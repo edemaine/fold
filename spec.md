@@ -114,21 +114,21 @@ Frame properties in the FOLD format include
   * `"nonSelfIntersecting"`: the polyhedral complex has no properly
     intersecting faces
 
-## Geometric Data
-
-### `vertices_...`
+## Vertex information: `vertices_...`
 
 * `vertices_coords`
 * `vertices_neighbors`
 
-### `edges_...`
+## Edge information: `edges_...`
 
 * `edges_vertices`
 * `edges_assignment`
 
-### `faces_...`
+## Face information: `faces_...`
 
 * `faces_vertices`
 
-### `faceOrders`
+## Layer information: `faceOrders` and `edgeOrders`
 
+* `faceOrders`
+* `edgeOrders`
