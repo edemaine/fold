@@ -32,7 +32,7 @@ oripa.prop_xml2fold =
 #  prop_fold2xml[y] = x if y?
 
 oripa.POINT_EPS = 1.0
-oripa.oripa2fold = (oripa) ->
+oripa.toFold = (oripa) ->
   fold =
     vertices_coords: []
     edges_vertices: []
@@ -129,7 +129,7 @@ oripa.oripa2fold = (oripa) ->
   convert.verticesEdges_to_faces_vertices fold
   fold
 
-oripa.fold2oripa = (fold) ->
+oripa.fromFold = (fold) ->
   if typeof fold == 'string'
     fold = JSON.parse fold
   s = """
