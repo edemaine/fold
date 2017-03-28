@@ -2,7 +2,7 @@
 
 The FOLD API consists of several modules under the `fold` namespace:
 
-* `fold.filter`: Selecting existing parts of, or computing new features of,
+* `fold.filter`: Select existing parts of, or compute new features of,
   a given FOLD object.
 * `fold.convert`: Augment an existing FOLD object with additional fields,
   and convert between FOLD and other file formats.
