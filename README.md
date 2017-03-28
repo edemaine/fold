@@ -43,12 +43,14 @@ For simple web apps, add this tag to your HTML:
 (or save a local copy of
 [`dist/fold.js`](https://github.com/edemaine/fold/blob/master/dist/fold.js)
 and use that).
-Then you can access the library via `FOLD.moduleName.functionName`, e.g.,
+Then you can access the library via `FOLD = require('fold')`.
+Then, if you add `FOLD = require('fold')` to your JavaScript/CoffeeScript code,
+you can access the library via `FOLD.moduleName.functionName`, e.g.,
 `FOLD.filter.collapseNearbyVertices`.
 
-For Node apps, first `npm install --save fold`.  (Coming soon.)
-Then, if you add `fold = require('fold')` to your JavaScript/CoffeeScript code,
-you can access the library via `FOLD.moduleName.functionName`, e.g.,
+For Node apps, just `npm install --save fold` (coming soon);
+then add `FOLD = require('fold')` to your JavaScript/CoffeeScript code;
+then access the library via `FOLD.moduleName.functionName`, e.g.,
 `FOLD.filter.collapseNearbyVertices`.
 
 The [FOLD library API](https://github.com/edemaine/fold/tree/master/doc/api.md)

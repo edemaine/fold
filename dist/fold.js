@@ -1470,7 +1470,7 @@ convert.setConverter('.fold', '.opx', oripa.fromFold);
 convert.setConverter('.opx', '.fold', oripa.toFold);
 
 
-},{"./convert":5,"xmldom":1}],"FOLD":[function(require,module,exports){
+},{"./convert":5,"xmldom":1}],"fold":[function(require,module,exports){
 module.exports = {
   geom: require('./geom'),
   filter: require('./filter'),
