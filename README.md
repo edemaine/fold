@@ -14,7 +14,10 @@ and **JavaScript libraries** to aid in manipulation of FOLD files.
 FOLD is built upon
 **[JSON](http://www.json.org/)** (JavaScript Object Notation)
 so [parsers](http://www.json.org/) are available in essentially all
-programming languages.
+programming languages.  Once parsed, the format also serves as the typical
+data structure you'll want to represent foldings in your software.
+Our libraries also help build useful redundant data structures for
+navigating the mesh.
 
 FOLD is similar in spirit to the
 [OBJ format](http://paulbourke.net/dataformats/obj/) (and other similar
