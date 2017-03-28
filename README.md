@@ -30,6 +30,7 @@ In addition, FOLD can support **linkages** (with 1D edges but no 2D faces).
 ## Documentation
 
 * [2-page paper describing FOLD](http://erikdemaine.org/papers/FOLD_CGW2016/)
+* [Examples of .fold files](https://github.com/edemaine/fold/examples/)
 
 ## Authors
 
