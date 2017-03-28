@@ -32,9 +32,21 @@ In addition, FOLD can support **linkages** (with 1D edges but no 2D faces).
 
 ## Documentation
 
-* [Draft specification](https://github.com/edemaine/fold/tree/master/spec.md)
+* [Draft FOLD specification](https://github.com/edemaine/fold/tree/master/spec.md)
 * [2-page paper describing FOLD](http://erikdemaine.org/papers/FOLD_CGW2016/)
 * [Examples of .fold files](https://github.com/edemaine/fold/tree/master/examples/)
+
+## FOLD Library
+
+For simple web apps, add to your HTML:
+`<script src="https://edemaine.github.io/fold/dist/fold.js"></script>`
+Then access the library via `fold.moduleName.functionName`, e.g.,
+`fold.filter.collapseNearbyVertices`.
+
+For Node apps, `npm install fold`.  (Coming soon.)
+If you add `fold = require('fold')` to your JavaScript/CoffeeScript code,
+then you can access the library via `fold.moduleName.functionName`, e.g.,
+`fold.filter.collapseNearbyVertices`.
 
 ## Authors
 
