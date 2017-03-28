@@ -4,35 +4,35 @@ geom = require './geom'
 convert = exports
 convert.oripa = require './oripa'
 
-convert.edges_vertices_to_vertices_neighbors = (fold) ->
+convert.edges_vertices_to_vertices_vertices = (fold) ->
   ###
   Works for abstract structures, so NOT SORTED.
-  Use sort_vertices_neighbors to sort in counterclockwise order.
+  Use sort_vertices_vertices to sort in counterclockwise order.
   ###
-  fold.vertices_neighbors = filter.edges_vertices_to_vertices_neighbors fold
+  fold.vertices_vertices = filter.edges_vertices_to_vertices_vertices fold
   fold
 
-convert.sort_vertices_neighbors = (fold) ->
+convert.sort_vertices_vertices = (fold) ->
   ###
   Sorts `fold.vertices_neighbords` in counterclockwise order using
   `fold.vertices_coordinates`.  2D only.
   Constructs `fold.vertices_neighbords` if absent, via
-  `convert.edges_vertices_to_vertices_neighbors`.
+  `convert.edges_vertices_to_vertices_vertices`.
   ###
   unless fold.vertices_coords?[0]?.length == 2
-    throw new Error "sort_vertices_neighbors: Vertex coordinates missing or not two dimensional"
-  unless fold.vertices_neighbors?
-    convert.edges_vertices_to_vertices_neighbors fold
-  for v, neighbors of fold.vertices_neighbors
+    throw new Error "sort_vertices_vertices: Vertex coordinates missing or not two dimensional"
+  unless fold.vertices_vertices?
+    convert.edges_vertices_to_vertices_vertices fold
+  for v, neighbors of fold.vertices_vertices
     sortByAngle neighbors, v, (x) -> fold.vertices_coords[x]
 
-convert.vertices_neighbors_to_faces_vertices = (fold) ->
+convert.vertices_vertices_to_faces_vertices = (fold) ->
   unless fold.vertices_coords?[0]?.length == 2
-    throw new Error "vertices_neighbors_to_faces_vertices: Vertex coordinates missing or not two dimensional"
-  unless fold.vertices_neighbors?
-    convert.sort_vertices_neighbors fold
+    throw new Error "vertices_vertices_to_faces_vertices: Vertex coordinates missing or not two dimensional"
+  unless fold.vertices_vertices?
+    convert.sort_vertices_vertices fold
   next = {}
-  for v, neighbors of fold.vertices_neighbors
+  for v, neighbors of fold.vertices_vertices
     v = parseInt v
     for u, i in neighbors
       next["#{u},#{v}"] = neighbors[(i-1) % neighbors.length]

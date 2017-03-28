@@ -17,21 +17,21 @@ for details.
 
 ## fold.convert
 
-* `fold.convert.edges_vertices_to_vertices_neighbors(foldObject)`:
+* `fold.convert.edges_vertices_to_vertices_vertices(foldObject)`:
   Given a FOLD object with `edges_vertices` property (defining edge
-  endpoints), automatically computes the `vertices_neighbors` property.
-  However, note that the `vertices_neighbors` arrays will *not* be sorted
-  in counterclockwise order.  Use `sort_vertices_neighbors` for that.
-* `fold.convert.sort_vertices_neighbors(foldObject)`:
-  Given a FOLD object with 2D `vertices_coords` and `vertices_neighbors`
-  properties, sorts each `vertices_neighbors` array in counterclockwise
+  endpoints), automatically computes the `vertices_vertices` property.
+  However, note that the `vertices_vertices` arrays will *not* be sorted
+  in counterclockwise order.  Use `sort_vertices_vertices` for that.
+* `fold.convert.sort_vertices_vertices(foldObject)`:
+  Given a FOLD object with 2D `vertices_coords` and `vertices_vertices`
+  properties, sorts each `vertices_vertices` array in counterclockwise
   order around the vertex.  Given a FOLD object with `vertices_coords` and
-  `edges_vertices` properties, automatically computes the `vertices_neighbors`
+  `edges_vertices` properties, automatically computes the `vertices_vertices`
   property and then sorts them.
-* `fold.convert.vertices_neighbors_to_faces_vertices(foldObject)`:
-  Given a FOLD object with counterclockwise-sorted `vertices_neighbors`
+* `fold.convert.vertices_vertices_to_faces_vertices(foldObject)`:
+  Given a FOLD object with counterclockwise-sorted `vertices_vertices`
   property (or one where this property can be computed via
-  `fold.convert.sort_vertices_neighbors`),
+  `fold.convert.sort_vertices_vertices`),
   constructs the implicitly defined faces, setting `faces_vertices` property.
 * `fold.convert.verticesFaces_to_edges(foldObject)`:
   Given a FOLD object with `faces_vertices` property, computes
