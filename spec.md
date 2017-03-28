@@ -119,6 +119,7 @@ Frame properties in the FOLD format include
 ### `vertices_...`
 
 * `vertices_coords`
+* `vertices_neighbors`
 
 ### `edges_...`
 
