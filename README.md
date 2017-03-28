@@ -30,15 +30,15 @@ and thus edge properties (such as mountain-valley assignments) and
 consecutive vertices from faces sharing an edge.)
 In addition, FOLD can support **linkages** (with 1D edges but no 2D faces).
 
-## Documentation
+## [FOLD Format Documentation](https://github.com/edemaine/fold/tree/master/doc/spec.md)
 
-* [Draft FOLD specification](https://github.com/edemaine/fold/tree/master/spec.md)
+* [FOLD specification](https://github.com/edemaine/fold/tree/master/doc/spec.md)
 * [2-page paper describing FOLD](http://erikdemaine.org/papers/FOLD_CGW2016/)
 * [Examples of .fold files](https://github.com/edemaine/fold/tree/master/examples/)
 
-## FOLD Library
+## [FOLD JavaScript Library](https://github.com/edemaine/fold/tree/master/doc/api.md)
 
-For simple web apps, add to your HTML:
+For simple web apps, add this tag to your HTML:
 `<script src="https://edemaine.github.io/fold/dist/fold.js"></script>`
 (or save a local copy of
 [`dist/fold.js`](https://github.com/edemaine/fold/blob/master/dist/fold.js)
@@ -46,10 +46,15 @@ and use that).
 Then you can access the library via `fold.moduleName.functionName`, e.g.,
 `fold.filter.collapseNearbyVertices`.
 
-For Node apps, `npm install fold`.  (Coming soon.)
-If you add `fold = require('fold')` to your JavaScript/CoffeeScript code,
-then you can access the library via `fold.moduleName.functionName`, e.g.,
+For Node apps, first `npm install --save fold`.  (Coming soon.)
+Then, if you add `fold = require('fold')` to your JavaScript/CoffeeScript code,
+you can access the library via `fold.moduleName.functionName`, e.g.,
 `fold.filter.collapseNearbyVertices`.
+
+The [FOLD library API](https://github.com/edemaine/fold/tree/master/doc/api.md)
+documents the available modules and functions for manipulating FOLD objects.
+If you have a `.fold` file, first parse it with `JSON.parse(fileContents)`
+to get a FOLD object.
 
 ## Authors
 

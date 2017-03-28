@@ -1,4 +1,4 @@
-# FOLD Specification (version 1)
+# FOLD Specification (version 1 DRAFT)
 
 ## Design
 
