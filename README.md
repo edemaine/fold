@@ -44,7 +44,6 @@ For simple web apps, add this tag to your HTML:
 (or save a local copy of
 [`dist/fold.js`](https://github.com/edemaine/fold/blob/master/dist/fold.js)
 and use that).
-Then you can access the library via `FOLD = require('fold')`.
 Then, if you add `FOLD = require('fold')` to your JavaScript/CoffeeScript code,
 you can access the library via `FOLD.moduleName.functionName`, e.g.,
 `FOLD.filter.collapseNearbyVertices`.
