@@ -1,4 +1,4 @@
 module.exports =
   geom: require './geom'
-  assignment: require './assignment'
+  filter: require './filter'
   convert: require './convert'

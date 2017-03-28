@@ -126,7 +126,7 @@ oripa.oripa2fold = (oripa) ->
   convert.collapseNearbyVertices fold, POINT_EPS
   convert.subdivideCrossingEdges_vertices fold, POINT_EPS
   ## In particular, convert.removeDuplicateEdges_vertices fold
-  convert.verticesEdges2faces_vertices fold
+  convert.verticesEdges_to_faces_vertices fold
   fold
 
 oripa.fold2oripa = (fold) ->
