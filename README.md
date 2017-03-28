@@ -40,7 +40,10 @@ In addition, FOLD can support **linkages** (with 1D edges but no 2D faces).
 
 For simple web apps, add to your HTML:
 `<script src="https://edemaine.github.io/fold/dist/fold.js"></script>`
-Then access the library via `fold.moduleName.functionName`, e.g.,
+(or save a local copy of
+[`dist/fold.js`](https://github.com/edemaine/fold/blob/master/dist/fold.js)
+and use that).
+Then you can access the library via `fold.moduleName.functionName`, e.g.,
 `fold.filter.collapseNearbyVertices`.
 
 For Node apps, `npm install fold`.  (Coming soon.)
