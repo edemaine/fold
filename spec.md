@@ -67,18 +67,29 @@ Standard metadata properties in the FOLD format include
   (a number).  See the top of this document.
 * `file_creator`: The software that created the file (string).
 * `file_author`: The human author (string).
-* `file_class`: A subjective interpretation about what the file represents.
-  The class is a string.  Some standard classes are
-  * `"creasePattern"`: a crease pattern (unfolded)
-  * `"foldedForm"`: a folded form/state, e.g. flat folding or 3D folding
-  * `"foldingMotion"`: a folding motion, e.g. specified as a sequence of frames
+* `file_classes`: A subjective interpretation about what the file represents
+  (array of strings).  Some standard file classes:
+  * `"singleModel"`: A single origami model, possibly still in multiple frames
+                     to represent crease pattern, folded form, etc.
+  * `"multiModel"`: Multiple origami models collected together into one file
+  * `"animation"`: Animation of sequence of frames,
+                   e.g., illustrating a continuous folding motion
+  * `"diagrams"`: A sequence of frames representing folding steps,
+                  as in origami diagrams
 
 ## Frame Metadata (`frame_...`)
 
 Frame properties in the FOLD format include
 
 * `frame_title`: A title for the frame (string).
+* `frame_description`: A description of the frame (string).
 * `frame_author`: The human author (string).
+* `frame_classes`: A subjective interpretation about what the frame represents
+  (array of strings).  Some standard frame classes:
+  * `"creasePattern"`: a crease pattern (unfolded)
+  * `"foldedForm"`: a folded form/state, e.g. flat folding or 3D folding
+  * `"graph"`: vertices and edges, but no lengths or faces
+  * `"linkage"`: vertices and edges and edge lengths, but no faces
 * `frame_attributes`: An array of attributes that objectively describe
   properties of the folded structure being represented.
   Some standard frame attributes include
@@ -88,6 +99,10 @@ Frame properties in the FOLD format include
     (has at most two faces incident to each edge)
   * `"nonManifold"`: the polyhedral complex is *not* a manifold
     (has more than two faces incident to an edge)
+  * `"orientable"`: the polyhedral complex is orientable, meaning it can be
+    assigned a consistent normal direction (and hence it is also manifold)
+  * `"nonOrientable"`: the polyhedral complex is not orientable, meaning it
+    cannot be assigned a consistent normal direction
   * `"selfTouching"`: the polyhedral complex has faces that touch in their
     relative interiors, so you probably want a face ordering
   * `"nonSelfTouching"`: the polyhedral complex has no touching faces,
