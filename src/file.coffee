@@ -5,9 +5,9 @@
 fs = require 'fs'
 path = require 'path'
 convert = require './convert'
-convertFile = exports
+file = exports
 
-convertFile.extensionOf = (filename) ->
+file.extensionOf = (filename) ->
   parsed = path.parse filename
   if parsed.ext
     parsed.ext
@@ -18,8 +18,8 @@ convertFile.extensionOf = (filename) ->
   else
     null
 
-convertFile.toFile = (fold, output, converter = null) ->
-  outFormat = convertFile.extensionOf output
+file.toFile = (fold, output, converter = null) ->
+  outFormat = file.extensionOf output
   unless outFormat
     console.warn "Could not detect extension of #{output}"
     return
@@ -33,9 +33,9 @@ convertFile.toFile = (fold, output, converter = null) ->
     result = JSON.stringify result, null, 1
   fs.writeFileSync output, result, 'utf-8'
 
-convertFile.fileToFile = (input, output, converter = null) ->
-  inFormat = convertFile.extensionOf input
-  outFormat = convertFile.extensionOf output
+file.fileToFile = (input, output, converter = null) ->
+  inFormat = file.extensionOf input
+  outFormat = file.extensionOf output
   unless inFormat
     console.warn "Could not detect extension of #{input}"
     return
@@ -62,7 +62,7 @@ convertFile.fileToFile = (input, output, converter = null) ->
       result = JSON.stringify result, null, 1
     fs.writeFileSync output, result, 'utf-8'
 
-convertFile.main = (args = process.argv[2..]) ->
+file.main = (args = process.argv[2..]) ->
   filenames = []
   output = '.fold'  ## Default behavior: convert to .fold
   mode = null
@@ -78,6 +78,6 @@ convertFile.main = (args = process.argv[2..]) ->
           else
             filenames.push arg
   for filename in filenames
-    convertFile.fileToFile filename, output
+    file.fileToFile filename, output
 
-convertFile.main() if require.main == module
+file.main() if require.main == module

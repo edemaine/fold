@@ -109,9 +109,20 @@ convert.setConverter = (fromExt, toExt, converter) ->
   convert.extensions[toExt] = true
   convert.converters["#{fromExt}#{toExt}"] = converter
 
-convert.oripa = require './oripa'
+convert.convertFromTo = (data, fromExt, toExt) ->
+  fromExt = ".#{fromExt}" unless fromExt[0] == '.'
+  toExt = ".#{toExt}" unless toExt[0] == '.'
+  converter = convert.getConverter fromExt, toExt
+  unless converter?
+    if fromExt == toExt
+      return data
+    throw new Error "No converter from #{fromExt} to #{toExt}"
+  converter data
 
-convertFile = require './convert_file'
-if convertFile?
-  for key, value of convertFile
-    convert[key] = value
+convert.convertFrom = (data, fromExt) ->
+  convert.convertFromTo data, fromExt, '.fold'
+
+convert.convertTo = (data, toExt) ->
+  convert.convertFromTo data, '.fold', toExt
+
+convert.oripa = require './oripa'

@@ -47,6 +47,6 @@
   },
   "browser": {
     "xmldom": false,
-    "src/convert_file.coffee": false
+    "./src/file.coffee": false
   }
 }

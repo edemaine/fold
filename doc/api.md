@@ -37,22 +37,37 @@ for details.
   Given a FOLD object with `faces_vertices` property, computes
   `edges_vertices`, `edges_faces`, `faces_edges`, and `edges_assignment`
   properties (where the assignment is "B" for boundary edges).
-* `FOLD.convert.toFile(fold, filename)`: Save FOLD object to specified
+
+File format conversion:
+
+* `FOLD.convert.convertFromTo(data, fromFormat, toFormat)`: Convert the
+  specified data from one format (`fold`, `opx`) to another.
+* `FOLD.convert.convertFrom(data, fromFormat)`: Convert the specified data
+  from one format (`fold`, `opx`) to FOLD.
+* `FOLD.convert.convertTo(data, toFormat)`: Convert the specified data
+  from FOLD to another format (`fold`, `opx`).
+* The `FOLD.convert.oripa` submodule implements the conversion between FOLD and
+  [ORIPA `.opx` format](http://mitani.cs.tsukuba.ac.jp/oripa/).  See
+  [source code](https://github.com/edemaine/fold/blob/master/src/oripa.coffee)
+  for details.
+
+
+See [source code](https://github.com/edemaine/fold/blob/master/src/convert.coffee)
+for details.
+
+## FOLD.file
+
+The following functions are available in Node only, not in the browser
+(where filenames don't really make sense).
+
+* `FOLD.file.toFile(fold, filename)`: Save FOLD object to specified
   filename, which can end in `.fold` or a supported extension (`.opx`).
-  *Available in Node only, not browser.*
-* `FOLD.convert.fileToFile(inFilename, outFilename)`: Convert one filename
+* `FOLD.file.fileToFile(inFilename, outFilename)`: Convert one filename
   to another, using extensions to determine format (`.fold`, `.opx`).
   Alternatively, `outFilename` can be *just* an extension, in which case
   it will be combined with `inFilename` to form a full filename.
-  *Available in Node only, not browser.*
-* `FOLD.convert.oripa.toFold(opxString)`: Parses a file in the
-  [ORIPA `.opx` format](http://mitani.cs.tsukuba.ac.jp/oripa/) and
-  returns a FOLD object.
-* `FOLD.convert.oripa.fromFold(fold)`: Converts a given FOLD object
-  (or JSON string) into a string in
-  [ORIPA `.opx` format](http://mitani.cs.tsukuba.ac.jp/oripa/).
 
-See [source code](https://github.com/edemaine/fold/blob/master/src/convert.coffee)
+See [source code](https://github.com/edemaine/fold/blob/master/src/file.coffee)
 for details.
 
 ## FOLD.geom
