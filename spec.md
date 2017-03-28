@@ -93,7 +93,7 @@ Frame properties in the FOLD format include
 * `frame_attributes`: An array of attributes that objectively describe
   properties of the folded structure being represented.
   Some standard frame attributes include
-  * `"2D"`: the coordinates lie in 2D (xy)
+  * `"2D"`: the coordinates lie in 2D (xy); z coordinates are all (implicitly) 0
   * `"3D"`: the coordinates lie in 3D (xyz) and not 2D (xy)
   * `"abstract"`: the polyhedral complex is not embedded in Euclidean space,
     so there are no vertex coordinates (but might be edge lengths defining
