@@ -17,6 +17,13 @@ for details.
 
 ## fold.convert
 
+* `fold.convert.oripa.oripa2fold(opxString)`: Parses a file in the
+  [ORIPA `.opx` format](http://mitani.cs.tsukuba.ac.jp/oripa/) and
+  returns a FOLD object.
+* `fold.convert.oripa.fold2oripa(foldObject)`: Converts a given FOLD object
+  (or JSON string) into a string in
+  [ORIPA `.opx` format](http://mitani.cs.tsukuba.ac.jp/oripa/).
+
 See [source code](https://github.com/edemaine/fold/blob/master/src/convert.coffee)
 for details.
 
