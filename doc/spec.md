@@ -127,16 +127,28 @@ Frame properties in the FOLD format include
 
 ## Vertex information: `vertices_...`
 
-* `vertices_coords`
-* `vertices_neighbors`
+The values of the following properties are zero-indexed arrays by vertex ID.
+
+* `vertices_coords`: For each vertex, an array of coordinates,
+  such as `[x, y, z]` or `[x, y]` (where `z` is implicitly zero).
+  In higher dimensions, all unspecified coordinates are implicitly zero.
+* `vertices_vertices`: For each vertex, an array of vertices (vertex IDs)
+  that are adjacent along edges.  If the frame is an orientable manifold,
+  this list should be ordered counterclockwise around the vertex.
+  If the frame is a nonorientable manifold, this list should be cyclicly
+  ordered around the vertex.  Otherwise, the order is arbitrary.
 
 ## Edge information: `edges_...`
+
+The values of the following properties are zero-indexed arrays by edge ID.
 
 * `edges_vertices`
 * `edges_assignment`
 * `edges_foldAngles`
 
 ## Face information: `faces_...`
+
+The values of the following properties are zero-indexed arrays by face ID.
 
 * `faces_vertices`
 
