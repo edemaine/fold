@@ -20,19 +20,23 @@ convert.sort_vertices_neighbors = (fold) ->
   `convert.edges_vertices_to_vertices_neighbors`.
   ###
   unless fold.vertices_coords?[0]?.length == 2
-    throw "verticesEdges2vertices_neighbors: Vertex coordinates missing or not two dimensional"
+    throw new Error "sort_vertices_neighbors: Vertex coordinates missing or not two dimensional"
   unless fold.vertices_neighbors?
     convert.edges_vertices_to_vertices_neighbors fold
   for v, neighbors of fold.vertices_neighbors
     sortByAngle neighbors, v, (x) -> fold.vertices_coords[x]
 
-convert.verticesEdges_to_faces_vertices = (fold) ->
+convert.vertices_neighbors_to_faces_vertices = (fold) ->
+  unless fold.vertices_coords?[0]?.length == 2
+    throw new Error "vertices_neighbors_to_faces_vertices: Vertex coordinates missing or not two dimensional"
+  unless fold.vertices_neighbors?
+    convert.sort_vertices_neighbors fold
   next = {}
   for v, neighbors of fold.vertices_neighbors
     v = parseInt v
     for u, i in neighbors
-      next["#{u},#{v}"] = neighbors[(i+1) % neighbors.length]
-      #console.log u, v, neighbors[(i+1) % neighbors.length]
+      next["#{u},#{v}"] = neighbors[(i-1) % neighbors.length]
+      #console.log u, v, neighbors[(i-1) % neighbors.length]
   fold.faces_vertices = []
   #for uv, w of next
   for uv in (key for key of next)
@@ -60,7 +64,7 @@ convert.verticesEdges_to_faces_vertices = (fold) ->
     #  console.log face, 'clockwise'
   fold
 
-convert.verticesFaces_to_edges = (mesh) ->
+convert.faces_vertices_to_edges = (mesh) ->
   mesh.edges_vertices = []
   mesh.edges_faces = []
   mesh.faces_edges = []
