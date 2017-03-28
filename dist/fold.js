@@ -1,4 +1,4 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 
 },{}],2:[function(require,module,exports){
 arguments[4][1][0].apply(exports,arguments)
@@ -413,15 +413,339 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],5:[function(require,module,exports){
-var assignment;
 
-assignment = exports;
+/* FOLD FORMAT MANIPULATORS */
+var convert, convertFile, geom, key, value;
 
-assignment.edgesAssigned = function(fold, target) {
-  var i, j, len, ref, results;
+geom = require('./geom');
+
+convert = exports;
+
+convert.edges_vertices_to_vertices_vertices = function(fold) {
+
+  /*
+  Works for abstract structures, so NOT SORTED.
+  Use sort_vertices_vertices to sort in counterclockwise order.
+   */
+  fold.vertices_vertices = filter.edges_vertices_to_vertices_vertices(fold);
+  return fold;
+};
+
+convert.sort_vertices_vertices = function(fold) {
+
+  /*
+  Sorts `fold.vertices_neighbords` in counterclockwise order using
+  `fold.vertices_coordinates`.  2D only.
+  Constructs `fold.vertices_neighbords` if absent, via
+  `convert.edges_vertices_to_vertices_vertices`.
+   */
+  var neighbors, ref, ref1, ref2, results, v;
+  if (((ref = fold.vertices_coords) != null ? (ref1 = ref[0]) != null ? ref1.length : void 0 : void 0) !== 2) {
+    throw new Error("sort_vertices_vertices: Vertex coordinates missing or not two dimensional");
+  }
+  if (fold.vertices_vertices == null) {
+    convert.edges_vertices_to_vertices_vertices(fold);
+  }
+  ref2 = fold.vertices_vertices;
+  results = [];
+  for (v in ref2) {
+    neighbors = ref2[v];
+    results.push(sortByAngle(neighbors, v, function(x) {
+      return fold.vertices_coords[x];
+    }));
+  }
+  return results;
+};
+
+convert.vertices_vertices_to_faces_vertices = function(fold) {
+  var face, i, j, k, key, len, len1, neighbors, next, ref, ref1, ref2, ref3, ref4, ref5, u, uv, v, w, x;
+  if (((ref = fold.vertices_coords) != null ? (ref1 = ref[0]) != null ? ref1.length : void 0 : void 0) !== 2) {
+    throw new Error("vertices_vertices_to_faces_vertices: Vertex coordinates missing or not two dimensional");
+  }
+  if (fold.vertices_vertices == null) {
+    convert.sort_vertices_vertices(fold);
+  }
+  next = {};
+  ref2 = fold.vertices_vertices;
+  for (v in ref2) {
+    neighbors = ref2[v];
+    v = parseInt(v);
+    for (i = j = 0, len = neighbors.length; j < len; i = ++j) {
+      u = neighbors[i];
+      next[u + "," + v] = neighbors[(i - 1) % neighbors.length];
+    }
+  }
+  fold.faces_vertices = [];
+  ref3 = (function() {
+    var results;
+    results = [];
+    for (key in next) {
+      results.push(key);
+    }
+    return results;
+  })();
+  for (k = 0, len1 = ref3.length; k < len1; k++) {
+    uv = ref3[k];
+    w = next[uv];
+    if (w == null) {
+      continue;
+    }
+    next[uv] = null;
+    ref4 = uv.split(','), u = ref4[0], v = ref4[1];
+    u = parseInt(u);
+    v = parseInt(v);
+    face = [u, v];
+    while (w !== face[0]) {
+      if (w == null) {
+        console.warn('Confusion with face', face);
+        break;
+      }
+      face.push(w);
+      ref5 = [v, w], u = ref5[0], v = ref5[1];
+      w = next[u + "," + v];
+      next[u + "," + v] = null;
+    }
+    next[face[face.length - 1] + "," + face[0]] = null;
+    if ((w != null) && polygonOrientation((function() {
+      var l, len2, results;
+      results = [];
+      for (l = 0, len2 = face.length; l < len2; l++) {
+        x = face[l];
+        results.push(fold.vertices_coords[x]);
+      }
+      return results;
+    })()) > 0) {
+      fold.faces_vertices.push(face);
+    }
+  }
+  return fold;
+};
+
+convert.faces_vertices_to_edges = function(mesh) {
+  var edge, edgeMap, face, i, key, ref, v1, v2, vertices;
+  mesh.edges_vertices = [];
+  mesh.edges_faces = [];
+  mesh.faces_edges = [];
+  mesh.edges_assignment = [];
+  edgeMap = {};
+  ref = mesh.faces_vertices;
+  for (face in ref) {
+    vertices = ref[face];
+    face = parseInt(face);
+    mesh.faces_edges.push((function() {
+      var j, len, results;
+      results = [];
+      for (i = j = 0, len = vertices.length; j < len; i = ++j) {
+        v1 = vertices[i];
+        v1 = parseInt(v1);
+        v2 = vertices[(i + 1) % vertices.length];
+        if (v1 <= v2) {
+          key = v1 + "," + v2;
+        } else {
+          key = v2 + "," + v1;
+        }
+        if (key in edgeMap) {
+          edge = edgeMap[key];
+        } else {
+          edge = edgeMap[key] = mesh.edges_vertices.length;
+          if (v1 <= v2) {
+            mesh.edges_vertices.push([v1, v2]);
+          } else {
+            mesh.edges_vertices.push([v2, v1]);
+          }
+          mesh.edges_faces.push([null, null]);
+          mesh.edges_assignment.push('B');
+        }
+        if (v1 <= v2) {
+          mesh.edges_faces[edge][0] = face;
+        } else {
+          mesh.edges_faces[edge][1] = face;
+        }
+        results.push(edge);
+      }
+      return results;
+    })());
+  }
+  return mesh;
+};
+
+convert.extensions = {};
+
+convert.converters = {};
+
+convert.getConverter = function(fromExt, toExt) {
+  if (fromExt === toExt) {
+    return function(x) {
+      return x;
+    };
+  } else {
+    return convert.converters["" + fromExt + toExt];
+  }
+};
+
+convert.setConverter = function(fromExt, toExt, converter) {
+  convert.extensions[fromExt] = true;
+  convert.extensions[toExt] = true;
+  return convert.converters["" + fromExt + toExt] = converter;
+};
+
+convert.oripa = require('./oripa');
+
+convertFile = require('./convert_file');
+
+if (convertFile != null) {
+  for (key in convertFile) {
+    value = convertFile[key];
+    convert[key] = value;
+  }
+}
+
+
+},{"./convert_file":6,"./geom":8,"./oripa":9}],6:[function(require,module,exports){
+(function (process){
+
+;
+var convert, convertFile, fs, path;
+
+fs = require('fs');
+
+path = require('path');
+
+convert = require('./convert');
+
+convertFile = exports;
+
+convertFile.extensionOf = function(filename) {
+  var parsed;
+  parsed = path.parse(filename);
+  if (parsed.ext) {
+    return parsed.ext;
+  } else if (parsed.base[0] === '.') {
+    return parsed.base;
+  } else if (("." + filename) in convert.extensions) {
+    return "." + filename;
+  } else {
+    return null;
+  }
+};
+
+convertFile.toFile = function(fold, output, converter) {
+  var outFormat, result;
+  if (converter == null) {
+    converter = null;
+  }
+  outFormat = convertFile.extensionOf(output);
+  if (!outFormat) {
+    console.warn("Could not detect extension of " + output);
+    return;
+  }
+  if (converter == null) {
+    converter = convert.getConverter('.fold', outFormat);
+    if (converter == null) {
+      console.warn("No converter from .fold to " + outFormat);
+      return;
+    }
+  }
+  result = converter(fold);
+  if (typeof result !== 'string') {
+    result = JSON.stringify(result, null, 1);
+  }
+  return fs.writeFileSync(output, result, 'utf-8');
+};
+
+convertFile.fileToFile = function(input, output, converter) {
+  var inFormat, outFormat, result;
+  if (converter == null) {
+    converter = null;
+  }
+  inFormat = convertFile.extensionOf(input);
+  outFormat = convertFile.extensionOf(output);
+  if (!inFormat) {
+    console.warn("Could not detect extension of " + input);
+    return;
+  }
+  if (!outFormat) {
+    console.warn("Could not detect extension of " + output);
+    return;
+  }
+  if (converter == null) {
+    converter = convert.getConverter(inFormat, outFormat);
+    if (converter == null) {
+      console.warn("No converter from " + inFormat + " to " + outFormat);
+      return;
+    }
+  }
+  if (outFormat === output || outFormat === ("." + output)) {
+    output = path.parse(input);
+    output.ext = outFormat;
+    output.base = output.name + output.ext;
+    output = path.format(output);
+  }
+  if (inFormat === outFormat || input === output) {
+    return console.warn("Attempt to convert " + input + " to same extension");
+  } else {
+    console.log(input, '->', output);
+    result = converter(fs.readFileSync(input, 'utf-8'));
+    if (typeof result !== 'string') {
+      result = JSON.stringify(result, null, 1);
+    }
+    return fs.writeFileSync(output, result, 'utf-8');
+  }
+};
+
+convertFile.main = function(args) {
+  var arg, filename, filenames, i, j, len, len1, mode, output, results;
+  if (args == null) {
+    args = process.argv.slice(2);
+  }
+  filenames = [];
+  output = '.fold';
+  mode = null;
+  for (i = 0, len = args.length; i < len; i++) {
+    arg = args[i];
+    switch (mode) {
+      case 'output':
+        output = arg;
+        mode = null;
+        break;
+      default:
+        switch (arg) {
+          case '-o':
+          case '--output':
+            mode = 'output';
+            break;
+          default:
+            filenames.push(arg);
+        }
+    }
+  }
+  results = [];
+  for (j = 0, len1 = filenames.length; j < len1; j++) {
+    filename = filenames[j];
+    results.push(convertFile.fileToFile(filename, output));
+  }
+  return results;
+};
+
+if (require.main === module) {
+  convertFile.main();
+}
+
+
+}).call(this,require('_process'))
+},{"./convert":5,"_process":4,"fs":2,"path":3}],7:[function(require,module,exports){
+var RepeatedPointsDS, filter, geom,
+  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
+geom = require('./geom');
+
+filter = exports;
+
+filter.edgesAssigned = function(fold, target) {
+  var assignment, i, k, len, ref, results;
   ref = fold.edges_assignment;
   results = [];
-  for (i = j = 0, len = ref.length; j < len; i = ++j) {
+  for (i = k = 0, len = ref.length; k < len; i = ++k) {
     assignment = ref[i];
     if (assignment === target) {
       results.push(i);
@@ -430,40 +754,27 @@ assignment.edgesAssigned = function(fold, target) {
   return results;
 };
 
-assignment.mountainEdges = function(fold) {
+filter.mountainEdges = function(fold) {
   return assignment.edgesAssigned(fold, 'M');
 };
 
-assignment.valleyEdges = function(fold) {
+filter.valleyEdges = function(fold) {
   return assignment.edgesAssigned(fold, 'V');
 };
 
-assignment.flatEdges = function(fold) {
+filter.flatEdges = function(fold) {
   return assignment.edgesAssigned(fold, 'F');
 };
 
-assignment.boundaryEdges = function(fold) {
+filter.boundaryEdges = function(fold) {
   return assignment.edgesAssigned(fold, 'B');
 };
 
-assignment.unassignedEdges = function(fold) {
+filter.unassignedEdges = function(fold) {
   return assignment.edgesAssigned(fold, 'F');
 };
 
-
-},{}],6:[function(require,module,exports){
-
-/* FOLD FORMAT MANIPULATORS */
-var RepeatedPointsDS, convert, convertFile, geom, key, value,
-  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
-
-geom = require('./geom');
-
-convert = exports;
-
-convert.oripa = require('./oripa');
-
-convert.keysStartingWith = function(fold, prefix) {
+filter.keysStartingWith = function(fold, prefix) {
   var key, results;
   results = [];
   for (key in fold) {
@@ -474,7 +785,7 @@ convert.keysStartingWith = function(fold, prefix) {
   return results;
 };
 
-convert.keysEndingWith = function(fold, suffix) {
+filter.keysEndingWith = function(fold, suffix) {
   var key, results;
   results = [];
   for (key in fold) {
@@ -485,14 +796,14 @@ convert.keysEndingWith = function(fold, suffix) {
   return results;
 };
 
-convert.remapField = function(fold, field, old2new) {
+filter.remapField = function(fold, field, old2new) {
   var array, i, j, k, key, l, len, len1, len2, m, new2old, old, ref, ref1;
   new2old = [];
   for (i = k = 0, len = old2new.length; k < len; i = ++k) {
     j = old2new[i];
     new2old[j] = i;
   }
-  ref = convert.keysStartingWith(fold, field + '_');
+  ref = filter.keysStartingWith(fold, field + '_');
   for (l = 0, len1 = ref.length; l < len1; l++) {
     key = ref[l];
     fold[key] = (function() {
@@ -505,7 +816,7 @@ convert.remapField = function(fold, field, old2new) {
       return results;
     })();
   }
-  ref1 = convert.keysEndingWith(fold, '_' + field);
+  ref1 = filter.keysEndingWith(fold, '_' + field);
   for (m = 0, len2 = ref1.length; m < len2; m++) {
     key = ref1[m];
     fold[key] = (function() {
@@ -530,7 +841,7 @@ convert.remapField = function(fold, field, old2new) {
   return fold;
 };
 
-convert.removeDuplicateEdges_vertices = function(fold) {
+filter.removeDuplicateEdges_vertices = function(fold) {
   var edge, id, key, old2new, seen, v, w;
   seen = {};
   id = 0;
@@ -554,10 +865,10 @@ convert.removeDuplicateEdges_vertices = function(fold) {
     }
     return results;
   })();
-  return convert.remapField(fold, 'edges', old2new);
+  return filter.remapField(fold, 'edges', old2new);
 };
 
-convert.edges_verticesIncident = function(e1, e2) {
+filter.edges_verticesIncident = function(e1, e2) {
   var k, len, v;
   for (k = 0, len = e1.length; k < len; k++) {
     v = e1[k];
@@ -637,7 +948,7 @@ RepeatedPointsDS = (function() {
 
 })();
 
-convert.collapseNearbyVertices = function(fold, epsilon) {
+filter.collapseNearbyVertices = function(fold, epsilon) {
   var coords, old2new, vertices;
   vertices = new RepeatedPointsDS([], epsilon);
   old2new = (function() {
@@ -650,12 +961,12 @@ convert.collapseNearbyVertices = function(fold, epsilon) {
     }
     return results;
   })();
-  return convert.remapField(fold, 'vertices', old2new);
+  return filter.remapField(fold, 'vertices', old2new);
 };
 
-convert.subdivideCrossingEdges_vertices = function(fold, epsilon) {
+filter.subdivideCrossingEdges_vertices = function(fold, epsilon) {
   var cross, crossI, e1, e2, i1, i2, k, len, ref, results, s1, s2, v, vertices;
-  convert.removeDuplicateEdges_vertices(fold);
+  filter.removeDuplicateEdges_vertices(fold);
   vertices = new RepeatedPointsDS(fold.vertices_coords, epsilon);
   ref = fold.edges_vertices;
   results = [];
@@ -685,8 +996,8 @@ convert.subdivideCrossingEdges_vertices = function(fold, epsilon) {
           }
           return results2;
         })();
-        if (!convert.edges_verticesIncident(e1, e2) && segmentsCross(s1, s2)) {
-          cross = lineIntersectLine(s1, s2);
+        if (!filter.edges_verticesIncident(e1, e2) && geom.segmentsCross(s1, s2)) {
+          cross = geom.lineIntersectLine(s1, s2);
           crossI = vertices.insert(cross);
           if (!(indexOf.call(e1, crossI) >= 0 && indexOf.call(e2, crossI) >= 0)) {
             if (indexOf.call(e1, crossI) < 0) {
@@ -712,236 +1023,32 @@ convert.subdivideCrossingEdges_vertices = function(fold, epsilon) {
   return results;
 };
 
-convert.edges_vertices2vertices_neighbors = function(fold) {
-  var edge, k, len, ref, v, w;
-  fold.vertices_neighbors = [];
+filter.edges_vertices_to_vertices_neighbors = function(fold) {
+
+  /*
+  Works for abstract structures, so NOT SORTED.
+  Use sort_vertices_neighbors to sort in counterclockwise order.
+   */
+  var edge, k, len, ref, v, vertices_neighbors, w;
+  vertices_neighbors = [];
   ref = fold.edges_vertices;
   for (k = 0, len = ref.length; k < len; k++) {
     edge = ref[k];
     v = edge[0], w = edge[1];
-    while (v >= fold.vertices_neighbors.length) {
-      fold.vertices_neighbors.push([]);
+    while (v >= vertices_neighbors.length) {
+      vertices_neighbors.push([]);
     }
-    while (w >= fold.vertices_neighbors.length) {
-      fold.vertices_neighbors.push([]);
+    while (w >= vertices_neighbors.length) {
+      vertices_neighbors.push([]);
     }
-    fold.vertices_neighbors[v].push(w);
-    fold.vertices_neighbors[w].push(v);
+    vertices_neighbors[v].push(w);
+    vertices_neighbors[w].push(v);
   }
-  return fold;
+  return vertices_neighbors;
 };
 
-convert.verticesEdges2vertices_neighbors = function(fold) {
-  var edge, k, len, neighbors, ref, ref1, ref2, ref3, v, vertex, w;
-  if (((ref = fold.vertices_coords) != null ? (ref1 = ref[0]) != null ? ref1.length : void 0 : void 0) !== 2) {
-    throw "verticesEdges2vertices_neighbors: Vertex coordinates missing or not two dimensional";
-  }
-  fold.vertices_neighbors = (function() {
-    var k, len, ref2, results;
-    ref2 = fold.vertices_coords;
-    results = [];
-    for (k = 0, len = ref2.length; k < len; k++) {
-      vertex = ref2[k];
-      results.push([]);
-    }
-    return results;
-  })();
-  ref2 = fold.edges_vertices;
-  for (k = 0, len = ref2.length; k < len; k++) {
-    edge = ref2[k];
-    v = edge[0], w = edge[1];
-    fold.vertices_neighbors[v].push(w);
-    fold.vertices_neighbors[w].push(v);
-  }
-  ref3 = fold.vertices_neighbors;
-  for (v in ref3) {
-    neighbors = ref3[v];
-    sortByAngle(neighbors, v, function(x) {
-      return fold.vertices_coords[x];
-    });
-  }
-  return fold;
-};
 
-convert.verticesEdges2faces_vertices = function(fold) {
-  var face, i, k, key, l, len, len1, neighbors, next, ref, ref1, ref2, ref3, u, uv, v, w, x;
-  convert.verticesEdges2vertices_neighbors(fold);
-  next = {};
-  ref = fold.vertices_neighbors;
-  for (v in ref) {
-    neighbors = ref[v];
-    v = parseInt(v);
-    for (i = k = 0, len = neighbors.length; k < len; i = ++k) {
-      u = neighbors[i];
-      next[u + "," + v] = neighbors[(i + 1) % neighbors.length];
-    }
-  }
-  fold.faces_vertices = [];
-  ref1 = (function() {
-    var results;
-    results = [];
-    for (key in next) {
-      results.push(key);
-    }
-    return results;
-  })();
-  for (l = 0, len1 = ref1.length; l < len1; l++) {
-    uv = ref1[l];
-    w = next[uv];
-    if (w == null) {
-      continue;
-    }
-    next[uv] = null;
-    ref2 = uv.split(','), u = ref2[0], v = ref2[1];
-    u = parseInt(u);
-    v = parseInt(v);
-    face = [u, v];
-    while (w !== face[0]) {
-      if (w == null) {
-        console.warn('Confusion with face', face);
-        break;
-      }
-      face.push(w);
-      ref3 = [v, w], u = ref3[0], v = ref3[1];
-      w = next[u + "," + v];
-      next[u + "," + v] = null;
-    }
-    next[face[face.length - 1] + "," + face[0]] = null;
-    if ((w != null) && polygonOrientation((function() {
-      var len2, m, results;
-      results = [];
-      for (m = 0, len2 = face.length; m < len2; m++) {
-        x = face[m];
-        results.push(fold.vertices_coords[x]);
-      }
-      return results;
-    })()) > 0) {
-      fold.faces_vertices.push(face);
-    }
-  }
-  return fold;
-};
-
-convert.verticesFaces2edges = function(mesh) {
-  var edge, edgeMap, face, i, key, ref, v1, v2, vertices;
-  mesh.edges_vertices = [];
-  mesh.edges_faces = [];
-  mesh.faces_edges = [];
-  mesh.edges_assignment = [];
-  edgeMap = {};
-  ref = mesh.faces_vertices;
-  for (face in ref) {
-    vertices = ref[face];
-    face = parseInt(face);
-    mesh.faces_edges.push((function() {
-      var k, len, results;
-      results = [];
-      for (i = k = 0, len = vertices.length; k < len; i = ++k) {
-        v1 = vertices[i];
-        v1 = parseInt(v1);
-        v2 = vertices[(i + 1) % vertices.length];
-        if (v1 <= v2) {
-          key = v1 + "," + v2;
-        } else {
-          key = v2 + "," + v1;
-        }
-        if (key in edgeMap) {
-          edge = edgeMap[key];
-        } else {
-          edge = edgeMap[key] = mesh.edges_vertices.length;
-          if (v1 <= v2) {
-            mesh.edges_vertices.push([v1, v2]);
-          } else {
-            mesh.edges_vertices.push([v2, v1]);
-          }
-          mesh.edges_faces.push([null, null]);
-          mesh.edges_assignment.push('B');
-        }
-        if (v1 <= v2) {
-          mesh.edges_faces[edge][0] = face;
-        } else {
-          mesh.edges_faces[edge][1] = face;
-        }
-        results.push(edge);
-      }
-      return results;
-    })());
-  }
-  return mesh;
-};
-
-convertFile = require('./convert_file');
-
-if (convertFile != null) {
-  for (key in convertFile) {
-    value = convertFile[key];
-    convert[key] = value;
-  }
-}
-
-
-},{"./convert_file":7,"./geom":8,"./oripa":10}],7:[function(require,module,exports){
-(function (process){
-
-;
-var convert, convertFile, fs, path;
-
-fs = require('fs');
-
-path = require('path');
-
-convert = require('./convert');
-
-convertFile = exports;
-
-convertFile.file = function(input, extension, converter) {
-  var output, result;
-  output = path.parse(input);
-  output.ext = extension;
-  output.base = output.name + output.ext;
-  output = path.format(output);
-  console.log(input, '->', output);
-  if (input === output) {
-    return console.warn(input + " already has extension " + extension);
-  } else {
-    result = converter(fs.readFileSync(input, 'utf-8'));
-    if (typeof result !== 'string') {
-      result = JSON.stringify(result, null, 1);
-    }
-    return fs.writeFileSync(output, result, 'utf-8');
-  }
-};
-
-convertFile.main = function(args) {
-  var filename, i, len, results;
-  if (args == null) {
-    args = process.argv.slice(2);
-  }
-  path = require('path');
-  results = [];
-  for (i = 0, len = args.length; i < len; i++) {
-    filename = args[i];
-    switch (path.parse(filename).ext) {
-      case '.fold':
-        results.push(convert.file(filename, '.fold.opx', convert.oripa.fold2oripa));
-        break;
-      case '.opx':
-        results.push(convert.file(filename, '.fold', convert.oripa.oripa2fold));
-        break;
-      default:
-        results.push(void 0);
-    }
-  }
-  return results;
-};
-
-if (require.main === module) {
-  convertFile.main();
-}
-
-
-}).call(this,require('_process'))
-},{"./convert":6,"_process":4,"fs":2,"path":3}],8:[function(require,module,exports){
+},{"./geom":8}],8:[function(require,module,exports){
 
 /* BASIC GEOMETRY */
 var geom;
@@ -1127,14 +1234,6 @@ geom.lineIntersectLine = function(l1, l2) {
 
 
 },{}],9:[function(require,module,exports){
-module.exports = {
-  geom: require('./geom'),
-  assignment: require('./assignment'),
-  convert: require('./convert')
-};
-
-
-},{"./assignment":5,"./convert":6,"./geom":8}],10:[function(require,module,exports){
 var DOMParser, convert, oripa, ref, x, y;
 
 if (typeof DOMParser === "undefined" || DOMParser === null) {
@@ -1175,7 +1274,7 @@ oripa.prop_xml2fold = {
 
 oripa.POINT_EPS = 1.0;
 
-oripa.oripa2fold = function(oripa) {
+oripa.toFold = function(oripa) {
   var children, fold, j, k, l, len, len1, len2, len3, len4, line, lines, m, n, nodeSpec, object, oneChildSpec, oneChildText, prop, property, ref1, ref2, ref3, ref4, ref5, subproperty, top, type, vertex, x0, x1, xml, y0, y1;
   fold = {
     vertices_coords: [],
@@ -1296,8 +1395,8 @@ oripa.oripa2fold = function(oripa) {
               }
             }
           }
-        } else if (property.getAttribute('property') in prop_xml2fold) {
-          prop = prop_xml2fold[property.getAttribute('property')];
+        } else if (property.getAttribute('property') in oripa.prop_xml2fold) {
+          prop = oripa.prop_xml2fold[property.getAttribute('property')];
           if (prop != null) {
             fold[prop] = oneChildText(oneChildSpec(property, 'string'));
           }
@@ -1309,35 +1408,36 @@ oripa.oripa2fold = function(oripa) {
   }
   convert.collapseNearbyVertices(fold, POINT_EPS);
   convert.subdivideCrossingEdges_vertices(fold, POINT_EPS);
-  convert.verticesEdges2faces_vertices(fold);
+  convert.verticesEdges_to_faces_vertices(fold);
   return fold;
 };
 
-oripa.fold2oripa = function(fold) {
-  var coord, edge, ei, fp, i, j, len, line, lines, s, vertex, vs, xp, z;
+oripa.fromFold = function(fold) {
+  var coord, edge, ei, fp, i, j, len, line, lines, ref1, s, vertex, vs, xp, z;
   if (typeof fold === 'string') {
     fold = JSON.parse(fold);
   }
   s = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n<java version=\"1.5.0_05\" class=\"java.beans.XMLDecoder\"> \n <object class=\"oripa.DataSet\"> \n  <void property=\"mainVersion\"> \n   <int>1</int> \n  </void> \n  <void property=\"subVersion\"> \n   <int>1</int> \n  </void> \n  <void property=\"paperSize\"> \n   <double>400.0</double> \n  </void> \n";
-  for (xp in prop_xml2fold) {
-    fp = prop_xml2fold[xp];
+  ref1 = oripa.prop_xml2fold;
+  for (xp in ref1) {
+    fp = ref1[xp];
     s += (".\n  <void property=\"" + xp + "\"> \n   <string>" + (fold[fp] || '') + "</string> \n  </void> \n").slice(2);
   }
   z = 0;
   lines = (function() {
-    var j, len, ref1, results;
-    ref1 = fold.edges_vertices;
+    var j, len, ref2, results;
+    ref2 = fold.edges_vertices;
     results = [];
-    for (ei = j = 0, len = ref1.length; j < len; ei = ++j) {
-      edge = ref1[ei];
+    for (ei = j = 0, len = ref2.length; j < len; ei = ++j) {
+      edge = ref2[ei];
       vs = (function() {
-        var k, l, len1, len2, ref2, results1;
+        var k, l, len1, len2, ref3, results1;
         results1 = [];
         for (k = 0, len1 = edge.length; k < len1; k++) {
           vertex = edge[k];
-          ref2 = fold.vertices_coords[vertex].slice(2);
-          for (l = 0, len2 = ref2.length; l < len2; l++) {
-            coord = ref2[l];
+          ref3 = fold.vertices_coords[vertex].slice(2);
+          for (l = 0, len2 = ref3.length; l < len2; l++) {
+            coord = ref3[l];
             if (coord !== 0) {
               z += 1;
             }
@@ -1351,7 +1451,7 @@ oripa.fold2oripa = function(fold) {
         y0: vs[0][1],
         x1: vs[1][0],
         y1: vs[1][1],
-        type: fold2type[fold.edges_assignment[ei]] || fold2type_default
+        type: oripa.fold2type[fold.edges_assignment[ei]] || oripa.fold2type_default
       });
     }
     return results;
@@ -1365,5 +1465,17 @@ oripa.fold2oripa = function(fold) {
   return s;
 };
 
+convert.setConverter('.fold', '.opx', oripa.fromFold);
 
-},{"./convert":6,"xmldom":1}]},{},[9]);
+convert.setConverter('.opx', '.fold', oripa.toFold);
+
+
+},{"./convert":5,"xmldom":1}],"FOLD":[function(require,module,exports){
+module.exports = {
+  geom: require('./geom'),
+  filter: require('./filter'),
+  convert: require('./convert')
+};
+
+
+},{"./convert":5,"./filter":7,"./geom":8}]},{},[]);
