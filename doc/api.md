@@ -37,6 +37,12 @@ for details.
   Given a FOLD object with `faces_vertices` property, computes
   `edges_vertices`, `edges_faces`, `faces_edges`, and `edges_assignment`
   properties (where the assignment is "B" for boundary edges).
+* `fold.convert.toFile(foldObject, filename)`: Save FOLD object to specified
+  filename, which can end in `.fold` or a supported extension (`.opx`).
+* `fold.convert.fileToFile(inFilename, outFilename)`: Convert one filename
+  to another, using extensions to determine format (`.fold`, `.opx`).
+  Alternatively, `outFilename` can be *just* an extension, in which case
+  it will be combined with `inFilename` to form a full filename.
 * `fold.convert.oripa.toFold(opxString)`: Parses a file in the
   [ORIPA `.opx` format](http://mitani.cs.tsukuba.ac.jp/oripa/) and
   returns a FOLD object.

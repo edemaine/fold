@@ -2,7 +2,6 @@
 
 geom = require './geom'
 convert = exports
-convert.oripa = require './oripa'
 
 convert.edges_vertices_to_vertices_vertices = (fold) ->
   ###
@@ -97,6 +96,20 @@ convert.faces_vertices_to_edges = (mesh) ->
         edge
     )
   mesh
+
+convert.extensions = {}
+convert.converters = {}
+convert.getConverter = (fromExt, toExt) ->
+  if fromExt == toExt
+    (x) -> x
+  else
+    convert.converters["#{fromExt}#{toExt}"]
+convert.setConverter = (fromExt, toExt, converter) ->
+  convert.extensions[fromExt] = true
+  convert.extensions[toExt] = true
+  convert.converters["#{fromExt}#{toExt}"] = converter
+
+convert.oripa = require './oripa'
 
 convertFile = require './convert_file'
 if convertFile?
