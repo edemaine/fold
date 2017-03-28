@@ -39,10 +39,12 @@ for details.
   properties (where the assignment is "B" for boundary edges).
 * `FOLD.convert.toFile(fold, filename)`: Save FOLD object to specified
   filename, which can end in `.fold` or a supported extension (`.opx`).
+  *Available in Node only, not browser.*
 * `FOLD.convert.fileToFile(inFilename, outFilename)`: Convert one filename
   to another, using extensions to determine format (`.fold`, `.opx`).
   Alternatively, `outFilename` can be *just* an extension, in which case
   it will be combined with `inFilename` to form a full filename.
+  *Available in Node only, not browser.*
 * `FOLD.convert.oripa.toFold(opxString)`: Parses a file in the
   [ORIPA `.opx` format](http://mitani.cs.tsukuba.ac.jp/oripa/) and
   returns a FOLD object.
