@@ -1,3 +1,4 @@
+#!/usr/bin/coffee
 `#!/usr/bin/node
 `
 
