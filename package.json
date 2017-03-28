@@ -1,0 +1,52 @@
+{
+  "name": "fold",
+  "version": "1.0.0",
+  "description": "FOLD file format for origami models, crease patterns, etc.",
+  "main": "lib/index.js",
+  "bin": {
+    "fold-convert": "lib/convert.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublish": "coffee --no-header --bare -o lib -c src",
+    "dist": "browserify -t coffeeify --extension=.coffee src/index.coffee -o dist/fold.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edemaine/fold.git"
+  },
+  "keywords": [
+    "origami",
+    "crease",
+    "pattern",
+    "geometry",
+    "2D",
+    "3D"
+  ],
+  "contributors": [
+    {
+      "name": "Erik Demaine",
+      "email": "edemaine@mit.edu",
+      "url": "http://erikdemaine.org"
+    },
+    "Jason Ku",
+    "Robert Lang"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/edemaine/fold/issues"
+  },
+  "homepage": "https://github.com/edemaine/fold#readme",
+  "devDependencies": {
+    "browserify": "^14.1.0",
+    "coffee-script": "^1.12.4",
+    "coffeeify": "^2.1.0"
+  },
+  "dependencies": {
+    "xmldom": "^0.1.27"
+  },
+  "browser": {
+    "xmldom": false,
+    "src/convert_file.coffee": false
+  }
+}
