@@ -38,14 +38,14 @@ for details.
   `edges_vertices`, `edges_faces`, `faces_edges`, and `edges_assignment`
   properties (where the assignment is "B" for boundary edges).
 
-File format conversion:
+File format conversion (supported formats are `"fold"` and `"opx"`):
 
 * `FOLD.convert.convertFromTo(data, fromFormat, toFormat)`: Convert the
-  specified data from one format (`fold`, `opx`) to another.
+  specified data from one format to another.
 * `FOLD.convert.convertFrom(data, fromFormat)`: Convert the specified data
-  from one format (`fold`, `opx`) to FOLD.
+  from one format to FOLD.
 * `FOLD.convert.convertTo(data, toFormat)`: Convert the specified data
-  from FOLD to another format (`fold`, `opx`).
+  from FOLD to another format.
 * The `FOLD.convert.oripa` submodule implements the conversion between FOLD and
   [ORIPA `.opx` format](http://mitani.cs.tsukuba.ac.jp/oripa/).  See
   [source code](https://github.com/edemaine/fold/blob/master/src/oripa.coffee)
@@ -61,9 +61,9 @@ The following functions are available in Node only, not in the browser
 (where filenames don't really make sense).
 
 * `FOLD.file.toFile(fold, filename)`: Save FOLD object to specified
-  filename, which can end in `.fold` or a supported extension (`.opx`).
+  filename, which can end in a supported extension (`.fold` or `.opx`).
 * `FOLD.file.fileToFile(inFilename, outFilename)`: Convert one filename
-  to another, using extensions to determine format (`.fold`, `.opx`).
+  to another, using extensions to determine format.
   Alternatively, `outFilename` can be *just* an extension, in which case
   it will be combined with `inFilename` to form a full filename.
 
