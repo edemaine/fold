@@ -142,9 +142,16 @@ The values of the following properties are zero-indexed arrays by vertex ID.
 
 The values of the following properties are zero-indexed arrays by edge ID.
 
-* `edges_vertices`
+* `edges_vertices`: For each edge, an array of two vertex IDs for the two
+  endpoints of the edge.  This effectively defines the *orientation*
+  of the edge, from the first listed vertex to the second listed vertex.
+  (This orientation choice is arbitrary, but is used to define
+  `edges_faces`.)
 * `edges_assignment`
-* `edges_foldAngles`
+* `edges_angles`
+* `edges_lengths`: For each edge, the length of the edge (a number).
+  This is mainly useful for defining the intrinsic geometry of
+  abstract complexes where `vertices_coords` are unspecified.
 
 ## Face information: `faces_...`
 
