@@ -2,9 +2,10 @@
 **FOLD** (Flexible Origami List Datastructure) is a file format (with extension
 `.fold`) for describing **origami models**: crease patterns, mountain-valley
 patterns, folded states, etc.  Mainly, a FOLD file can store a **mesh** with
-**vertices**, **edges**, **faces**, and links between them, optionally embedded
-in 2D or 3D, plus the topological **stacking order** of faces that overlap
-geometrically.  The mesh can also easily store additional user-defined data.
+**vertices**, **edges**, **faces**, and links between them, with optional
+2D or 3D geometry, plus the topological **stacking order** of faces that
+overlap geometrically.
+A mesh can also easily store additional user-defined data.
 One FOLD file can even store multiple such meshes in "**frames**"
 (but this feature is not yet supported in any code).
 
