@@ -19,19 +19,24 @@ programming languages.
 FOLD is similar in spirit to the
 [OBJ format](http://paulbourke.net/dataformats/obj/) (and other similar
 formats) for storing 3D meshes; its main distinguishing features are
-**easy parsing**, **easy extensibility**, the ability to define
-**stacking orders**, and the ability to define edges and thus edge properties
-(such as mountain-valley assignments) and **arbitrary polyhedral complexes**.
+**easy parsing**, **easy extensibility**, the ability to disambiguate
+**overlapping faces** with stacking order, and the ability to define edges
+and thus edge properties (such as mountain-valley assignments) and
+**arbitrary polyhedral complexes**.
 (Without edges, OBJ cannot distinguish between two faces sharing two
 consecutive vertices from faces sharing an edge.)
+In addition, FOLD can support **linkages** (with 1D edges but no 2D faces).
 
 ## Documentation
 
-* [2-page paper about FOLD](http://erikdemaine.org/papers/FOLD_CGW2016/)
+* [2-page paper describing FOLD](http://erikdemaine.org/papers/FOLD_CGW2016/)
 
 ## Authors
 
-The FOLD format was invented by three main people:
+The FOLD format was invented by three people:
 * [Erik Demaine](http://erikdemaine.org), M.I.T.
 * [Jason Ku](http://jasonku.mit.edu), M.I.T.
 * [Robert Lang](http://langorigami.com), langorigami.com
+
+We welcome your feedback and suggestions!  The goal is for all software in
+computational origami to support FOLD as a common interchange format.
