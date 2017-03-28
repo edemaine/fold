@@ -95,6 +95,9 @@ Frame properties in the FOLD format include
   Some standard frame attributes include
   * `"2D"`: the coordinates lie in 2D (xy)
   * `"3D"`: the coordinates lie in 3D (xyz) and not 2D (xy)
+  * `"abstract"`: the polyhedral complex is not embedded in Euclidean space,
+    so there are no vertex coordinates (but might be edge lengths defining
+    intrinsic geometry)
   * `"manifold"`: the polyhedral complex is a manifold
     (has at most two faces incident to each edge)
   * `"nonManifold"`: the polyhedral complex is *not* a manifold
