@@ -2,11 +2,20 @@
 
 ## Design
 
-The FOLD format seeks to balance **generality** and **simplicity**: it is
-able to represent a wide variety of folded structures in different dimensions,
-including general codimensional layering information, but is also able to
-represent common folded structures simply (for example, most fields are
-optional).
+The FOLD format seeks to balance generality and simplicity:
+
+* **Generality:** FOLD can represent a wide variety of folded structures in
+  different dimensions, including general codimensional layering information
+  and general polyhedral complexes (even nonorientable nonmanifold complexes
+  with holes, genus, etc.).  And it's easy to add your own extra data,
+  supporting use cases in existing (and hopefully future)
+  computational origami software.
+* **Simplicity:** FOLD can represent common folded structures simply:
+  it's easy to ignore features you don't need.
+  For example, most fields are optional and can be omitted.
+  (Our library provides tools for automatically filling in optional fields
+   where possible.)  Similarly, if you only store one "frame" in the file,
+  then you can altogether ignore the idea of frames.
 
 ## Overview
 
