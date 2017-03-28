@@ -12,7 +12,7 @@ The FOLD format seeks to balance generality and simplicity:
   computational origami software.
 * **Simplicity:** FOLD can represent common folded structures simply:
   it's easy to ignore features you don't need.
-  For example, most fields are optional and can be omitted.
+  For example, **most fields are optional** and can be omitted.
   (Our library provides tools for automatically filling in optional fields
    where possible.)  Similarly, if you only store one "frame" in the file,
   then you can altogether ignore the idea of frames.
