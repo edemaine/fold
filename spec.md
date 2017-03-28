@@ -85,6 +85,8 @@ Standard metadata properties in the FOLD format include
                    e.g., illustrating a continuous folding motion
   * `"diagrams"`: A sequence of frames representing folding steps,
                   as in origami diagrams
+* `file_frames`: Array of frame dictionaries.
+  See [Multiple Frames](#multiple-frames) below.
 
 ## Frame Metadata (`frame_...`)
 
@@ -132,6 +134,7 @@ Frame properties in the FOLD format include
 
 * `edges_vertices`
 * `edges_assignment`
+* `edges_foldAngles`
 
 ## Face information: `faces_...`
 
@@ -141,3 +144,42 @@ Frame properties in the FOLD format include
 
 * `faceOrders`
 * `edgeOrders`
+
+## Multiple Frames
+
+Most properties described above (all but the `file_...` properties
+which are about the entire file) can appear in the top-level dictionary
+*or* within an individiaul frame.  Properties in the top-level dictionary
+describes the **key frame** (frame 0).
+If your file consists of just one frame, that's all you need to know.
+
+If you want to store multiple frames in one file, use `file_frames`
+to store all frames beyond the key frame.  The value of the
+`file_frames` property is an array of dictonaries, where
+`file_frames[i]` represents frame `i+1` (because frame 0 is the key frame).
+Each frame dictionary can have any of the properties described above
+(again, except for `file_...` properties).
+In addition, frames (other than the key frame)
+can have the following properties:
+
+* `frame_parent`: Parent frame ID.  Intuitively, this frame (the child)
+  is a modification (or, in general, is related to) the parent frame.
+  This property is optional, but enables organizing frames into a tree
+  structure.
+* `frame_inherit`: Boolean.  If true, any properties in the parent frame
+  (or recursively inherited from an ancestor) that is not overridden in
+  this frame are automatically inherited, allowing you to avoid duplicated
+  data in many cases.  For example, the frame can change the vertex coordinates
+  (`vertices_coords`) while inheriting the structure of the parent's mesh.
+
+## Custom Properties
+
+To add custom data to the FOLD format specific to your software, include
+a colon (`:`) in the property key, where the part before the colon
+identifies your software.  For example, TreeMaker will use the `tm:`
+namespace, and a property mapping edges to TreeMaker structural types
+will use key `edges_tm:structuralType`.
+(All property keys without colons are reserved for possible use in
+future versions of the FOLD specification.  If you think your custom
+property would be broadly useful, feel free to send us your use cases
+for consideration.)
