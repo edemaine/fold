@@ -157,7 +157,7 @@ geom.twiceSignedArea = (points) ->
   ## vertex.
   (for v0, i in points
     v1 = points[geom.next(i, points.length)]
-    v0[0] * v1[0] - v1[0] * v0[1]
+    v0[0] * v1[1] - v1[0] * v0[1]
   ).reduce(geom.sum)
 
 geom.polygonOrientation = (points) ->

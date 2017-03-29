@@ -126,7 +126,9 @@ filter.removeLoopEdges = (fold) ->
       edge[0] != edge[1]
 
 filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
-  ## Takes quadratic time.  xxx Should be O(n log n) via plane sweep.
+  ###
+  Takes quadratic time.  xxx Should be O(n log n) via plane sweep.
+  ###
   #filter.removeDuplicateEdges_vertices fold
   vertices = new RepeatedPointsDS fold.vertices_coords, epsilon
   for e1, i1 in fold.edges_vertices
@@ -137,6 +139,7 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
       continue if e1[0] == e1[1] or e2[0] == e2[1]
       s2 = (fold.vertices_coords[v] for v in e2)
       #console.log s1, s2, filter.edges_verticesIncident(e1, e2), geom.segmentsCross s1, s2
+      ## Handle overlapping edges that share an endpoint.
       if filter.edges_verticesIncident e1, e2
         if e1[0] == e2[0] or e1[1] == e2[1]
           vec1 = geom.sub s1...
@@ -167,6 +170,11 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
               e1[1] = e2[1]
             else if e1[1] == e2[1]
               e1[1] = e2[0]
+      ## xxx Handle overlapping edges that don't share an endpoint.
+      #else if geom.parallel(vec1, vec2) and not (
+      #          geom.rangesDisjoint([s1[0][0], s1[1][0]], [s2[0][0], s2[1][0]]) or
+      #          geom.rangesDisjoint([s1[0][1], s1[1][1]], [s2[0][1], s2[1][1]]))
+      #  console.log 'hi'
       else if geom.segmentsCross s1, s2
         ## segment intersection is too sensitive a test;
         ## segmentsCross more reliable
