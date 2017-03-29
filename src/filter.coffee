@@ -129,53 +129,33 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
   ###
   Takes quadratic time.  xxx Should be O(n log n) via plane sweep.
   ###
-  #filter.removeDuplicateEdges_vertices fold
-  vertices = new RepeatedPointsDS fold.vertices_coords, epsilon
+
+  ## Handle overlapping edges
   for e1, i1 in fold.edges_vertices
-    continue if e1[0] == e1[1]
     s1 = (fold.vertices_coords[v] for v in e1)
     for e2, i2 in fold.edges_vertices[...i1]
-      ## Skip over edges that have (since) contracted to a point
-      continue if e1[0] == e1[1] or e2[0] == e2[1]
       s2 = (fold.vertices_coords[v] for v in e2)
-      #console.log s1, s2, filter.edges_verticesIncident(e1, e2), geom.segmentsCross s1, s2
-      ## Handle overlapping edges that share an endpoint.
-      if filter.edges_verticesIncident e1, e2
-        if e1[0] == e2[0] or e1[1] == e2[1]
-          vec1 = geom.sub s1...
-          vec2 = geom.sub s2...
-        else
-          vec1 = geom.sub s1...
-          vec2 = geom.sub s2[1], s2[0]
-        if geom.parallel(vec1, vec2) and geom.dot(vec1, vec2) > 0
-          if geom.mag(vec1) < geom.mag(vec2)
-            ## e1 is correct, and e2 needs to be clipped to end at the
-            ## other endpoint of e1 than it currently matches
-            if e2[0] == e1[0]
-              e2[0] = e1[1]
-            else if e2[0] == e1[1]
-              e2[0] = e1[0]
-            else if e2[1] == e1[0]
-              e2[1] = e1[1]
-            else if e2[1] == e1[1]
-              e2[1] = e1[0]
-          else
-            ## e2 is correct, and e1 needs to be clipped to end at the
-            ## other endpoint of e2 than it currently matches
-            if e1[0] == e2[0]
-              e1[0] = e2[1]
-            else if e1[0] == e2[1]
-              e1[0] = e2[0]
-            else if e1[1] == e2[0]
-              e1[1] = e2[1]
-            else if e1[1] == e2[1]
-              e1[1] = e2[0]
-      ## xxx Handle overlapping edges that don't share an endpoint.
-      #else if geom.parallel(vec1, vec2) and not (
-      #          geom.rangesDisjoint([s1[0][0], s1[1][0]], [s2[0][0], s2[1][0]]) or
-      #          geom.rangesDisjoint([s1[0][1], s1[1][1]], [s2[0][1], s2[1][1]]))
-      #  console.log 'hi'
-      else if geom.segmentsCross s1, s2
+      for j in [0,1]
+        e1old = [e1[0], e1[1]]
+        e2old = [e2[0], e2[1]]
+        if geom.pointStrictlyInSegment s1[j], s2
+          #console.log s1[j], 'in', s2
+          fold.edges_vertices.push [e1old[j], e2old[1]]
+          e2[1] = e1old[j]
+        if geom.pointStrictlyInSegment s2[j], s1
+          #console.log s2[j], 'in', s1
+          fold.edges_vertices.push [e2old[j], e1old[1]]
+          e1[1] = e2old[j]
+  filter.removeDuplicateEdges_vertices fold
+  filter.removeLoopEdges fold
+
+  ## Handle crossing edges
+  vertices = new RepeatedPointsDS fold.vertices_coords, epsilon
+  for e1, i1 in fold.edges_vertices
+    s1 = (fold.vertices_coords[v] for v in e1)
+    for e2, i2 in fold.edges_vertices[...i1]
+      s2 = (fold.vertices_coords[v] for v in e2)
+      if not filter.edges_verticesIncident(e1, e2) and geom.segmentsCross s1, s2
         ## segment intersection is too sensitive a test;
         ## segmentsCross more reliable
         #cross = segmentIntersectSegment s1, s2
@@ -193,7 +173,7 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
             e2[1] = crossI
             #console.log '->', e2, fold.edges_vertices[fold.edges_vertices.length-1]
   # xxx should renumber other edges arrays?
-  filter.removeLoopEdges fold
+  fold
 
 filter.edges_vertices_to_vertices_vertices = (fold) ->
   ###

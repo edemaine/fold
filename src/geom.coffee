@@ -215,6 +215,11 @@ geom.lineIntersectLine = (l1, l2) ->
   else
     null
 
+geom.pointStrictlyInSegment = (p, s, eps = EPS) ->
+  v0 = geom.sub p, s[0]
+  v1 = geom.sub p, s[1]
+  geom.parallel(v0, v1, eps) and geom.dot(v0, v1) < 0
+
 geom.centroid = (points) ->
   ## Returns the centroid of a set of points having the same dimension.
   geom.div(points.reduce(geom.plus), points.length)
