@@ -18,7 +18,7 @@ geom.next = (start, n, i = 1) ->
   ###
   Returns the ith cyclic ordered number after start in the range [0..n].
   ###
-  (start + i) % n
+  (start + i) %% n
 
 geom.rangesDisjoint = ([a1, a2], [b1, b2]) ->
   ## Returns whether the scalar interval [a1, a2] is disjoint from the scalar
