@@ -126,7 +126,7 @@ oripa.toFold = (oripaStr) ->
   ## points being the same.
   filter.collapseNearbyVertices fold, oripa.POINT_EPS
   filter.subdivideCrossingEdges_vertices fold, oripa.POINT_EPS
-  ## In particular, convert.removeDuplicateEdges_vertices fold
+  ## In particular, convert.removeLoopEdges fold
   convert.vertices_vertices_to_faces_vertices fold
   fold
 
