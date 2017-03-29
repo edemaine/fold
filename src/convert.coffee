@@ -57,7 +57,7 @@ convert.vertices_vertices_to_faces_vertices = (fold) ->
       next["#{u},#{v}"] = null
     next["#{face[face.length-1]},#{face[0]}"] = null
     ## Outside face is clockwise; exclude it.
-    if w? and polygonOrientation(fold.vertices_coords[x] for x in face) > 0
+    if w? and geom.polygonOrientation(fold.vertices_coords[x] for x in face) > 0
       #console.log face
       fold.faces_vertices.push face
     #else
