@@ -126,7 +126,9 @@ filter.removeLoopEdges = (fold) ->
       edge[0] != edge[1]
 
 filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
-  ## Takes quadratic time.  xxx Should be O(n log n) via plane sweep.
+  ###
+  Takes quadratic time.  xxx Should be O(n log n) via plane sweep.
+  ###
   #filter.removeDuplicateEdges_vertices fold
   vertices = new RepeatedPointsDS fold.vertices_coords, epsilon
   for e1, i1 in fold.edges_vertices
@@ -137,6 +139,7 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
       continue if e1[0] == e1[1] or e2[0] == e2[1]
       s2 = (fold.vertices_coords[v] for v in e2)
       #console.log s1, s2, filter.edges_verticesIncident(e1, e2), geom.segmentsCross s1, s2
+      ## Handle overlapping edges that share an endpoint
       if filter.edges_verticesIncident e1, e2
         if e1[0] == e2[0] or e1[1] == e2[1]
           vec1 = geom.sub s1...
