@@ -76,7 +76,7 @@ class RepeatedPointsDS
       for yt in [yr, yr-1, yr+1]
         key = "#{xt},#{yt}"
         for v in @hash[key] ? []
-          if @epsilon > geom.distance @vertices_coords[v], coord
+          if @epsilon > geom.dist @vertices_coords[v], coord
             return v
     null
 

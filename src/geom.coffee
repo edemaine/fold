@@ -2,9 +2,9 @@
 
 geom = exports
 
-##
-##  Utilities
-##
+###
+    Utilities
+###
 
 EPS = 0.000001
 
@@ -15,7 +15,9 @@ geom.min  = (a, b) -> if a < b then a else b
 geom.max  = (a, b) -> if a > b then a else b
 
 geom.next = (start, n, i = 1) ->
-  ## Returns the ith cyclic ordered number after start in the range [0..n].
+  ###
+  Returns the ith cyclic ordered number after start in the range [0..n].
+  ###
   (start + i) % n
 
 geom.rangesDisjoint = ([a1, a2], [b1, b2]) ->
@@ -150,15 +152,13 @@ geom.triangleNormal = (a, b, c) ->
   geom.unit geom.cross(geom.sub(b, a), geom.sub(c, b))
 
 geom.twiceSignedArea = (points) ->
-  ## Returns twice signed area of input points.
-  ## If two points are given, uses area spanned by the origin. Otherwise,
-  ## calculates and sums the signed area of triangles in a fan from the first
+  ## Returns twice signed area of polygon defined by input points.
+  ## Calculates and sums twice signed area of triangles in a fan from the first
   ## vertex.
-  if points.length == 2
-    return points[0][0]*points[1][1] - points[1][0]*points[0][1]
-  (for v, i in points
-    geom.twiceSignedArea([v, points[geom.next(i, points.length)]]))
-    .reduce(geom.sum)
+  (for v0, i in points
+    v1 = points[geom.next(i, points.length)]
+    v0[0] * v1[0] - v1[0] * v0[1]
+  ).reduce(geom.sum)
 
 geom.polygonOrientation = (points) ->
   ## Returns the orientation of the 2D polygon defined by the input points.
