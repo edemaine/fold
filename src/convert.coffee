@@ -1,6 +1,7 @@
 ### FOLD FORMAT MANIPULATORS ###
 
 geom = require './geom'
+filter = require './filter'
 convert = exports
 
 convert.edges_vertices_to_vertices_vertices = (fold) ->
@@ -23,7 +24,7 @@ convert.sort_vertices_vertices = (fold) ->
   unless fold.vertices_vertices?
     convert.edges_vertices_to_vertices_vertices fold
   for v, neighbors of fold.vertices_vertices
-    sortByAngle neighbors, v, (x) -> fold.vertices_coords[x]
+    geom.sortByAngle neighbors, v, (x) -> fold.vertices_coords[x]
 
 convert.vertices_vertices_to_faces_vertices = (fold) ->
   unless fold.vertices_coords?[0]?.length == 2

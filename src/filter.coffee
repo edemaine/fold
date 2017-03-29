@@ -131,18 +131,18 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
             #console.log '->', e2, fold.edges_vertices[fold.edges_vertices.length-1]
   # xxx should renumber other edges arrays?
 
-filter.edges_vertices_to_vertices_neighbors = (fold) ->
+filter.edges_vertices_to_vertices_vertices = (fold) ->
   ###
   Works for abstract structures, so NOT SORTED.
-  Use sort_vertices_neighbors to sort in counterclockwise order.
+  Use sort_vertices_vertices to sort in counterclockwise order.
   ###
-  vertices_neighbors = []
+  vertices_vertices = []
   for edge in fold.edges_vertices
     [v, w] = edge
-    while v >= vertices_neighbors.length
-      vertices_neighbors.push []
-    while w >= vertices_neighbors.length
-      vertices_neighbors.push []
-    vertices_neighbors[v].push w
-    vertices_neighbors[w].push v
-  vertices_neighbors
+    while v >= vertices_vertices.length
+      vertices_vertices.push []
+    while w >= vertices_vertices.length
+      vertices_vertices.push []
+    vertices_vertices[v].push w
+    vertices_vertices[w].push v
+  vertices_vertices

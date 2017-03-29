@@ -5,6 +5,7 @@ DOMParser = require('xmldom').DOMParser unless DOMParser?
 #XMLSerializer = require('xmldom').XMLSerializer unless XMLSerializer?
 #DOMImplementation = require('xmldom').DOMImplementation unless DOMImplementation?
 convert = require './convert'
+filter = require './filter'
 oripa = exports
 
 ## Based on src/oripa/geom/OriLine.java
@@ -32,7 +33,7 @@ oripa.prop_xml2fold =
 #  oripa.prop_fold2xml[y] = x if y?
 
 oripa.POINT_EPS = 1.0
-oripa.toFold = (oripa) ->
+oripa.toFold = (oripaStr) ->
   fold =
     vertices_coords: []
     edges_vertices: []
@@ -80,7 +81,7 @@ oripa.toFold = (oripa) ->
       else
         child.data
 
-  xml = new DOMParser().parseFromString oripa, 'text/xml'
+  xml = new DOMParser().parseFromString oripaStr, 'text/xml'
   for top in children xml.documentElement
     if nodeSpec top, 'object', 'class', 'oripa.DataSet'
       for property in children top
@@ -111,7 +112,7 @@ oripa.toFold = (oripa) ->
                       vertex x1, y1
                     ]
                     type = parseInt type if type?
-                    fold.edges_assignment.push type2fold[type]
+                    fold.edges_assignment.push oripa.type2fold[type]
                   else
                     console.warn "ORIPA line has missing data: #{x0} #{x1} #{y0} #{y1} #{type}"
         else if property.getAttribute('property') of oripa.prop_xml2fold
@@ -123,10 +124,10 @@ oripa.toFold = (oripa) ->
 
   ## src/oripa/Doc.java uses absolute distance POINT_EPS = 1.0 to detect
   ## points being the same.
-  convert.collapseNearbyVertices fold, POINT_EPS
-  convert.subdivideCrossingEdges_vertices fold, POINT_EPS
+  filter.collapseNearbyVertices fold, oripa.POINT_EPS
+  filter.subdivideCrossingEdges_vertices fold, oripa.POINT_EPS
   ## In particular, convert.removeDuplicateEdges_vertices fold
-  convert.verticesEdges_to_faces_vertices fold
+  convert.vertices_vertices_to_faces_vertices fold
   fold
 
 oripa.fromFold = (fold) ->
