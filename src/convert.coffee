@@ -35,8 +35,8 @@ convert.vertices_vertices_to_faces_vertices = (fold) ->
   for v, neighbors of fold.vertices_vertices
     v = parseInt v
     for u, i in neighbors
-      next["#{u},#{v}"] = neighbors[(i-1) % neighbors.length]
-      #console.log u, v, neighbors[(i-1) % neighbors.length]
+      next["#{u},#{v}"] = neighbors[(i-1) %% neighbors.length]
+      #console.log u, v, neighbors[(i-1) %% neighbors.length]
   fold.faces_vertices = []
   #for uv, w of next
   for uv in (key for key of next)
