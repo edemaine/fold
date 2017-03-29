@@ -1,427 +1,224 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 
 },{}],2:[function(require,module,exports){
-arguments[4][1][0].apply(exports,arguments)
-},{"dup":1}],3:[function(require,module,exports){
-(function (process){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-// resolves . and .. elements in a path array with directory names there
-// must be no slashes, empty elements, or device names (c:\) in the array
-// (so also no leading and trailing slashes - it does not distinguish
-// relative and absolute paths)
-function normalizeArray(parts, allowAboveRoot) {
-  // if the path tries to go above the root, `up` ends up > 0
-  var up = 0;
-  for (var i = parts.length - 1; i >= 0; i--) {
-    var last = parts[i];
-    if (last === '.') {
-      parts.splice(i, 1);
-    } else if (last === '..') {
-      parts.splice(i, 1);
-      up++;
-    } else if (up) {
-      parts.splice(i, 1);
-      up--;
-    }
-  }
+/* FOLD FORMAT MANIPULATORS */
+var convert, geom;
 
-  // if the path is allowed to go above the root, restore leading ..s
-  if (allowAboveRoot) {
-    for (; up--; up) {
-      parts.unshift('..');
-    }
-  }
+geom = require('./geom');
 
-  return parts;
-}
+convert = exports;
 
-// Split a filename into [root, dir, basename, ext], unix version
-// 'root' is just a slash, or nothing.
-var splitPathRe =
-    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
-var splitPath = function(filename) {
-  return splitPathRe.exec(filename).slice(1);
+convert.edges_vertices_to_vertices_vertices = function(fold) {
+
+  /*
+  Works for abstract structures, so NOT SORTED.
+  Use sort_vertices_vertices to sort in counterclockwise order.
+   */
+  fold.vertices_vertices = filter.edges_vertices_to_vertices_vertices(fold);
+  return fold;
 };
 
-// path.resolve([from ...], to)
-// posix version
-exports.resolve = function() {
-  var resolvedPath = '',
-      resolvedAbsolute = false;
+convert.sort_vertices_vertices = function(fold) {
 
-  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
-    var path = (i >= 0) ? arguments[i] : process.cwd();
+  /*
+  Sorts `fold.vertices_neighbords` in counterclockwise order using
+  `fold.vertices_coordinates`.  2D only.
+  Constructs `fold.vertices_neighbords` if absent, via
+  `convert.edges_vertices_to_vertices_vertices`.
+   */
+  var neighbors, ref, ref1, ref2, results, v;
+  if (((ref = fold.vertices_coords) != null ? (ref1 = ref[0]) != null ? ref1.length : void 0 : void 0) !== 2) {
+    throw new Error("sort_vertices_vertices: Vertex coordinates missing or not two dimensional");
+  }
+  if (fold.vertices_vertices == null) {
+    convert.edges_vertices_to_vertices_vertices(fold);
+  }
+  ref2 = fold.vertices_vertices;
+  results = [];
+  for (v in ref2) {
+    neighbors = ref2[v];
+    results.push(sortByAngle(neighbors, v, function(x) {
+      return fold.vertices_coords[x];
+    }));
+  }
+  return results;
+};
 
-    // Skip empty and invalid entries
-    if (typeof path !== 'string') {
-      throw new TypeError('Arguments to path.resolve must be strings');
-    } else if (!path) {
+convert.vertices_vertices_to_faces_vertices = function(fold) {
+  var face, i, j, k, key, len, len1, neighbors, next, ref, ref1, ref2, ref3, ref4, ref5, u, uv, v, w, x;
+  if (((ref = fold.vertices_coords) != null ? (ref1 = ref[0]) != null ? ref1.length : void 0 : void 0) !== 2) {
+    throw new Error("vertices_vertices_to_faces_vertices: Vertex coordinates missing or not two dimensional");
+  }
+  if (fold.vertices_vertices == null) {
+    convert.sort_vertices_vertices(fold);
+  }
+  next = {};
+  ref2 = fold.vertices_vertices;
+  for (v in ref2) {
+    neighbors = ref2[v];
+    v = parseInt(v);
+    for (i = j = 0, len = neighbors.length; j < len; i = ++j) {
+      u = neighbors[i];
+      next[u + "," + v] = neighbors[(i - 1) % neighbors.length];
+    }
+  }
+  fold.faces_vertices = [];
+  ref3 = (function() {
+    var results;
+    results = [];
+    for (key in next) {
+      results.push(key);
+    }
+    return results;
+  })();
+  for (k = 0, len1 = ref3.length; k < len1; k++) {
+    uv = ref3[k];
+    w = next[uv];
+    if (w == null) {
       continue;
     }
-
-    resolvedPath = path + '/' + resolvedPath;
-    resolvedAbsolute = path.charAt(0) === '/';
-  }
-
-  // At this point the path should be resolved to a full absolute path, but
-  // handle relative paths to be safe (might happen when process.cwd() fails)
-
-  // Normalize the path
-  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
-    return !!p;
-  }), !resolvedAbsolute).join('/');
-
-  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
-};
-
-// path.normalize(path)
-// posix version
-exports.normalize = function(path) {
-  var isAbsolute = exports.isAbsolute(path),
-      trailingSlash = substr(path, -1) === '/';
-
-  // Normalize the path
-  path = normalizeArray(filter(path.split('/'), function(p) {
-    return !!p;
-  }), !isAbsolute).join('/');
-
-  if (!path && !isAbsolute) {
-    path = '.';
-  }
-  if (path && trailingSlash) {
-    path += '/';
-  }
-
-  return (isAbsolute ? '/' : '') + path;
-};
-
-// posix version
-exports.isAbsolute = function(path) {
-  return path.charAt(0) === '/';
-};
-
-// posix version
-exports.join = function() {
-  var paths = Array.prototype.slice.call(arguments, 0);
-  return exports.normalize(filter(paths, function(p, index) {
-    if (typeof p !== 'string') {
-      throw new TypeError('Arguments to path.join must be strings');
+    next[uv] = null;
+    ref4 = uv.split(','), u = ref4[0], v = ref4[1];
+    u = parseInt(u);
+    v = parseInt(v);
+    face = [u, v];
+    while (w !== face[0]) {
+      if (w == null) {
+        console.warn('Confusion with face', face);
+        break;
+      }
+      face.push(w);
+      ref5 = [v, w], u = ref5[0], v = ref5[1];
+      w = next[u + "," + v];
+      next[u + "," + v] = null;
     }
-    return p;
-  }).join('/'));
-};
-
-
-// path.relative(from, to)
-// posix version
-exports.relative = function(from, to) {
-  from = exports.resolve(from).substr(1);
-  to = exports.resolve(to).substr(1);
-
-  function trim(arr) {
-    var start = 0;
-    for (; start < arr.length; start++) {
-      if (arr[start] !== '') break;
-    }
-
-    var end = arr.length - 1;
-    for (; end >= 0; end--) {
-      if (arr[end] !== '') break;
-    }
-
-    if (start > end) return [];
-    return arr.slice(start, end - start + 1);
-  }
-
-  var fromParts = trim(from.split('/'));
-  var toParts = trim(to.split('/'));
-
-  var length = Math.min(fromParts.length, toParts.length);
-  var samePartsLength = length;
-  for (var i = 0; i < length; i++) {
-    if (fromParts[i] !== toParts[i]) {
-      samePartsLength = i;
-      break;
+    next[face[face.length - 1] + "," + face[0]] = null;
+    if ((w != null) && polygonOrientation((function() {
+      var l, len2, results;
+      results = [];
+      for (l = 0, len2 = face.length; l < len2; l++) {
+        x = face[l];
+        results.push(fold.vertices_coords[x]);
+      }
+      return results;
+    })()) > 0) {
+      fold.faces_vertices.push(face);
     }
   }
-
-  var outputParts = [];
-  for (var i = samePartsLength; i < fromParts.length; i++) {
-    outputParts.push('..');
-  }
-
-  outputParts = outputParts.concat(toParts.slice(samePartsLength));
-
-  return outputParts.join('/');
+  return fold;
 };
 
-exports.sep = '/';
-exports.delimiter = ':';
-
-exports.dirname = function(path) {
-  var result = splitPath(path),
-      root = result[0],
-      dir = result[1];
-
-  if (!root && !dir) {
-    // No dirname whatsoever
-    return '.';
-  }
-
-  if (dir) {
-    // It has a dirname, strip trailing slash
-    dir = dir.substr(0, dir.length - 1);
-  }
-
-  return root + dir;
-};
-
-
-exports.basename = function(path, ext) {
-  var f = splitPath(path)[2];
-  // TODO: make this comparison case-insensitive on windows?
-  if (ext && f.substr(-1 * ext.length) === ext) {
-    f = f.substr(0, f.length - ext.length);
-  }
-  return f;
-};
-
-
-exports.extname = function(path) {
-  return splitPath(path)[3];
-};
-
-function filter (xs, f) {
-    if (xs.filter) return xs.filter(f);
-    var res = [];
-    for (var i = 0; i < xs.length; i++) {
-        if (f(xs[i], i, xs)) res.push(xs[i]);
-    }
-    return res;
-}
-
-// String.prototype.substr - negative index don't work in IE8
-var substr = 'ab'.substr(-1) === 'b'
-    ? function (str, start, len) { return str.substr(start, len) }
-    : function (str, start, len) {
-        if (start < 0) start = str.length + start;
-        return str.substr(start, len);
-    }
-;
-
-}).call(this,require('_process'))
-},{"_process":4}],4:[function(require,module,exports){
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
+convert.faces_vertices_to_edges = function(mesh) {
+  var edge, edgeMap, face, i, key, ref, v1, v2, vertices;
+  mesh.edges_vertices = [];
+  mesh.edges_faces = [];
+  mesh.faces_edges = [];
+  mesh.edges_assignment = [];
+  edgeMap = {};
+  ref = mesh.faces_vertices;
+  for (face in ref) {
+    vertices = ref[face];
+    face = parseInt(face);
+    mesh.faces_edges.push((function() {
+      var j, len, results;
+      results = [];
+      for (i = j = 0, len = vertices.length; j < len; i = ++j) {
+        v1 = vertices[i];
+        v1 = parseInt(v1);
+        v2 = vertices[(i + 1) % vertices.length];
+        if (v1 <= v2) {
+          key = v1 + "," + v2;
         } else {
-            cachedSetTimeout = defaultSetTimout;
+          key = v2 + "," + v1;
         }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
+        if (key in edgeMap) {
+          edge = edgeMap[key];
         } else {
-            cachedClearTimeout = defaultClearTimeout;
+          edge = edgeMap[key] = mesh.edges_vertices.length;
+          if (v1 <= v2) {
+            mesh.edges_vertices.push([v1, v2]);
+          } else {
+            mesh.edges_vertices.push([v2, v1]);
+          }
+          mesh.edges_faces.push([null, null]);
+          mesh.edges_assignment.push('B');
         }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
+        if (v1 <= v2) {
+          mesh.edges_faces[edge][0] = face;
+        } else {
+          mesh.edges_faces[edge][1] = face;
         }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
+        results.push(edge);
+      }
+      return results;
+    })());
+  }
+  return mesh;
 };
 
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
+convert.extensions = {};
 
-function noop() {}
+convert.converters = {};
 
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
+convert.getConverter = function(fromExt, toExt) {
+  if (fromExt === toExt) {
+    return function(x) {
+      return x;
+    };
+  } else {
+    return convert.converters["" + fromExt + toExt];
+  }
 };
 
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
+convert.setConverter = function(fromExt, toExt, converter) {
+  convert.extensions[fromExt] = true;
+  convert.extensions[toExt] = true;
+  return convert.converters["" + fromExt + toExt] = converter;
 };
-process.umask = function() { return 0; };
 
-},{}],5:[function(require,module,exports){
-var assignment;
+convert.convertFromTo = function(data, fromExt, toExt) {
+  var converter;
+  if (fromExt[0] !== '.') {
+    fromExt = "." + fromExt;
+  }
+  if (toExt[0] !== '.') {
+    toExt = "." + toExt;
+  }
+  converter = convert.getConverter(fromExt, toExt);
+  if (converter == null) {
+    if (fromExt === toExt) {
+      return data;
+    }
+    throw new Error("No converter from " + fromExt + " to " + toExt);
+  }
+  return converter(data);
+};
 
-assignment = exports;
+convert.convertFrom = function(data, fromExt) {
+  return convert.convertFromTo(data, fromExt, '.fold');
+};
 
-assignment.edgesAssigned = function(fold, target) {
-  var i, j, len, ref, results;
+convert.convertTo = function(data, toExt) {
+  return convert.convertFromTo(data, '.fold', toExt);
+};
+
+convert.oripa = require('./oripa');
+
+
+},{"./geom":4,"./oripa":5}],3:[function(require,module,exports){
+var RepeatedPointsDS, filter, geom,
+  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
+geom = require('./geom');
+
+filter = exports;
+
+filter.edgesAssigned = function(fold, target) {
+  var assignment, i, k, len, ref, results;
   ref = fold.edges_assignment;
   results = [];
-  for (i = j = 0, len = ref.length; j < len; i = ++j) {
+  for (i = k = 0, len = ref.length; k < len; i = ++k) {
     assignment = ref[i];
     if (assignment === target) {
       results.push(i);
@@ -430,40 +227,27 @@ assignment.edgesAssigned = function(fold, target) {
   return results;
 };
 
-assignment.mountainEdges = function(fold) {
+filter.mountainEdges = function(fold) {
   return assignment.edgesAssigned(fold, 'M');
 };
 
-assignment.valleyEdges = function(fold) {
+filter.valleyEdges = function(fold) {
   return assignment.edgesAssigned(fold, 'V');
 };
 
-assignment.flatEdges = function(fold) {
+filter.flatEdges = function(fold) {
   return assignment.edgesAssigned(fold, 'F');
 };
 
-assignment.boundaryEdges = function(fold) {
+filter.boundaryEdges = function(fold) {
   return assignment.edgesAssigned(fold, 'B');
 };
 
-assignment.unassignedEdges = function(fold) {
+filter.unassignedEdges = function(fold) {
   return assignment.edgesAssigned(fold, 'F');
 };
 
-
-},{}],6:[function(require,module,exports){
-
-/* FOLD FORMAT MANIPULATORS */
-var RepeatedPointsDS, convert, convertFile, geom, key, value,
-  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
-
-geom = require('./geom');
-
-convert = exports;
-
-convert.oripa = require('./oripa');
-
-convert.keysStartingWith = function(fold, prefix) {
+filter.keysStartingWith = function(fold, prefix) {
   var key, results;
   results = [];
   for (key in fold) {
@@ -474,7 +258,7 @@ convert.keysStartingWith = function(fold, prefix) {
   return results;
 };
 
-convert.keysEndingWith = function(fold, suffix) {
+filter.keysEndingWith = function(fold, suffix) {
   var key, results;
   results = [];
   for (key in fold) {
@@ -485,14 +269,14 @@ convert.keysEndingWith = function(fold, suffix) {
   return results;
 };
 
-convert.remapField = function(fold, field, old2new) {
+filter.remapField = function(fold, field, old2new) {
   var array, i, j, k, key, l, len, len1, len2, m, new2old, old, ref, ref1;
   new2old = [];
   for (i = k = 0, len = old2new.length; k < len; i = ++k) {
     j = old2new[i];
     new2old[j] = i;
   }
-  ref = convert.keysStartingWith(fold, field + '_');
+  ref = filter.keysStartingWith(fold, field + '_');
   for (l = 0, len1 = ref.length; l < len1; l++) {
     key = ref[l];
     fold[key] = (function() {
@@ -505,7 +289,7 @@ convert.remapField = function(fold, field, old2new) {
       return results;
     })();
   }
-  ref1 = convert.keysEndingWith(fold, '_' + field);
+  ref1 = filter.keysEndingWith(fold, '_' + field);
   for (m = 0, len2 = ref1.length; m < len2; m++) {
     key = ref1[m];
     fold[key] = (function() {
@@ -530,7 +314,7 @@ convert.remapField = function(fold, field, old2new) {
   return fold;
 };
 
-convert.removeDuplicateEdges_vertices = function(fold) {
+filter.removeDuplicateEdges_vertices = function(fold) {
   var edge, id, key, old2new, seen, v, w;
   seen = {};
   id = 0;
@@ -554,10 +338,10 @@ convert.removeDuplicateEdges_vertices = function(fold) {
     }
     return results;
   })();
-  return convert.remapField(fold, 'edges', old2new);
+  return filter.remapField(fold, 'edges', old2new);
 };
 
-convert.edges_verticesIncident = function(e1, e2) {
+filter.edges_verticesIncident = function(e1, e2) {
   var k, len, v;
   for (k = 0, len = e1.length; k < len; k++) {
     v = e1[k];
@@ -637,7 +421,7 @@ RepeatedPointsDS = (function() {
 
 })();
 
-convert.collapseNearbyVertices = function(fold, epsilon) {
+filter.collapseNearbyVertices = function(fold, epsilon) {
   var coords, old2new, vertices;
   vertices = new RepeatedPointsDS([], epsilon);
   old2new = (function() {
@@ -650,12 +434,12 @@ convert.collapseNearbyVertices = function(fold, epsilon) {
     }
     return results;
   })();
-  return convert.remapField(fold, 'vertices', old2new);
+  return filter.remapField(fold, 'vertices', old2new);
 };
 
-convert.subdivideCrossingEdges_vertices = function(fold, epsilon) {
+filter.subdivideCrossingEdges_vertices = function(fold, epsilon) {
   var cross, crossI, e1, e2, i1, i2, k, len, ref, results, s1, s2, v, vertices;
-  convert.removeDuplicateEdges_vertices(fold);
+  filter.removeDuplicateEdges_vertices(fold);
   vertices = new RepeatedPointsDS(fold.vertices_coords, epsilon);
   ref = fold.edges_vertices;
   results = [];
@@ -685,8 +469,8 @@ convert.subdivideCrossingEdges_vertices = function(fold, epsilon) {
           }
           return results2;
         })();
-        if (!convert.edges_verticesIncident(e1, e2) && segmentsCross(s1, s2)) {
-          cross = lineIntersectLine(s1, s2);
+        if (!filter.edges_verticesIncident(e1, e2) && geom.segmentsCross(s1, s2)) {
+          cross = geom.lineIntersectLine(s1, s2);
           crossI = vertices.insert(cross);
           if (!(indexOf.call(e1, crossI) >= 0 && indexOf.call(e2, crossI) >= 0)) {
             if (indexOf.call(e1, crossI) < 0) {
@@ -712,236 +496,32 @@ convert.subdivideCrossingEdges_vertices = function(fold, epsilon) {
   return results;
 };
 
-convert.edges_vertices2vertices_neighbors = function(fold) {
-  var edge, k, len, ref, v, w;
-  fold.vertices_neighbors = [];
+filter.edges_vertices_to_vertices_neighbors = function(fold) {
+
+  /*
+  Works for abstract structures, so NOT SORTED.
+  Use sort_vertices_neighbors to sort in counterclockwise order.
+   */
+  var edge, k, len, ref, v, vertices_neighbors, w;
+  vertices_neighbors = [];
   ref = fold.edges_vertices;
   for (k = 0, len = ref.length; k < len; k++) {
     edge = ref[k];
     v = edge[0], w = edge[1];
-    while (v >= fold.vertices_neighbors.length) {
-      fold.vertices_neighbors.push([]);
+    while (v >= vertices_neighbors.length) {
+      vertices_neighbors.push([]);
     }
-    while (w >= fold.vertices_neighbors.length) {
-      fold.vertices_neighbors.push([]);
+    while (w >= vertices_neighbors.length) {
+      vertices_neighbors.push([]);
     }
-    fold.vertices_neighbors[v].push(w);
-    fold.vertices_neighbors[w].push(v);
+    vertices_neighbors[v].push(w);
+    vertices_neighbors[w].push(v);
   }
-  return fold;
+  return vertices_neighbors;
 };
 
-convert.verticesEdges2vertices_neighbors = function(fold) {
-  var edge, k, len, neighbors, ref, ref1, ref2, ref3, v, vertex, w;
-  if (((ref = fold.vertices_coords) != null ? (ref1 = ref[0]) != null ? ref1.length : void 0 : void 0) !== 2) {
-    throw "verticesEdges2vertices_neighbors: Vertex coordinates missing or not two dimensional";
-  }
-  fold.vertices_neighbors = (function() {
-    var k, len, ref2, results;
-    ref2 = fold.vertices_coords;
-    results = [];
-    for (k = 0, len = ref2.length; k < len; k++) {
-      vertex = ref2[k];
-      results.push([]);
-    }
-    return results;
-  })();
-  ref2 = fold.edges_vertices;
-  for (k = 0, len = ref2.length; k < len; k++) {
-    edge = ref2[k];
-    v = edge[0], w = edge[1];
-    fold.vertices_neighbors[v].push(w);
-    fold.vertices_neighbors[w].push(v);
-  }
-  ref3 = fold.vertices_neighbors;
-  for (v in ref3) {
-    neighbors = ref3[v];
-    sortByAngle(neighbors, v, function(x) {
-      return fold.vertices_coords[x];
-    });
-  }
-  return fold;
-};
 
-convert.verticesEdges2faces_vertices = function(fold) {
-  var face, i, k, key, l, len, len1, neighbors, next, ref, ref1, ref2, ref3, u, uv, v, w, x;
-  convert.verticesEdges2vertices_neighbors(fold);
-  next = {};
-  ref = fold.vertices_neighbors;
-  for (v in ref) {
-    neighbors = ref[v];
-    v = parseInt(v);
-    for (i = k = 0, len = neighbors.length; k < len; i = ++k) {
-      u = neighbors[i];
-      next[u + "," + v] = neighbors[(i + 1) % neighbors.length];
-    }
-  }
-  fold.faces_vertices = [];
-  ref1 = (function() {
-    var results;
-    results = [];
-    for (key in next) {
-      results.push(key);
-    }
-    return results;
-  })();
-  for (l = 0, len1 = ref1.length; l < len1; l++) {
-    uv = ref1[l];
-    w = next[uv];
-    if (w == null) {
-      continue;
-    }
-    next[uv] = null;
-    ref2 = uv.split(','), u = ref2[0], v = ref2[1];
-    u = parseInt(u);
-    v = parseInt(v);
-    face = [u, v];
-    while (w !== face[0]) {
-      if (w == null) {
-        console.warn('Confusion with face', face);
-        break;
-      }
-      face.push(w);
-      ref3 = [v, w], u = ref3[0], v = ref3[1];
-      w = next[u + "," + v];
-      next[u + "," + v] = null;
-    }
-    next[face[face.length - 1] + "," + face[0]] = null;
-    if ((w != null) && polygonOrientation((function() {
-      var len2, m, results;
-      results = [];
-      for (m = 0, len2 = face.length; m < len2; m++) {
-        x = face[m];
-        results.push(fold.vertices_coords[x]);
-      }
-      return results;
-    })()) > 0) {
-      fold.faces_vertices.push(face);
-    }
-  }
-  return fold;
-};
-
-convert.verticesFaces2edges = function(mesh) {
-  var edge, edgeMap, face, i, key, ref, v1, v2, vertices;
-  mesh.edges_vertices = [];
-  mesh.edges_faces = [];
-  mesh.faces_edges = [];
-  mesh.edges_assignment = [];
-  edgeMap = {};
-  ref = mesh.faces_vertices;
-  for (face in ref) {
-    vertices = ref[face];
-    face = parseInt(face);
-    mesh.faces_edges.push((function() {
-      var k, len, results;
-      results = [];
-      for (i = k = 0, len = vertices.length; k < len; i = ++k) {
-        v1 = vertices[i];
-        v1 = parseInt(v1);
-        v2 = vertices[(i + 1) % vertices.length];
-        if (v1 <= v2) {
-          key = v1 + "," + v2;
-        } else {
-          key = v2 + "," + v1;
-        }
-        if (key in edgeMap) {
-          edge = edgeMap[key];
-        } else {
-          edge = edgeMap[key] = mesh.edges_vertices.length;
-          if (v1 <= v2) {
-            mesh.edges_vertices.push([v1, v2]);
-          } else {
-            mesh.edges_vertices.push([v2, v1]);
-          }
-          mesh.edges_faces.push([null, null]);
-          mesh.edges_assignment.push('B');
-        }
-        if (v1 <= v2) {
-          mesh.edges_faces[edge][0] = face;
-        } else {
-          mesh.edges_faces[edge][1] = face;
-        }
-        results.push(edge);
-      }
-      return results;
-    })());
-  }
-  return mesh;
-};
-
-convertFile = require('./convert_file');
-
-if (convertFile != null) {
-  for (key in convertFile) {
-    value = convertFile[key];
-    convert[key] = value;
-  }
-}
-
-
-},{"./convert_file":7,"./geom":8,"./oripa":10}],7:[function(require,module,exports){
-(function (process){
-
-;
-var convert, convertFile, fs, path;
-
-fs = require('fs');
-
-path = require('path');
-
-convert = require('./convert');
-
-convertFile = exports;
-
-convertFile.file = function(input, extension, converter) {
-  var output, result;
-  output = path.parse(input);
-  output.ext = extension;
-  output.base = output.name + output.ext;
-  output = path.format(output);
-  console.log(input, '->', output);
-  if (input === output) {
-    return console.warn(input + " already has extension " + extension);
-  } else {
-    result = converter(fs.readFileSync(input, 'utf-8'));
-    if (typeof result !== 'string') {
-      result = JSON.stringify(result, null, 1);
-    }
-    return fs.writeFileSync(output, result, 'utf-8');
-  }
-};
-
-convertFile.main = function(args) {
-  var filename, i, len, results;
-  if (args == null) {
-    args = process.argv.slice(2);
-  }
-  path = require('path');
-  results = [];
-  for (i = 0, len = args.length; i < len; i++) {
-    filename = args[i];
-    switch (path.parse(filename).ext) {
-      case '.fold':
-        results.push(convert.file(filename, '.fold.opx', convert.oripa.fold2oripa));
-        break;
-      case '.opx':
-        results.push(convert.file(filename, '.fold', convert.oripa.oripa2fold));
-        break;
-      default:
-        results.push(void 0);
-    }
-  }
-  return results;
-};
-
-if (require.main === module) {
-  convertFile.main();
-}
-
-
-}).call(this,require('_process'))
-},{"./convert":6,"_process":4,"fs":2,"path":3}],8:[function(require,module,exports){
+},{"./geom":4}],4:[function(require,module,exports){
 
 /* BASIC GEOMETRY */
 var geom;
@@ -1126,15 +706,7 @@ geom.lineIntersectLine = function(l1, l2) {
 };
 
 
-},{}],9:[function(require,module,exports){
-module.exports = {
-  geom: require('./geom'),
-  assignment: require('./assignment'),
-  convert: require('./convert')
-};
-
-
-},{"./assignment":5,"./convert":6,"./geom":8}],10:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 var DOMParser, convert, oripa, ref, x, y;
 
 if (typeof DOMParser === "undefined" || DOMParser === null) {
@@ -1175,7 +747,7 @@ oripa.prop_xml2fold = {
 
 oripa.POINT_EPS = 1.0;
 
-oripa.oripa2fold = function(oripa) {
+oripa.toFold = function(oripa) {
   var children, fold, j, k, l, len, len1, len2, len3, len4, line, lines, m, n, nodeSpec, object, oneChildSpec, oneChildText, prop, property, ref1, ref2, ref3, ref4, ref5, subproperty, top, type, vertex, x0, x1, xml, y0, y1;
   fold = {
     vertices_coords: [],
@@ -1296,8 +868,8 @@ oripa.oripa2fold = function(oripa) {
               }
             }
           }
-        } else if (property.getAttribute('property') in prop_xml2fold) {
-          prop = prop_xml2fold[property.getAttribute('property')];
+        } else if (property.getAttribute('property') in oripa.prop_xml2fold) {
+          prop = oripa.prop_xml2fold[property.getAttribute('property')];
           if (prop != null) {
             fold[prop] = oneChildText(oneChildSpec(property, 'string'));
           }
@@ -1309,35 +881,36 @@ oripa.oripa2fold = function(oripa) {
   }
   convert.collapseNearbyVertices(fold, POINT_EPS);
   convert.subdivideCrossingEdges_vertices(fold, POINT_EPS);
-  convert.verticesEdges2faces_vertices(fold);
+  convert.verticesEdges_to_faces_vertices(fold);
   return fold;
 };
 
-oripa.fold2oripa = function(fold) {
-  var coord, edge, ei, fp, i, j, len, line, lines, s, vertex, vs, xp, z;
+oripa.fromFold = function(fold) {
+  var coord, edge, ei, fp, i, j, len, line, lines, ref1, s, vertex, vs, xp, z;
   if (typeof fold === 'string') {
     fold = JSON.parse(fold);
   }
   s = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n<java version=\"1.5.0_05\" class=\"java.beans.XMLDecoder\"> \n <object class=\"oripa.DataSet\"> \n  <void property=\"mainVersion\"> \n   <int>1</int> \n  </void> \n  <void property=\"subVersion\"> \n   <int>1</int> \n  </void> \n  <void property=\"paperSize\"> \n   <double>400.0</double> \n  </void> \n";
-  for (xp in prop_xml2fold) {
-    fp = prop_xml2fold[xp];
+  ref1 = oripa.prop_xml2fold;
+  for (xp in ref1) {
+    fp = ref1[xp];
     s += (".\n  <void property=\"" + xp + "\"> \n   <string>" + (fold[fp] || '') + "</string> \n  </void> \n").slice(2);
   }
   z = 0;
   lines = (function() {
-    var j, len, ref1, results;
-    ref1 = fold.edges_vertices;
+    var j, len, ref2, results;
+    ref2 = fold.edges_vertices;
     results = [];
-    for (ei = j = 0, len = ref1.length; j < len; ei = ++j) {
-      edge = ref1[ei];
+    for (ei = j = 0, len = ref2.length; j < len; ei = ++j) {
+      edge = ref2[ei];
       vs = (function() {
-        var k, l, len1, len2, ref2, results1;
+        var k, l, len1, len2, ref3, results1;
         results1 = [];
         for (k = 0, len1 = edge.length; k < len1; k++) {
           vertex = edge[k];
-          ref2 = fold.vertices_coords[vertex].slice(2);
-          for (l = 0, len2 = ref2.length; l < len2; l++) {
-            coord = ref2[l];
+          ref3 = fold.vertices_coords[vertex].slice(2);
+          for (l = 0, len2 = ref3.length; l < len2; l++) {
+            coord = ref3[l];
             if (coord !== 0) {
               z += 1;
             }
@@ -1351,7 +924,7 @@ oripa.fold2oripa = function(fold) {
         y0: vs[0][1],
         x1: vs[1][0],
         y1: vs[1][1],
-        type: fold2type[fold.edges_assignment[ei]] || fold2type_default
+        type: oripa.fold2type[fold.edges_assignment[ei]] || oripa.fold2type_default
       });
     }
     return results;
@@ -1365,5 +938,18 @@ oripa.fold2oripa = function(fold) {
   return s;
 };
 
+convert.setConverter('.fold', '.opx', oripa.fromFold);
 
-},{"./convert":6,"xmldom":1}]},{},[9]);
+convert.setConverter('.opx', '.fold', oripa.toFold);
+
+
+},{"./convert":2,"xmldom":1}],"fold":[function(require,module,exports){
+module.exports = {
+  geom: require('./geom'),
+  filter: require('./filter'),
+  convert: require('./convert'),
+  file: require('./file')
+};
+
+
+},{"./convert":2,"./file":1,"./filter":3,"./geom":4}]},{},[]);

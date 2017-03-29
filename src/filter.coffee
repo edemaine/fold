@@ -1,4 +1,4 @@
-geom = require 'geom'
+geom = require './geom'
 filter = exports
 
 filter.edgesAssigned = (fold, target) ->

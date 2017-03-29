@@ -27,12 +27,12 @@ oripa.prop_xml2fold =
   'paperSize': null
   'mainVersion': null
   'subVersion': null
-#prop_fold2xml = {}
-#for x, y of prop_xml2fold
-#  prop_fold2xml[y] = x if y?
+#oripa.prop_fold2xml = {}
+#for x, y of oripa.prop_xml2fold
+#  oripa.prop_fold2xml[y] = x if y?
 
 oripa.POINT_EPS = 1.0
-oripa.oripa2fold = (oripa) ->
+oripa.toFold = (oripa) ->
   fold =
     vertices_coords: []
     edges_vertices: []
@@ -114,8 +114,8 @@ oripa.oripa2fold = (oripa) ->
                     fold.edges_assignment.push type2fold[type]
                   else
                     console.warn "ORIPA line has missing data: #{x0} #{x1} #{y0} #{y1} #{type}"
-        else if property.getAttribute('property') of prop_xml2fold
-          prop = prop_xml2fold[property.getAttribute 'property']
+        else if property.getAttribute('property') of oripa.prop_xml2fold
+          prop = oripa.prop_xml2fold[property.getAttribute 'property']
           if prop?
             fold[prop] = oneChildText oneChildSpec(property, 'string')
         else
@@ -129,7 +129,7 @@ oripa.oripa2fold = (oripa) ->
   convert.verticesEdges_to_faces_vertices fold
   fold
 
-oripa.fold2oripa = (fold) ->
+oripa.fromFold = (fold) ->
   if typeof fold == 'string'
     fold = JSON.parse fold
   s = """
@@ -147,7 +147,7 @@ oripa.fold2oripa = (fold) ->
   </void> 
 
 """
-  for xp, fp of prop_xml2fold
+  for xp, fp of oripa.prop_xml2fold
     #if fp of fold
     s += """
 .
@@ -168,7 +168,7 @@ oripa.fold2oripa = (fold) ->
       y0: vs[0][1]
       x1: vs[1][0]
       y1: vs[1][1]
-      type: fold2type[fold.edges_assignment[ei]] or fold2type_default
+      type: oripa.fold2type[fold.edges_assignment[ei]] or oripa.fold2type_default
   s += """
 .
   <void property="lines"> 
@@ -208,3 +208,6 @@ oripa.fold2oripa = (fold) ->
 
 """[2..]
   s
+
+convert.setConverter '.fold', '.opx', oripa.fromFold
+convert.setConverter '.opx', '.fold', oripa.toFold

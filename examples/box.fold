@@ -1,7 +1,11 @@
 {
-  "file_version": 1.0,
+  "file_version": 1,
   "file_creator": "A text editor",
   "file_author": "Jason Ku",
+  "file_classes": ["singleModel"],
+  "frame_title": "3D box folding with wing",
+  "frame_classes": ["foldedForm"],
+  "frame_attributes": ["3D"],
   "vertices_coords": [
     [-1,-1,-1],
     [-1, 1,-1],

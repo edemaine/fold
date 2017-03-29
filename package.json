@@ -9,7 +9,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepublish": "coffee --no-header --bare -o lib -c src",
-    "dist": "browserify -t coffeeify --extension=.coffee src/index.coffee -o dist/fold.js"
+    "dist": "browserify -t coffeeify --extension=.coffee -r ./src/index.coffee:fold -o dist/fold.js"
   },
   "repository": {
     "type": "git",
@@ -47,6 +47,6 @@
   },
   "browser": {
     "xmldom": false,
-    "src/convert_file.coffee": false
+    "./src/file.coffee": false
   }
 }
