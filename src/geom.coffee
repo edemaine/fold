@@ -179,8 +179,8 @@ geom.segmentsCross = ([p0, q0], [p1, q1]) ->
   ## May not work if the segments are collinear.
   ## First do rough overlap check in x and y.  This helps with
   ## near-collinear segments.  (Inspired by oripa/geom/GeomUtil.java)
-  if geom.rangesDisjoint([p0[0], q0[0]], [p1[0], p2[0]]) or
-     geom.rangesDisjoint([p0[1], q0[1]], [p1[1], p2[1]])
+  if geom.rangesDisjoint([p0[0], q0[0]], [p1[0], q1[0]]) or
+     geom.rangesDisjoint([p0[1], q0[1]], [p1[1], q1[1]])
     return false
   ## Now do orientation test.
   geom.polygonOrientation([p0,q0,p1]) != geom.polygonOrientation([p0,q0,q1]) and
