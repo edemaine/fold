@@ -42,9 +42,16 @@ viewer.listenId = (id, event, callback) ->
 viewer.setAttrs = (el, attrs) ->
   (el.setAttribute(k, v) for k, v of attrs); el
 
+viewer.appendHTML = (el, tag, attrs) ->
+  el.appendChild(setAttrs(document.createElement(tag), attrs))
+
 SVGNS = 'http://www.w3.org/2000/svg'
-viewer.appendSVG = (svg, tag, attrs) ->
-  svg.appendChild(setAttrs(document.createElementNS(SVGNS, tag),attrs))
+viewer.appendSVG = (el, tag, attrs) ->
+  el.appendChild(setAttrs(document.createElementNS(SVGNS, tag), attrs))
+
+viewer.appendButton = (el, value, callback) ->
+  appendHTML(el, 'input', {type: 'button', value: value})
+    .addEventListener('click', callback)
 
 viewer.makePath = (coords) ->
   (for c, i in coords
@@ -82,8 +89,33 @@ viewer.rotateCam = (p, cam) ->
 
 ### VIEWER FUNCTIONS ###
 
-viewer.initView = () ->
-  {svg: null, cam: viewer.initCam(), fold: null, model: null}
+DEFAULTS = {
+  viewButtons: true, axisButtons: true, attrViewer: true
+  examples: true, import: true, export: true}
+
+viewer.addViewer = (div, fold = null, options = {}) ->
+  view = {cam: viewer.initCam(), fold: fold, options: DEFAULTS}
+  view.model = viewer.makeModel(fold) if fold?
+  viewer.setAttrs(view.options, options)
+  if view.options.viewButtons
+    viewButtonDiv = viewer.appendHTML(div, 'div')
+    viewButtonDiv.innerHtml = 'Toggle: '
+    for val in ['facesText', 'faces', 'edges', 'vertices']
+      viewer.appendButton(viewButtonDiv, val, (e) =>
+        view.cam.show[button] = !view.cam.show[button]; viewer.update view)
+  if view.options.axisButtons
+    axisButtonDiv = viewer.appendHTML(div, 'div')
+    axisButtonDiv.innerHTML = 'View: '
+    axes = [[0,1,0],[0,0,1],[1,0,0]]
+    for val in ['x', 'y', 'z']
+      viewer.appendButton(axisButtonsDiv, val, (e) =>
+        viewer.setCamXY(axes[i], axes[geom.next(i,3)]); viewer.update view)
+  if view.options.import
+    importDiv = appendHTML(div, 'div')
+    viewer.appendHTML(importDiv, 'input', {type: 'file'})
+      .addEventListener('change', (e) =>
+        importFile(e.target.files[0], view))
+  view.svg = appendSVG(div, 'svg', {xmlns: SVGNS})
 
 viewer.faceAbove = (f1, f2, n) ->
   [p1,p2] = ((v.ps for v in f.vs) for f in [f1,f2])
@@ -138,7 +170,7 @@ viewer.orderFaces = (faces, direction) ->
 viewer.draw = (model, {svg: svg, cam: cam}) ->
   svg.empty()
   for k, v of viewer.STYLES
-    viewer.appendSVG(svg,'style',{id: k}).html(".#{k}{#{v}}")
+    viewer.appendSVG(svg,'style',{id: k}).innerHtml = ".#{k}{#{v}}"
   min = ((v.cs[i] for v in model.vs).reduce(geom.min) for i in [0,1,2])
   max = ((v.cs[i] for v in model.vs).reduce(geom.max) for i in [0,1,2])
   cam.c = geom.mul(geom.plus(min, max), 0.5)
@@ -150,13 +182,13 @@ viewer.draw = (model, {svg: svg, cam: cam}) ->
     g = viewer.appendSVG(svg, 'g')
     f.path = viewer.appendSVG(g, 'path')
     f.text = viewer.appendSVG(g, 'text',
-      {class: 'text', transform: t}).html("f#{f.i}")
+      {class: 'text', transform: t}).innerHTML = "f#{f.i}"
     for e, j in f.es when not e.path?
       e.path = viewer.appendSVG(g, 'path')
     for v, j in f.vs when not v.path?
       v.path = viewer.appendSVG(g, 'circle', {class: 'vert'})
       v.text = viewer.appendSVG(g, 'text',
-        {transform: 'translate(0, 0.01)', class: 'text'}).html("#{v.i}")
+        {transform: 'translate(0, 0.01)', class: 'text'}).innerHTML = "#{v.i}"
     model.fs[i].svg = g
   g = viewer.appendSVG(svg,'g',{transform: 'translate(-0.9,-0.9)'})
   for c in ['x','y','z']
