@@ -48,7 +48,7 @@ Then, if you add `FOLD = require('fold')` to your JavaScript/CoffeeScript code,
 you can access the library via `FOLD.moduleName.functionName`, e.g.,
 `FOLD.filter.collapseNearbyVertices`.
 
-For Node apps, just `npm install --save fold` (coming soon);
+For Node apps, just `npm install --save fold`;
 then add `FOLD = require('fold')` to your JavaScript/CoffeeScript code;
 then access the library via `FOLD.moduleName.functionName`, e.g.,
 `FOLD.filter.collapseNearbyVertices`.
