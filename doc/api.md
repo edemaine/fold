@@ -6,6 +6,7 @@ The FOLD API consists of several modules under the `FOLD` namespace:
   a given FOLD object.
 * `FOLD.convert`: Augment an existing FOLD object with additional fields,
   and convert between FOLD and other file formats.
+* `FOLD.file`: Load/save/convert files on file system (Node only, not browser)
 * `FOLD.geom`: Basic geometry tools (manipulation of vectors, angles,
   lines, segments, etc.).  Basically whatever we needed to implement other
   features, but which you might find helpful too.
