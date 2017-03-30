@@ -133,6 +133,7 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
   ## Handle overlapping edges
   for e1, i1 in fold.edges_vertices
     s1 = (fold.vertices_coords[v] for v in e1)
+    ## xxx should do vertices in inner loop...
     for e2, i2 in fold.edges_vertices[...i1]
       s2 = (fold.vertices_coords[v] for v in e2)
       for j in [0,1]
