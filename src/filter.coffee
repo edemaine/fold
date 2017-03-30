@@ -130,23 +130,15 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
   Takes quadratic time.  xxx Should be O(n log n) via plane sweep.
   ###
 
-  ## Handle overlapping edges
-  for e1, i1 in fold.edges_vertices
-    s1 = (fold.vertices_coords[v] for v in e1)
-    ## xxx should do vertices in inner loop...
-    for e2, i2 in fold.edges_vertices[...i1]
-      s2 = (fold.vertices_coords[v] for v in e2)
-      for j in [0,1]
-        e1old = [e1[0], e1[1]]
-        e2old = [e2[0], e2[1]]
-        if geom.pointStrictlyInSegment s1[j], s2
-          #console.log s1[j], 'in', s2
-          fold.edges_vertices.push [e1old[j], e2old[1]]
-          e2[1] = e1old[j]
-        if geom.pointStrictlyInSegment s2[j], s1
-          #console.log s2[j], 'in', s1
-          fold.edges_vertices.push [e2old[j], e1old[1]]
-          e1[1] = e2old[j]
+  ## Handle overlapping edges by subdividing edges at any vertices on them.
+  for p, v in fold.vertices_coords
+    for e, i in fold.edges_vertices
+      continue if v in e
+      s = (fold.vertices_coords[u] for u in e)
+      if geom.pointStrictlyInSegment p, s  ## implicit epsilon
+        #console.log p, 'in', s
+        fold.edges_vertices.push [v, e[1]]
+        e[1] = v
   filter.removeDuplicateEdges_vertices fold
   filter.removeLoopEdges fold
 
