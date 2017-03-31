@@ -11,7 +11,7 @@ STYLES = {
     font-family: sans-serif;"
   B: "stroke: black;", V: "stroke: blue;"
   M: "stroke: red;", U: "stroke: white"
-  x0: "stroke: blue;", x1: "stroke: red;", x2: "stroke: green;"
+  ax: "stroke: blue;", ay: "stroke: red;", az: "stroke: green;"
 }
 
 ### UTILITIES ###
@@ -19,7 +19,7 @@ STYLES = {
 viewer.processInput = (text, view) ->
   view.fold = JSON.parse(text)
   view.model = viewer.makeModel(view.fold)
-  viewer.addRotation(view.svg, view.cam)
+  viewer.addRotation(view)
   viewer.draw(view)
   viewer.update(view)
 
@@ -59,28 +59,33 @@ viewer.makePath = (coords) ->
 
 viewer.initCam = () -> {
   c: [0,0,0], x: [1,0,0], y: [0,1,0], z: [0,0,1], rad: 1, last: null
-  show: {faces: false, edges: true, vertices: false, faceText: false}}
+  show: {faces: true, edges: true, vertices: false, faceText: false}}
 
 viewer.proj = (p, cam) ->
   [geom.dot(geom.sub(p, cam.c), cam.x), -geom.dot(geom.sub(p, cam.c), cam.y), 0]
 
 viewer.setCamXY = (cam, x, y) ->
-  [cam.x, cam.y, cam.z] = [x, y, geom.cross(x,y)]
+  [cam.x, cam.y, cam.z] = [x, y, geom.cross(x, y)]
 
-viewer.addRotation = (svg, cam) ->
+viewer.addRotation = (view) ->
+  {svg: svg, cam: cam} = view
   for s in ['contextmenu','selectstart','dragstart']
-    svg.on(s, (e) -> e.preventDefault())
-  svg.mousedown (e) => cam.last = [e.clientX, e.clientY]
-  svg.mousemove (e) => viewer.rotateCam([e.clientX, e.clientY])
-  svg.mouseup (e) => viewer.rotateCam([e.clientX, e.clientY]); cam.last = null
+    svg.addEventListener(s, (e) -> e.preventDefault())
+  svg.addEventListener('mousedown', (e) =>
+    cam.last = [e.clientX, e.clientY])
+  svg.addEventListener('mousemove', (e) =>
+    viewer.rotateCam([e.clientX, e.clientY], view))
+  svg.addEventListener('mouseup', (e) =>
+    viewer.rotateCam([e.clientX, e.clientY], view); cam.last = null)
 
-viewer.rotateCam = (p, cam) ->
+viewer.rotateCam = (p, view) ->
+  cam = view.cam
   return if not cam.last?
   d = geom.sub(p, cam.last)
   return if not geom.mag(d) > 0
   u = geom.unit(geom.plus(geom.mul(cam.x, -d[1]), geom.mul(cam.y, -d[0])))
-  [x,y] = (geom.rot(cam[c], u, geom.mag(d) * 0.01) for c in ['x','y'])
-  viewer.setCamXY(x, y)
+  [x, y] = (geom.rotate(cam[c], u, geom.mag(d) * 0.01) for c in ['x','y'])
+  viewer.setCamXY(cam, x, y)
   cam.last = p
   viewer.update(view)
 
@@ -93,32 +98,40 @@ DEFAULTS = {
 viewer.addViewer = (div, fold = null, options = {}) ->
   view = {cam: viewer.initCam(), fold: fold, options: DEFAULTS}
   viewer.setAttrs(view.options, options)
-  if view.options.viewButtons
-    viewButtonDiv = viewer.appendHTML(div, 'div')
-    viewButtonDiv.innerHtml = 'Toggle: '
-    for val in ['facesText', 'faces', 'edges', 'vertices']
-      viewer.appendButton(viewButtonDiv, val, (e) =>
-        view.cam.show[button] = !view.cam.show[button]; viewer.update view)
-  if view.options.axisButtons
-    axisButtonDiv = viewer.appendHTML(div, 'div')
-    axisButtonDiv.innerHTML = 'View: '
-    axes = [[0,1,0],[0,0,1],[1,0,0]]
-    for val in ['x', 'y', 'z']
-      viewer.appendButton(axisButtonDiv, val, (e) =>
-        viewer.setCamXY(axes[i], axes[geom.next(i,3)]); viewer.update view)
-  if view.options.import
-    importDiv = viewer.appendHTML(div, 'div')
-    viewer.appendHTML(importDiv, 'input', {type: 'file'})
-      .addEventListener('change', (e) =>
-        viewer.importFile(e.target.files[0], view))
+  if view.options.viewButtons or view.options.axisButtons
+    toggleDiv = viewer.appendHTML(div, 'div')
+    toggleDiv.innerHtml = ''
+    if view.options.viewButtons
+      toggleDiv.innerHtml += 'Toggle: '
+      for val in ['facesText', 'faces', 'edges', 'vertices']
+        viewer.appendButton(toggleDiv, val, (e) =>
+          view.cam.show[button] = !view.cam.show[button]; viewer.update view)
+    if view.options.axisButtons
+      toggleDiv.innerHTML += 'View: '
+      axes = [[0,1,0],[0,0,1],[1,0,0]]
+      for val in ['x', 'y', 'z']
+        viewer.appendButton(toggleDiv, val, (e) =>
+          viewer.setCamXY(cam, axes[i], axes[geom.next(i,3)]); viewer.update view)
+  if view.options.examples or view.options.import
+    inputDiv = viewer.appendHTML(div, 'div')
+    if view.options.examples
+      select = viewer.appendHTML(inputDiv, 'select')
+      select.addEventListener('change', (e) =>
+        viewer.importURL(select.value, view))
+      viewer.appendHTML(select, 'option', {value: '../examples/simple.fold'})
+        .innerHTML = 'Default'
+      viewer.appendHTML(select, 'option', {value: '../examples/box.fold'})
+        .innerHTML = 'Flexicube Unit'
+    if view.options.import
+      viewer.appendHTML(inputDiv, 'input', {type: 'file'})
+        .addEventListener('change', (e) =>
+          viewer.importFile(e.target.files[0], view))
   view.svg = viewer.appendSVG(div, 'svg', {xmlns: SVGNS})
-  if fold?
-    viewer.draw(view)
-    viewer.update(view)
+  viewer.importURL(select.value, view)
 
 viewer.faceAbove = (f1, f2, n) ->
-  [p1,p2] = ((v.ps for v in f.vs) for f in [f1,f2])
-  [dp,disjoint,np] = geom.sepNormal(p1,p2)
+  [p1, p2] = ((v.ps for v in f.vs) for f in [f1,f2])
+  [dp, disjoint, np] = geom.sepNormal(p1, p2)
   return null if disjoint # projections do not overlap
   [v1,v2] = ((v.cs for v in f.vs) for f in [f1,f2])
   [dv,disjoint,nv] = geom.sepNormal(v1,v2)
@@ -144,7 +157,7 @@ viewer.makeModel = (fold) ->
         [a,b] = if v.i > w.i then [w,v] else [v,w]
         m.es["e#{a.i}e#{b.i}"] = {v1: a, v2: b, as: 'B'}
   for f, i in m.fs
-    m.fs[i].n = geom.triangleNormal(v.cs for v in f.vs)
+    m.fs[i].n = geom.triangleNormal((v.cs for v in f.vs)...)
     m.fs[i].c = geom.centroid(v.cs for v in f.vs)
     m.fs[i].es = {}
     m.fs[i].es = (for v, j in f.vs
@@ -160,42 +173,45 @@ viewer.orderFaces = (faces, direction) ->
   (f.children = [] for f in faces)
   for f1, i in faces
     for f2, j in faces when j > i
-      f1_above = viewer.aboveFace(f1, f2, geom.mul(direction, -1))
+      f1_above = viewer.faceAbove(f1, f2, geom.mul(direction, -1))
       if f1_above?
         ([p,c] = if f1_above then [f1,f2] else [f2,f1])
         p.children = p.children.concat([c])
   geom.topologicalSort(faces)
 
-viewer.draw = (model, {svg: svg, cam: cam}) ->
-  svg.empty()
-  for k, v of viewer.STYLES
-    viewer.appendSVG(svg,'style',{id: k}).innerHtml = ".#{k}{#{v}}"
+viewer.draw = ({svg: svg, cam: cam, model: model}) ->
+  svg.innerHTML = ''
+  style = viewer.appendSVG(svg, 'style')
+  for k, v of STYLES
+    style.innerHTML += ".#{k}{#{v}}\n"
   min = ((v.cs[i] for v in model.vs).reduce(geom.min) for i in [0,1,2])
   max = ((v.cs[i] for v in model.vs).reduce(geom.max) for i in [0,1,2])
   cam.c = geom.mul(geom.plus(min, max), 0.5)
   cam.r = geom.mag(geom.sub(max, min)) / 2 * 1.05
   pc = viewer.proj(cam.c, cam)
-  svg.attr('viewBox', "#{pc[0] - cam.r},#{pc[1] - cam.r},#{2*cam.r},#{2*cam.r}")
+  viewer.setAttrs(svg, {
+    viewBox: "#{pc[0]-cam.r},#{pc[1]-cam.r},#{2*cam.r},#{2*cam.r}"})
   t = "translate(0,0.01)"
   for f, i in model.fs
     g = viewer.appendSVG(svg, 'g')
     f.path = viewer.appendSVG(g, 'path')
-    f.text = viewer.appendSVG(g, 'text',
-      {class: 'text', transform: t}).innerHTML = "f#{f.i}"
+    f.text = viewer.appendSVG(g, 'text', {class: 'text', transform: t})
+    f.text.innerHTML = "f#{f.i}"
     for e, j in f.es when not e.path?
       e.path = viewer.appendSVG(g, 'path')
     for v, j in f.vs when not v.path?
       v.path = viewer.appendSVG(g, 'circle', {class: 'vert'})
       v.text = viewer.appendSVG(g, 'text',
-        {transform: 'translate(0, 0.01)', class: 'text'}).innerHTML = "#{v.i}"
+        {transform: 'translate(0, 0.01)', class: 'text'})
+      v.text.innerHTML = "#{v.i}"
     model.fs[i].svg = g
   g = viewer.appendSVG(svg,'g',{transform: 'translate(-0.9,-0.9)'})
   for c in ['x','y','z']
     viewer.appendSVG(g,'path', {id: "a#{c}", class: "a#{c} axis"})
 
 viewer.update = ({model: model, cam: cam, svg: svg}) ->
-  (model.vs[i].ps = proj(v.cs, cam) for v, i in model.vs)
-  (model.fs[i].c2 = proj(f.c, cam)  for f, i in model.fs)
+  (model.vs[i].ps = viewer.proj(v.cs, cam) for v, i in model.vs)
+  (model.fs[i].c2 = viewer.proj(f.c, cam)  for f, i in model.fs)
   viewer.orderFaces(model.fs, cam.z)
   show = {}
   for attr in ['faceText','faces','edges','vertices']

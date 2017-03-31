@@ -8,11 +8,13 @@ geom = exports
 
 EPS = 0.000001
 
-geom.sum  = (a, b) -> a + b
+geom.sum = (a, b) -> a + b
 
-geom.min  = (a, b) -> if a < b then a else b
+geom.min = (a, b) -> if a < b then a else b
 
-geom.max  = (a, b) -> if a > b then a else b
+geom.max = (a, b) -> if a > b then a else b
+
+geom.all = (a, b) -> a and b
 
 geom.next = (start, n, i = 1) ->
   ###
@@ -110,8 +112,8 @@ geom.ang = (a, b) ->
 geom.cross = (a, b) ->
   ## Returns the cross product of two 3D vectors a, b.
   (for i in [0,1,2]
-    [next, next2] = [geom.next(i, 3), geom.next(i, 3, 2)]
-    (a[next] * b[next2] - a[next2] * b[next]))
+    [next, next2] = (geom.next(i, 3, j) for j in [1, 2])
+    a[next] * b[next2] - a[next2] * b[next])
 
 geom.parallel = (a, b, eps = EPS) ->
   ## Return if vectors are parallel, up to accuracy eps
@@ -119,7 +121,7 @@ geom.parallel = (a, b, eps = EPS) ->
   return null unless ua? and ub?
   1 - Math.abs(geom.dot ua, ub) < eps
 
-geom.rotate = (a,u,t) ->
+geom.rotate = (a, u, t) ->
   ## Returns the rotation of 3D vector a about 3D unit vector u by angle t.
   u = geom.unit(u)
   return null unless u?
@@ -222,7 +224,7 @@ geom.pointStrictlyInSegment = (p, s, eps = EPS) ->
 
 geom.centroid = (points) ->
   ## Returns the centroid of a set of points having the same dimension.
-  geom.div(points.reduce(geom.plus), points.length)
+  geom.mul(points.reduce(geom.plus), 1.0 / points.length)
 
 geom.dimension = (ps, eps = EPS) ->
   ds = (geom.dir(p,ps[0]) for p in ps when geom.distsq(p,ps[0]) > eps)
