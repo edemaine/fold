@@ -28,29 +28,26 @@ viewer.importURL = (url, view) ->
   xhr.onload = (e) => viewer.processInput(e.target.responseText, view)
   xhr.open('GET', url); xhr.send()
 
-viewer.importFile = (file, view) ->
-  file_reader = new FileReader()
-  file_reader.onload = (e) => viewer.processInput(e.target.result, view)
-  file_reader.readAsText file
-
 viewer.getId = (id) ->
   document.getElementById(id)
 
-viewer.listenId = (id, event, callback) ->
-  viewer.getId(id).addEventListener(event, callback)
+viewer.importFile = (file, view) ->
+  file_reader = new FileReader()
+  file_reader.onload = (e) => viewer.processInput(e.target.result, view)
+  file_reader.readAsText(file)
 
 viewer.setAttrs = (el, attrs) ->
   (el.setAttribute(k, v) for k, v of attrs); el
 
 viewer.appendHTML = (el, tag, attrs) ->
-  el.appendChild(setAttrs(document.createElement(tag), attrs))
+  el.appendChild(viewer.setAttrs(document.createElement(tag), attrs))
 
 SVGNS = 'http://www.w3.org/2000/svg'
 viewer.appendSVG = (el, tag, attrs) ->
-  el.appendChild(setAttrs(document.createElementNS(SVGNS, tag), attrs))
+  el.appendChild(viewer.setAttrs(document.createElementNS(SVGNS, tag), attrs))
 
 viewer.appendButton = (el, value, callback) ->
-  appendHTML(el, 'input', {type: 'button', value: value})
+  viewer.appendHTML(el, 'input', {type: 'button', value: value})
     .addEventListener('click', callback)
 
 viewer.makePath = (coords) ->
@@ -95,7 +92,6 @@ DEFAULTS = {
 
 viewer.addViewer = (div, fold = null, options = {}) ->
   view = {cam: viewer.initCam(), fold: fold, options: DEFAULTS}
-  view.model = viewer.makeModel(fold) if fold?
   viewer.setAttrs(view.options, options)
   if view.options.viewButtons
     viewButtonDiv = viewer.appendHTML(div, 'div')
@@ -108,14 +104,17 @@ viewer.addViewer = (div, fold = null, options = {}) ->
     axisButtonDiv.innerHTML = 'View: '
     axes = [[0,1,0],[0,0,1],[1,0,0]]
     for val in ['x', 'y', 'z']
-      viewer.appendButton(axisButtonsDiv, val, (e) =>
+      viewer.appendButton(axisButtonDiv, val, (e) =>
         viewer.setCamXY(axes[i], axes[geom.next(i,3)]); viewer.update view)
   if view.options.import
-    importDiv = appendHTML(div, 'div')
+    importDiv = viewer.appendHTML(div, 'div')
     viewer.appendHTML(importDiv, 'input', {type: 'file'})
       .addEventListener('change', (e) =>
-        importFile(e.target.files[0], view))
-  view.svg = appendSVG(div, 'svg', {xmlns: SVGNS})
+        viewer.importFile(e.target.files[0], view))
+  view.svg = viewer.appendSVG(div, 'svg', {xmlns: SVGNS})
+  if fold?
+    viewer.draw(view)
+    viewer.update(view)
 
 viewer.faceAbove = (f1, f2, n) ->
   [p1,p2] = ((v.ps for v in f.vs) for f in [f1,f2])
@@ -203,18 +202,20 @@ viewer.update = ({model: model, cam: cam, svg: svg}) ->
     show[attr] = if cam.show[attr] then 'visible' else 'hidden'
   for f, i in model.fs when f.path?
     visibleSide = if geom.dot(f.n, cam.z) > 0 then 'top' else 'bot'
-    setAttrs(f.text, {x: f.c2[0], y: f.c2[1], visibility: show.faceText})
-    setAttrs(f.path, {
+    viewer.setAttrs(f.text, {x: f.c2[0], y: f.c2[1], visibility: show.faceText})
+    viewer.setAttrs(f.path, {
       d: viewer.makePath(v.ps for v in f.vs) + 'Z'
       visibility: show.faces, class: "face #{visibleSide}"})
     for e, j in f.es
-      setAttrs(e.path, {
+      viewer.setAttrs(e.path, {
         d: viewer.makePath([e.v1.ps, e.v2.ps])
         visibility: show.edges, class: "edge #{e.as}"})
     for v, j in f.vs
-      setAttrs(v.path, {cx: v.ps[0], cy: v.ps[1], visibility: show.vertices})
-      setAttrs(v.text, {x: v.ps[1], y: v.ps[1], visibility: show.vertices})
+      viewer.setAttrs(v.path, {
+        cx: v.ps[0], cy: v.ps[1], visibility: show.vertices})
+      viewer.setAttrs(v.text, {
+        x: v.ps[1], y: v.ps[1], visibility: show.vertices})
   for c, v of {x: [1,0,0], y: [0,1,0], z: [0,0,1]}
     end = geom.plus(geom.mul(v, 0.05), cam.c)
-    setAttrs(document.getElementById("a#{c}"), {
+    viewer.setAttrs(document.getElementById("a#{c}"), {
       d: viewer.makePath(viewer.proj(p, cam) for p in [cam.c, end])})
