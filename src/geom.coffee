@@ -240,6 +240,7 @@ geom.above = (ps, qs, n, eps = EPS) ->
 
 geom.sepNormal = (t1, t2, eps = EPS) ->
   [d,n] = geom.dimension(t1.concat(t2))
+  console.log [d, n]
   switch d
     when 0 then return [d, true, n]
     when 1 then return [d, true, n]

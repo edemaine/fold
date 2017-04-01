@@ -59,7 +59,7 @@ viewer.makePath = (coords) ->
 
 viewer.initCam = () -> {
   c: [0,0,0], x: [1,0,0], y: [0,1,0], z: [0,0,1], rad: 1, last: null
-  show: {faces: true, edges: true, vertices: false, faceText: false}}
+  show: {'Faces': true, 'Edges': true, 'Vertices': false, 'Face Text': false}}
 
 viewer.proj = (p, cam) ->
   [geom.dot(geom.sub(p, cam.c), cam.x), -geom.dot(geom.sub(p, cam.c), cam.y), 0]
@@ -98,20 +98,34 @@ DEFAULTS = {
 viewer.addViewer = (div, fold = null, options = {}) ->
   view = {cam: viewer.initCam(), fold: fold, options: DEFAULTS}
   viewer.setAttrs(view.options, options)
-  if view.options.viewButtons or view.options.axisButtons
+  document.addEventListener('click', (e) =>
+    if e.target.type is 'checkbox'
+      if e.target.hasAttribute('checked')
+        e.target.removeAttribute('checked')
+      else
+        e.target.setAttribute('checked', '')
+      view.cam.show[e.target.value] = e.target.hasAttribute('checked')
+      viewer.update view
+    if e.target.type is 'button'
+      switch e.target.value
+        when 'x' then viewer.setCamXY(view.cam, [0,1,0], [0,0,1])
+        when 'y' then viewer.setCamXY(view.cam, [0,0,1], [1,0,0])
+        when 'z' then viewer.setCamXY(view.cam, [1,0,0], [0,1,0])
+      viewer.update view
+  )
+  if view.options.viewButtons
     toggleDiv = viewer.appendHTML(div, 'div')
     toggleDiv.innerHtml = ''
-    if view.options.viewButtons
-      toggleDiv.innerHtml += 'Toggle: '
-      for val in ['facesText', 'faces', 'edges', 'vertices']
-        viewer.appendButton(toggleDiv, val, (e) =>
-          view.cam.show[button] = !view.cam.show[button]; viewer.update view)
-    if view.options.axisButtons
-      toggleDiv.innerHTML += 'View: '
-      axes = [[0,1,0],[0,0,1],[1,0,0]]
-      for val in ['x', 'y', 'z']
-        viewer.appendButton(toggleDiv, val, (e) =>
-          viewer.setCamXY(cam, axes[i], axes[geom.next(i,3)]); viewer.update view)
+    toggleDiv.innerHtml += 'Toggle: '
+    for k, v of view.cam.show
+      t = viewer.appendHTML(toggleDiv, 'input', {type: 'checkbox', value: k})
+      t.setAttribute('checked', '') if v
+      toggleDiv.innerHTML += k + ' '
+  if view.options.axisButtons
+    buttonDiv = viewer.appendHTML(div, 'div')
+    buttonDiv.innerHTML += 'View: '
+    for val, i in ['x', 'y', 'z']
+      viewer.appendHTML(buttonDiv, 'input', {type: 'button', value: val})
   if view.options.examples or view.options.import
     inputDiv = viewer.appendHTML(div, 'div')
     if view.options.examples
@@ -193,18 +207,18 @@ viewer.draw = ({svg: svg, cam: cam, model: model}) ->
     viewBox: "#{pc[0]-cam.r},#{pc[1]-cam.r},#{2*cam.r},#{2*cam.r}"})
   t = "translate(0,0.01)"
   for f, i in model.fs
-    g = viewer.appendSVG(svg, 'g')
-    f.path = viewer.appendSVG(g, 'path')
-    f.text = viewer.appendSVG(g, 'text', {class: 'text', transform: t})
+    f.g = viewer.appendSVG(svg, 'g')
+    f.path = viewer.appendSVG(f.g, 'path')
+    f.text = viewer.appendSVG(f.g, 'text', {class: 'text', transform: t})
     f.text.innerHTML = "f#{f.i}"
     for e, j in f.es when not e.path?
-      e.path = viewer.appendSVG(g, 'path')
+      e.path = viewer.appendSVG(f.g, 'path')
     for v, j in f.vs when not v.path?
-      v.path = viewer.appendSVG(g, 'circle', {class: 'vert'})
-      v.text = viewer.appendSVG(g, 'text',
+      v.g = viewer.appendSVG(f.g, 'g')
+      v.path = viewer.appendSVG(v.g, 'circle', {class: 'vert'})
+      v.text = viewer.appendSVG(v.g, 'text',
         {transform: 'translate(0, 0.01)', class: 'text'})
       v.text.innerHTML = "#{v.i}"
-    model.fs[i].svg = g
   g = viewer.appendSVG(svg,'g',{transform: 'translate(-0.9,-0.9)'})
   for c in ['x','y','z']
     viewer.appendSVG(g,'path', {id: "a#{c}", class: "a#{c} axis"})
@@ -214,23 +228,23 @@ viewer.update = ({model: model, cam: cam, svg: svg}) ->
   (model.fs[i].c2 = viewer.proj(f.c, cam)  for f, i in model.fs)
   viewer.orderFaces(model.fs, cam.z)
   show = {}
-  for attr in ['faceText','faces','edges','vertices']
-    show[attr] = if cam.show[attr] then 'visible' else 'hidden'
+  for k, v of cam.show
+    show[k] = if v then 'visible' else 'hidden'
   for f, i in model.fs when f.path?
     visibleSide = if geom.dot(f.n, cam.z) > 0 then 'top' else 'bot'
-    viewer.setAttrs(f.text, {x: f.c2[0], y: f.c2[1], visibility: show.faceText})
+    viewer.setAttrs(f.text, {
+      x: f.c2[0], y: f.c2[1], visibility: show['Face Text']})
     viewer.setAttrs(f.path, {
       d: viewer.makePath(v.ps for v in f.vs) + 'Z'
-      visibility: show.faces, class: "face #{visibleSide}"})
+      visibility: show['Faces'], class: "face #{visibleSide}"})
     for e, j in f.es
       viewer.setAttrs(e.path, {
         d: viewer.makePath([e.v1.ps, e.v2.ps])
-        visibility: show.edges, class: "edge #{e.as}"})
+        visibility: show['Edges'], class: "edge #{e.as}"})
     for v, j in f.vs
-      viewer.setAttrs(v.path, {
-        cx: v.ps[0], cy: v.ps[1], visibility: show.vertices})
-      viewer.setAttrs(v.text, {
-        x: v.ps[1], y: v.ps[1], visibility: show.vertices})
+      viewer.setAttrs(v.g, {visibility: show['Vertices']})
+      viewer.setAttrs(v.path, {cx: v.ps[0], cy: v.ps[1]})
+      viewer.setAttrs(v.text, {x: v.ps[1], y: v.ps[1]})
   for c, v of {x: [1,0,0], y: [0,1,0], z: [0,0,1]}
     end = geom.plus(geom.mul(v, 0.05), cam.c)
     viewer.setAttrs(document.getElementById("a#{c}"), {

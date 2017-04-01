@@ -22,7 +22,8 @@ rs = [
   {a: [4.5,1], b: [4.5,8]}
 ]
 for r in rs
-  print "geom.rangesDisjoint([#{r.a}],[#{r.b}]) = #{geom.rangesDisjoint(r.a,r.b)}"
+  print "geom.rangesDisjoint([#{r.a}],[#{r.b}]) = " +
+    "#{geom.rangesDisjoint(r.a,r.b)}"
 
 print "\nExample for geom.topologicalSort pending."
 
@@ -52,7 +53,8 @@ for t in [-1,0,1,2,2.5,3]
 
 print "\nTesting geom.linearInterpolate..."
 for t in [0.2..0.8] by 0.2
-  print "geom.linearInterpolate(#{t},a,c) = [#{geom.linearInterpolate(t,vs.a,vs.c)}]"
+  print "geom.linearInterpolate(#{t},a,c) = " +
+    " [#{geom.linearInterpolate(t,vs.a,vs.c)}]"
 
 print "\nTesting Binary Vector Operators"
 for f in ['plus','sub','dot','distsq','dist','dir','ang','cross', 'parallel']
@@ -97,21 +99,27 @@ ts = [
 ]
 print "\nTesting geom.triangleNormal..."
 for t in ts
-  print "geom.triangleNormal([#{t.a}],[#{t.b}],[#{t.c}]) = [#{geom.triangleNormal(t.a,t.b,t.c)}]"
+  print "geom.triangleNormal([#{t.a}],[#{t.b}],[#{t.c}]) = " +
+    "[#{geom.triangleNormal(t.a,t.b,t.c)}]"
 
 print "\nTesting 2D Polygon Operations"
 ts = [
   [[5,9],[2,7],[1,7]]
-  [[3,1],[5,8],[0,3]]
+  [[0,3],[5,8],[3,1]]
   [[4.5,1],[4.5,8],[2,5]]
-  [[5,9],[2,7],[1,7],[0,4]]
-  [[3,1],[5,8],[0,3],[-1,5]]
+  [[1,7],[0,4],[5,9],[2,7]]
+  [[0,3],[-1,5],[3,1],[5,8]]
   [[4.5,1],[4.5,8],[2,5],[3.5, 3]]
 ]
 for f in ['twiceSignedArea', 'polygonOrientation', 'sortByAngle']
   print "\nTesting geom.#{f}..."
   for t in ts
-    print "geom.#{f}([#{"[#{c}]" for c in t}]) \
-      = #{geom[f](t)}"
-
+    old = (c for c in t)
+    result = geom[f](t)
+    if result? and result.length > 1
+      print "geom.#{f}([#{"[#{c}]" for c in old}]) \
+        = [#{"[#{r}]" for r in result}]"
+    else
+      print "geom.#{f}([#{"[#{c}]" for c in old}]) \
+        = #{result}"
  

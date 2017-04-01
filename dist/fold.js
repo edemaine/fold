@@ -1034,6 +1034,7 @@ geom.sepNormal = function(t1, t2, eps) {
     eps = EPS;
   }
   ref = geom.dimension(t1.concat(t2)), d = ref[0], n = ref[1];
+  console.log([d, n]);
   switch (d) {
     case 0:
       return [d, true, n];
@@ -1464,10 +1465,10 @@ viewer.initCam = function() {
     rad: 1,
     last: null,
     show: {
-      faces: true,
-      edges: true,
-      vertices: false,
-      faceText: false
+      'Faces': true,
+      'Edges': true,
+      'Vertices': false,
+      'Face Text': false
     }
   };
 };
@@ -1548,7 +1549,7 @@ DEFAULTS = {
 };
 
 viewer.addViewer = function(div, fold, options) {
-  var axes, inputDiv, len, len1, o, q, ref, ref1, select, toggleDiv, val, view;
+  var buttonDiv, i, inputDiv, k, len, o, ref, ref1, select, t, toggleDiv, v, val, view;
   if (fold == null) {
     fold = null;
   }
@@ -1561,35 +1562,59 @@ viewer.addViewer = function(div, fold, options) {
     options: DEFAULTS
   };
   viewer.setAttrs(view.options, options);
-  if (view.options.viewButtons || view.options.axisButtons) {
+  document.addEventListener('click', (function(_this) {
+    return function(e) {
+      if (e.target.type === 'checkbox') {
+        if (e.target.hasAttribute('checked')) {
+          e.target.removeAttribute('checked');
+        } else {
+          e.target.setAttribute('checked', '');
+        }
+        view.cam.show[e.target.value] = e.target.hasAttribute('checked');
+        viewer.update(view);
+      }
+      if (e.target.type === 'button') {
+        switch (e.target.value) {
+          case 'x':
+            viewer.setCamXY(view.cam, [0, 1, 0], [0, 0, 1]);
+            break;
+          case 'y':
+            viewer.setCamXY(view.cam, [0, 0, 1], [1, 0, 0]);
+            break;
+          case 'z':
+            viewer.setCamXY(view.cam, [1, 0, 0], [0, 1, 0]);
+        }
+        return viewer.update(view);
+      }
+    };
+  })(this));
+  if (view.options.viewButtons) {
     toggleDiv = viewer.appendHTML(div, 'div');
     toggleDiv.innerHtml = '';
-    if (view.options.viewButtons) {
-      toggleDiv.innerHtml += 'Toggle: ';
-      ref = ['facesText', 'faces', 'edges', 'vertices'];
-      for (o = 0, len = ref.length; o < len; o++) {
-        val = ref[o];
-        viewer.appendButton(toggleDiv, val, (function(_this) {
-          return function(e) {
-            view.cam.show[button] = !view.cam.show[button];
-            return viewer.update(view);
-          };
-        })(this));
+    toggleDiv.innerHtml += 'Toggle: ';
+    ref = view.cam.show;
+    for (k in ref) {
+      v = ref[k];
+      t = viewer.appendHTML(toggleDiv, 'input', {
+        type: 'checkbox',
+        value: k
+      });
+      if (v) {
+        t.setAttribute('checked', '');
       }
+      toggleDiv.innerHTML += k + ' ';
     }
-    if (view.options.axisButtons) {
-      toggleDiv.innerHTML += 'View: ';
-      axes = [[0, 1, 0], [0, 0, 1], [1, 0, 0]];
-      ref1 = ['x', 'y', 'z'];
-      for (q = 0, len1 = ref1.length; q < len1; q++) {
-        val = ref1[q];
-        viewer.appendButton(toggleDiv, val, (function(_this) {
-          return function(e) {
-            viewer.setCamXY(cam, axes[i], axes[geom.next(i, 3)]);
-            return viewer.update(view);
-          };
-        })(this));
-      }
+  }
+  if (view.options.axisButtons) {
+    buttonDiv = viewer.appendHTML(div, 'div');
+    buttonDiv.innerHTML += 'View: ';
+    ref1 = ['x', 'y', 'z'];
+    for (i = o = 0, len = ref1.length; o < len; i = ++o) {
+      val = ref1[i];
+      viewer.appendHTML(buttonDiv, 'input', {
+        type: 'button',
+        value: val
+      });
     }
   }
   if (view.options.examples || view.options["import"]) {
@@ -1818,7 +1843,7 @@ viewer.orderFaces = function(faces, direction) {
       if (!(j > i)) {
         continue;
       }
-      f1_above = viewer.faceAbove(f1, f2, direction);
+      f1_above = viewer.faceAbove(f1, f2, geom.mul(direction, -1));
       if (f1_above != null) {
         ref = f1_above ? [f1, f2] : [f2, f1], p = ref[0], c = ref[1];
         p.children = p.children.concat([c]);
@@ -1885,9 +1910,9 @@ viewer.draw = function(arg) {
   ref = model.fs;
   for (i = o = 0, len = ref.length; o < len; i = ++o) {
     f = ref[i];
-    g = viewer.appendSVG(svg, 'g');
-    f.path = viewer.appendSVG(g, 'path');
-    f.text = viewer.appendSVG(g, 'text', {
+    f.g = viewer.appendSVG(svg, 'g');
+    f.path = viewer.appendSVG(f.g, 'path');
+    f.text = viewer.appendSVG(f.g, 'text', {
       "class": 'text',
       transform: t
     });
@@ -1896,7 +1921,7 @@ viewer.draw = function(arg) {
     for (j = q = 0, len1 = ref1.length; q < len1; j = ++q) {
       e = ref1[j];
       if (e.path == null) {
-        e.path = viewer.appendSVG(g, 'path');
+        e.path = viewer.appendSVG(f.g, 'path');
       }
     }
     ref2 = f.vs;
@@ -1905,16 +1930,16 @@ viewer.draw = function(arg) {
       if (!(v.path == null)) {
         continue;
       }
-      v.path = viewer.appendSVG(g, 'circle', {
+      v.g = viewer.appendSVG(f.g, 'g');
+      v.path = viewer.appendSVG(v.g, 'circle', {
         "class": 'vert'
       });
-      v.text = viewer.appendSVG(g, 'text', {
+      v.text = viewer.appendSVG(v.g, 'text', {
         transform: 'translate(0, 0.01)',
         "class": 'text'
       });
       v.text.innerHTML = "" + v.i;
     }
-    model.fs[i].svg = g;
   }
   g = viewer.appendSVG(svg, 'g', {
     transform: 'translate(-0.9,-0.9)'
@@ -1932,7 +1957,7 @@ viewer.draw = function(arg) {
 };
 
 viewer.update = function(arg) {
-  var attr, c, cam, e, end, f, i, i1, j, j1, len, len1, len2, len3, len4, len5, model, o, p, q, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, results, show, svg, v, visibleSide, z;
+  var c, cam, e, end, f, i, i1, j, k, len, len1, len2, len3, len4, model, o, p, q, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, results, show, svg, v, visibleSide, z;
   model = arg.model, cam = arg.cam, svg = arg.svg;
   ref = model.vs;
   for (i = o = 0, len = ref.length; o < len; i = ++o) {
@@ -1946,13 +1971,13 @@ viewer.update = function(arg) {
   }
   viewer.orderFaces(model.fs, cam.z);
   show = {};
-  ref2 = ['faceText', 'faces', 'edges', 'vertices'];
-  for (r = 0, len2 = ref2.length; r < len2; r++) {
-    attr = ref2[r];
-    show[attr] = cam.show[attr] ? 'visible' : 'hidden';
+  ref2 = cam.show;
+  for (k in ref2) {
+    v = ref2[k];
+    show[k] = v ? 'visible' : 'hidden';
   }
   ref3 = model.fs;
-  for (i = z = 0, len3 = ref3.length; z < len3; i = ++z) {
+  for (i = r = 0, len2 = ref3.length; r < len2; i = ++r) {
     f = ref3[i];
     if (!(f.path != null)) {
       continue;
@@ -1961,43 +1986,44 @@ viewer.update = function(arg) {
     viewer.setAttrs(f.text, {
       x: f.c2[0],
       y: f.c2[1],
-      visibility: show.faceText
+      visibility: show['Face Text']
     });
     viewer.setAttrs(f.path, {
       d: viewer.makePath((function() {
-        var i1, len4, ref4, results;
+        var len3, ref4, results, z;
         ref4 = f.vs;
         results = [];
-        for (i1 = 0, len4 = ref4.length; i1 < len4; i1++) {
-          v = ref4[i1];
+        for (z = 0, len3 = ref4.length; z < len3; z++) {
+          v = ref4[z];
           results.push(v.ps);
         }
         return results;
       })()) + 'Z',
-      visibility: show.faces,
+      visibility: show['Faces'],
       "class": "face " + visibleSide
     });
     ref4 = f.es;
-    for (j = i1 = 0, len4 = ref4.length; i1 < len4; j = ++i1) {
+    for (j = z = 0, len3 = ref4.length; z < len3; j = ++z) {
       e = ref4[j];
       viewer.setAttrs(e.path, {
         d: viewer.makePath([e.v1.ps, e.v2.ps]),
-        visibility: show.edges,
+        visibility: show['Edges'],
         "class": "edge " + e.as
       });
     }
     ref5 = f.vs;
-    for (j = j1 = 0, len5 = ref5.length; j1 < len5; j = ++j1) {
+    for (j = i1 = 0, len4 = ref5.length; i1 < len4; j = ++i1) {
       v = ref5[j];
+      viewer.setAttrs(v.g, {
+        visibility: show['Vertices']
+      });
       viewer.setAttrs(v.path, {
         cx: v.ps[0],
-        cy: v.ps[1],
-        visibility: show.vertices
+        cy: v.ps[1]
       });
       viewer.setAttrs(v.text, {
         x: v.ps[1],
-        y: v.ps[1],
-        visibility: show.vertices
+        y: v.ps[1]
       });
     }
   }
@@ -2012,11 +2038,11 @@ viewer.update = function(arg) {
     end = geom.plus(geom.mul(v, 0.05), cam.c);
     results.push(viewer.setAttrs(document.getElementById("a" + c), {
       d: viewer.makePath((function() {
-        var k1, len6, ref7, results1;
+        var j1, len5, ref7, results1;
         ref7 = [cam.c, end];
         results1 = [];
-        for (k1 = 0, len6 = ref7.length; k1 < len6; k1++) {
-          p = ref7[k1];
+        for (j1 = 0, len5 = ref7.length; j1 < len5; j1++) {
+          p = ref7[j1];
           results1.push(viewer.proj(p, cam));
         }
         return results1;
