@@ -1472,10 +1472,10 @@ viewer.processInput = function(text, view) {
   viewer.addRotation(view);
   viewer.draw(view);
   viewer.update(view);
-  if (view.options.properties) {
+  if (view.opts.properties) {
     view.properties.innerHTML = '';
     for (k in view.fold) {
-      if (view.options.properties) {
+      if (view.opts.properties) {
         viewer.appendHTML(view.properties, 'option', {
           value: k
         }).innerHTML = k;
@@ -1525,20 +1525,20 @@ DEFAULTS = {
   properties: true
 };
 
-viewer.addViewer = function(div, options) {
+viewer.addViewer = function(div, opts) {
   var buttonDiv, i, inputDiv, k, l, len, ref, ref1, select, t, toggleDiv, v, val, view;
-  if (options == null) {
-    options = {};
+  if (opts == null) {
+    opts = {};
   }
   view = {
     cam: viewer.initCam(),
-    options: DEFAULTS
+    opts: DEFAULTS
   };
-  for (k in options) {
-    v = options[k];
-    view.options[k] = v;
+  for (k in opts) {
+    v = opts[k];
+    view.opts[k] = v;
   }
-  if (view.options.viewButtons) {
+  if (view.opts.viewButtons) {
     toggleDiv = viewer.appendHTML(div, 'div');
     toggleDiv.innerHtml = '';
     toggleDiv.innerHtml += 'Toggle: ';
@@ -1555,7 +1555,7 @@ viewer.addViewer = function(div, options) {
       toggleDiv.innerHTML += k + ' ';
     }
   }
-  if (view.options.axisButtons) {
+  if (view.opts.axisButtons) {
     buttonDiv = viewer.appendHTML(div, 'div');
     buttonDiv.innerHTML += 'View: ';
     ref1 = ['x', 'y', 'z'];
@@ -1567,16 +1567,16 @@ viewer.addViewer = function(div, options) {
       });
     }
   }
-  if (view.options.properties) {
+  if (view.opts.properties) {
     buttonDiv.innerHTML += ' Property:';
     view.properties = viewer.appendHTML(buttonDiv, 'select');
     view.data = viewer.appendHTML(buttonDiv, 'div', {
       style: 'width: 300; padding: 10px; overflow: auto; border: 1px solid black; display: inline-block; white-space: nowrap;'
     });
   }
-  if (view.options.examples || view.options["import"]) {
+  if (view.opts.examples || view.opts["import"]) {
     inputDiv = viewer.appendHTML(div, 'div');
-    if (view.options.examples) {
+    if (view.opts.examples) {
       inputDiv.innerHTML = 'Example: ';
       select = viewer.appendHTML(inputDiv, 'select');
       viewer.appendHTML(select, 'option', {
@@ -1587,14 +1587,14 @@ viewer.addViewer = function(div, options) {
       }).innerHTML = 'Flexicube Unit';
       viewer.importURL(select.value, view);
     }
-    if (view.options["import"]) {
+    if (view.opts["import"]) {
       inputDiv.innerHTML += ' Import: ';
       viewer.appendHTML(inputDiv, 'input', {
         type: 'file'
       });
     }
   }
-  document.onclick = (function(_this) {
+  div.onclick = (function(_this) {
     return function(e) {
       if (e.target.type === 'checkbox') {
         if (e.target.hasAttribute('checked')) {
@@ -1620,7 +1620,7 @@ viewer.addViewer = function(div, options) {
       }
     };
   })(this);
-  document.onchange = (function(_this) {
+  div.onchange = (function(_this) {
     return function(e) {
       if (e.target.type === 'file') {
         viewer.importFile(e.target.files[0], view);

@@ -39,9 +39,9 @@ viewer.processInput = (text, view) ->
   viewer.addRotation(view)
   viewer.draw(view)
   viewer.update(view)
-  if view.options.properties
+  if view.opts.properties
     view.properties.innerHTML = ''
-    for k of view.fold when view.options.properties
+    for k of view.fold when view.opts.properties
       viewer.appendHTML(view.properties, 'option', {value: k})
         .innerHTML = k
     viewer.updateProperties(view)
@@ -65,10 +65,10 @@ DEFAULTS = {
   viewButtons: true, axisButtons: true, attrViewer: true
   examples: true, import: true, export: true, properties: true}
 
-viewer.addViewer = (div, options = {}) ->
-  view = {cam: viewer.initCam(), options: DEFAULTS}
-  view.options[k] = v for k, v of options
-  if view.options.viewButtons
+viewer.addViewer = (div, opts = {}) ->
+  view = {cam: viewer.initCam(), opts: DEFAULTS}
+  view.opts[k] = v for k, v of opts
+  if view.opts.viewButtons
     toggleDiv = viewer.appendHTML(div, 'div')
     toggleDiv.innerHtml = ''
     toggleDiv.innerHtml += 'Toggle: '
@@ -76,20 +76,20 @@ viewer.addViewer = (div, options = {}) ->
       t = viewer.appendHTML(toggleDiv, 'input', {type: 'checkbox', value: k})
       t.setAttribute('checked', '') if v
       toggleDiv.innerHTML += k + ' '
-  if view.options.axisButtons
+  if view.opts.axisButtons
     buttonDiv = viewer.appendHTML(div, 'div')
     buttonDiv.innerHTML += 'View: '
     for val, i in ['x', 'y', 'z']
       viewer.appendHTML(buttonDiv, 'input', {type: 'button', value: val})
-  if view.options.properties
+  if view.opts.properties
     buttonDiv.innerHTML += ' Property:'
     view.properties = viewer.appendHTML(buttonDiv, 'select')
     view.data = viewer.appendHTML(buttonDiv, 'div', {
       style: 'width: 300; padding: 10px; overflow: auto; \
         border: 1px solid black; display: inline-block; white-space: nowrap;'})
-  if view.options.examples or view.options.import
+  if view.opts.examples or view.opts.import
     inputDiv = viewer.appendHTML(div, 'div')
-    if view.options.examples
+    if view.opts.examples
       inputDiv.innerHTML = 'Example: '
       select = viewer.appendHTML(inputDiv, 'select')
       viewer.appendHTML(select, 'option', {
@@ -97,10 +97,10 @@ viewer.addViewer = (div, options = {}) ->
       viewer.appendHTML(select, 'option', {
         value: '../examples/box.fold'}).innerHTML = 'Flexicube Unit'
       viewer.importURL(select.value, view)
-    if view.options.import
+    if view.opts.import
       inputDiv.innerHTML += ' Import: '
       viewer.appendHTML(inputDiv, 'input', {type: 'file'})
-  document.onclick = (e) =>
+  div.onclick = (e) =>
     if e.target.type is 'checkbox'
       if e.target.hasAttribute('checked')
         e.target.removeAttribute('checked')
@@ -114,7 +114,7 @@ viewer.addViewer = (div, options = {}) ->
         when 'y' then viewer.setCamXY(view.cam, [0,0,1], [1,0,0])
         when 'z' then viewer.setCamXY(view.cam, [1,0,0], [0,1,0])
       viewer.update view
-  document.onchange = (e) =>
+  div.onchange = (e) =>
     if e.target.type is 'file'
       viewer.importFile(e.target.files[0], view)
     if e.target.type is 'select-one'
