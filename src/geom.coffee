@@ -313,18 +313,3 @@ geom.quadSplit = (u, p, d, t) ->
     throw new Error "STOP! Trying to split expansive quad."
   return geom.mul(u, (d*d - geom.magsq(p))/2/(d*Math.cos(t) - geom.dot(u, p)))
 
-
-
-#points = [
-#  [1,0]
-#  [1,1]
-#  [0,1]
-#  [-1,1]
-#  [-1,0]
-#  [-1,-1]
-#  [0,-1]
-#  [1,-1]
-#]
-#sortByAngle points
-#console.log points
-
