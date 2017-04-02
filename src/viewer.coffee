@@ -143,10 +143,13 @@ viewer.addRotation = (view) ->
   for s in ['contextmenu','selectstart','dragstart']
     svg["on#{s}"] = (e) -> e.preventDefault()
   svg.onmousedown = svg.ontouchstart = (e) =>
+    e.preventDefault()
     cam.last = [e.clientX, e.clientY]
   svg.onmousemove = svg.touchmove = (e) =>
+    e.preventDefault()
     viewer.rotateCam([e.clientX, e.clientY], view)
   svg.onmouseup = svg.touchend = (e) =>
+    e.preventDefault()
     viewer.rotateCam([e.clientX, e.clientY], view); cam.last = null
 
 viewer.rotateCam = (p, view) ->
