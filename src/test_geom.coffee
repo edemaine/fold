@@ -122,4 +122,20 @@ for f in ['twiceSignedArea', 'polygonOrientation', 'sortByAngle']
     else
       print "geom.#{f}([#{"[#{c}]" for c in old}]) \
         = #{result}"
- 
+
+print '\nSkipping segmentsCross(), parametricLineIntersect(), \
+  segmentLineIntersect(), lineIntersectLine(), and pointStrictlyInSegment()'
+
+
+print "\nTesting General Dimension Point Operations"
+
+ps1 = [[0,0,0],[0,0,1],[1,0,0],[0,1,0],[1,1,0],[1,0,1],[0,1,1],[1,1,1]]
+ps2 = [[0,0,0],[1,1,0],[0,1,1]]
+print "ps1 = [#{ps1}]"
+print "ps2 = [#{ps2}]"
+print "geom.centroid(ps1) = [#{geom.centroid(ps1)}]"
+print "geom.centroid(ps2) = [#{geom.centroid(ps2)}]"
+
+print "geom.basis(ps1) = #{geom.basis(ps1).length}: [#{geom.basis(ps1)}]"
+print "geom.basis(ps2) = #{geom.basis(ps2).length}: [#{geom.basis(ps2)}]"
+

@@ -31,7 +31,7 @@ geom.topologicalSort = (vs) ->
   ([v.visited, v.parent] = [false, null] for v in vs)
   list = []
   for v in vs when (not v.visited)
-    list = geom.visit(v,list)
+    list = geom.visit(v, list)
   return list
 
 geom.visit = (v, list) ->
@@ -39,7 +39,7 @@ geom.visit = (v, list) ->
   for u in v.children when not u.visited
     u.parent = v
     list = geom.visit(u,list)
-  return list.concat([v.i])
+  return list.concat([v])
 
 ##
 ## Vector operations
@@ -110,10 +110,12 @@ geom.ang = (a, b) ->
   Math.acos geom.dot(ua, ub)
 
 geom.cross = (a, b) ->
-  ## Returns the cross product of two 3D vectors a, b.
-  (for i in [0,1,2]
-    [next, next2] = (geom.next(i, 3, j) for j in [1, 2])
-    a[next] * b[next2] - a[next2] * b[next])
+  ## Returns the cross product of two 2D or 3D vectors a, b.
+  if a.length == b.length == 2
+    return (a[0] * b[1] - a[1] * b[0])
+  if a.length == b.length == 3
+    return (a[i] * b[j] - a[j] * b[i] for [i, j] in [[1, 2], [2, 0], [0, 1]])
+  return null
 
 geom.parallel = (a, b, eps = EPS) ->
   ## Return if vectors are parallel, up to accuracy eps
@@ -128,7 +130,7 @@ geom.rotate = (a, u, t) ->
   [ct, st] = [Math.cos(t), Math.sin(t)]
   (for p in [[0,1,2],[1,2,0],[2,0,1]]
     (for q, i in [ct, -st * u[p[2]], st * u[p[1]]]
-      a[p[i]] * (a[p[0]] * a[p[i]] * (1 - ct) + q)).reduce(geom.sum))
+      a[p[i]] * (u[p[0]] * u[p[i]] * (1 - ct) + q)).reduce(geom.sum))
 
 ##
 ## Polygon Operations
@@ -152,6 +154,12 @@ geom.triangleNormal = (a, b, c) ->
   ## Returns the right handed normal unit vector to triangle a, b, c in 3D. If
   ## the triangle is degenerate, returns null.
   geom.unit geom.cross(geom.sub(b, a), geom.sub(c, b))
+
+geom.polygonNormal = (points, eps = EPS) ->
+  ## Returns the right handed normal unit vector to the polygon defined by
+  ## points in 3D. Assumes the points are planar.
+  return geom.unit((for p, i in points
+    geom.cross(p, points[geom.next(i, points.length)])).reduce(geom.plus))
 
 geom.twiceSignedArea = (points) ->
   ## Returns twice signed area of polygon defined by input points.
@@ -226,41 +234,56 @@ geom.centroid = (points) ->
   ## Returns the centroid of a set of points having the same dimension.
   geom.mul(points.reduce(geom.plus), 1.0 / points.length)
 
-geom.dimension = (ps, eps = EPS) ->
+geom.basis = (ps, eps = EPS) ->
+  ## Returns a basis of a 3D point set.
+  ##  - [] if the points are all the same point (0 dimensional)
+  ##  - [x] if the points lie on a line with basis direction x
+  ##  - [x,y] if the points lie in a plane with basis directions x and y
+  ##  - [x,y,z] if the points span three dimensions
+  return null if (p.length != 3 for p in ps).reduce(geom.all)
   ds = (geom.dir(p,ps[0]) for p in ps when geom.distsq(p,ps[0]) > eps)
-  return [0,ps[0]] if ds.length is 0
-  return [1,ds[0]] if (geom.parallel(d,ds[0]) for d in ds).reduce(geom.all)
-  ns = (geom.unit(geom.cross(d,ds[0])) for d in ds when not geom.parallel(d,ds[0]))
-  return [2,ns[0]] if (geom.parallel(n,ns[0]) for n in ns).reduce(geom.all)
-  return [3, null]
+  return [] if ds.length is 0
+  x = ds[0]
+  return [x] if (geom.parallel(d, x, eps) for d in ds).reduce(geom.all)
+  ns = (geom.unit(geom.cross(d, x)) for d in ds)
+  ns = (n for n in ns when n?)
+  z = ns[0]
+  y = geom.cross(z, x)
+  return [x, y] if (geom.parallel(n, z, eps) for n in ns).reduce(geom.all)
+  return [x, y, z]
 
 geom.above = (ps, qs, n, eps = EPS) ->
-  [pn,qn] = ((geom.dot(v,n) for v in vs) for vs in [ps,qs])
-  (qn.reduce(geom.max) - pn.reduce(geom.min) < eps)
+  [pn,qn] = ((geom.dot(v, n) for v in vs) for vs in [ps,qs])
+  return  1 if qn.reduce(geom.max) - pn.reduce(geom.min) < eps
+  return -1 if pn.reduce(geom.max) - qn.reduce(geom.min) < eps
+  return 0
 
-geom.sepNormal = (t1, t2, eps = EPS) ->
-  [d,n] = geom.dimension(t1.concat(t2))
-  console.log [d, n]
-  switch d
-    when 0 then return [d, true, n]
-    when 1 then return [d, true, n]
-    when 2
-      for t in [t1, t2]
-        for p, i in t
-          m = geom.unit(geom.cross(geom.unit(geom.sub(t[geom.next(i,3)],p)),n))
-          return [d, true, m]               if geom.above(t1, t2, m, eps)
-          return [d, true, geom.mul(m, -1)] if geom.above(t2, t1, m, eps)
-    when 3
-      for [x1, x2] in [[t1, t2], [t2, t1]]
-        for p, i in x1
-          for q in x2
-            [e1, e2] = [geom.sub(x1[geom.next(i, 3)], p), geom.sub(q, p)]
-            if geom.magsq(e1) > eps and geom.magsq(e2) > eps and
-                not geom.parallel(e1, e2)
-              m = geom.unit(geom.cross(e1, e2))
-              return [d, true, m]               if geom.above(t1, t2, m, eps)
-              return [d, true, geom.mul(m, -1)] if geom.above(t2, t1, m, eps)
-  return [d, false, n]
+geom.separatingDirection2D = (t1, t2, n, eps = EPS) ->
+  ## If points are contained in a common plane with normal n and a separating 
+  ## direction exists, a direction perpendicular to some pair of points from 
+  ## the same set is also a separating direction.
+  for t in [t1, t2]
+    for p, i in t
+      for q, j in t when i < j
+        m = geom.unit(geom.cross(geom.sub(p, q), n))
+        if m?
+          sign = geom.above(t1, t2, m, eps)
+          return geom.mul(m, sign) if sign isnt 0
+  return null
+
+geom.separatingDirection3D = (t1, t2, eps = EPS) ->
+  ## If points are not contained in a common plane and a separating direction
+  ## exists, a plane spanning two points from one set and one point from the
+  ## other set is a separating plane, with its normal a separating direction. 
+  for [x1, x2] in [[t1, t2], [t2, t1]]
+    for p in x1
+      for q1, i in x2
+        for q2, j in x2 when i < j
+          m = geom.unit(geom.cross(geom.sub(p, q1), geom.sub(p, q2)))
+          if m?
+            sign = geom.above(t1, t2, m, eps)
+            return geom.mul(m, sign) if sign isnt 0
+  return null
 
 ##
 ## Hole Filling Methods

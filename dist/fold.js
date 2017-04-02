@@ -670,7 +670,7 @@ geom.visit = function(v, list) {
     u.parent = v;
     list = geom.visit(u, list);
   }
-  return list.concat([v.i]);
+  return list.concat([v]);
 };
 
 geom.magsq = function(a) {
@@ -775,24 +775,23 @@ geom.ang = function(a, b) {
 };
 
 geom.cross = function(a, b) {
-  var i, j, k, len, next, next2, ref, ref1, results;
-  ref = [0, 1, 2];
-  results = [];
-  for (k = 0, len = ref.length; k < len; k++) {
-    i = ref[k];
-    ref1 = (function() {
-      var l, len1, ref1, results1;
-      ref1 = [1, 2];
-      results1 = [];
-      for (l = 0, len1 = ref1.length; l < len1; l++) {
-        j = ref1[l];
-        results1.push(geom.next(i, 3, j));
-      }
-      return results1;
-    })(), next = ref1[0], next2 = ref1[1];
-    results.push(a[next] * b[next2] - a[next2] * b[next]);
+  var i, j, ref, ref1;
+  if ((a.length === (ref = b.length) && ref === 2)) {
+    return a[0] * b[1] - a[1] * b[0];
   }
-  return results;
+  if ((a.length === (ref1 = b.length) && ref1 === 3)) {
+    return (function() {
+      var k, len, ref2, ref3, results;
+      ref2 = [[1, 2], [2, 0], [0, 1]];
+      results = [];
+      for (k = 0, len = ref2.length; k < len; k++) {
+        ref3 = ref2[k], i = ref3[0], j = ref3[1];
+        results.push(a[i] * b[j] - a[j] * b[i]);
+      }
+      return results;
+    })();
+  }
+  return null;
 };
 
 geom.parallel = function(a, b, eps) {
@@ -833,7 +832,7 @@ geom.rotate = function(a, u, t) {
       results1 = [];
       for (i = l = 0, len1 = ref2.length; l < len1; i = ++l) {
         q = ref2[i];
-        results1.push(a[p[i]] * (a[p[0]] * a[p[i]] * (1 - ct) + q));
+        results1.push(a[p[i]] * (u[p[0]] * u[p[i]] * (1 - ct) + q));
       }
       return results1;
     })()).reduce(geom.sum));
@@ -853,6 +852,22 @@ geom.turnAngle = function(a, b, c) {
 
 geom.triangleNormal = function(a, b, c) {
   return geom.unit(geom.cross(geom.sub(b, a), geom.sub(c, b)));
+};
+
+geom.polygonNormal = function(points, eps) {
+  var i, p;
+  if (eps == null) {
+    eps = EPS;
+  }
+  return geom.unit(((function() {
+    var k, len, results;
+    results = [];
+    for (i = k = 0, len = points.length; k < len; i = ++k) {
+      p = points[i];
+      results.push(geom.cross(p, points[geom.next(i, points.length)]));
+    }
+    return results;
+  })()).reduce(geom.plus));
 };
 
 geom.twiceSignedArea = function(points) {
@@ -947,10 +962,21 @@ geom.centroid = function(points) {
   return geom.mul(points.reduce(geom.plus), 1.0 / points.length);
 };
 
-geom.dimension = function(ps, eps) {
-  var d, ds, n, ns, p;
+geom.basis = function(ps, eps) {
+  var d, ds, n, ns, p, x, y, z;
   if (eps == null) {
     eps = EPS;
+  }
+  if (((function() {
+    var k, len, results;
+    results = [];
+    for (k = 0, len = ps.length; k < len; k++) {
+      p = ps[k];
+      results.push(p.length !== 3);
+    }
+    return results;
+  })()).reduce(geom.all)) {
+    return null;
   }
   ds = (function() {
     var k, len, results;
@@ -964,42 +990,54 @@ geom.dimension = function(ps, eps) {
     return results;
   })();
   if (ds.length === 0) {
-    return [0, ps[0]];
+    return [];
   }
+  x = ds[0];
   if (((function() {
     var k, len, results;
     results = [];
     for (k = 0, len = ds.length; k < len; k++) {
       d = ds[k];
-      results.push(geom.parallel(d, ds[0]));
+      results.push(geom.parallel(d, x, eps));
     }
     return results;
   })()).reduce(geom.all)) {
-    return [1, ds[0]];
+    return [x];
   }
   ns = (function() {
     var k, len, results;
     results = [];
     for (k = 0, len = ds.length; k < len; k++) {
       d = ds[k];
-      if (!geom.parallel(d, ds[0])) {
-        results.push(geom.unit(geom.cross(d, ds[0])));
+      results.push(geom.unit(geom.cross(d, x)));
+    }
+    return results;
+  })();
+  ns = (function() {
+    var k, len, results;
+    results = [];
+    for (k = 0, len = ns.length; k < len; k++) {
+      n = ns[k];
+      if (n != null) {
+        results.push(n);
       }
     }
     return results;
   })();
+  z = ns[0];
+  y = geom.cross(z, x);
   if (((function() {
     var k, len, results;
     results = [];
     for (k = 0, len = ns.length; k < len; k++) {
       n = ns[k];
-      results.push(geom.parallel(n, ns[0]));
+      results.push(geom.parallel(n, z, eps));
     }
     return results;
   })()).reduce(geom.all)) {
-    return [2, ns[0]];
+    return [x, y];
   }
-  return [3, null];
+  return [x, y, z];
 };
 
 geom.above = function(ps, qs, n, eps) {
@@ -1025,60 +1063,72 @@ geom.above = function(ps, qs, n, eps) {
     }
     return results;
   })(), pn = ref[0], qn = ref[1];
-  return qn.reduce(geom.max) - pn.reduce(geom.min) < eps;
+  if (qn.reduce(geom.max) - pn.reduce(geom.min) < eps) {
+    return 1;
+  }
+  if (pn.reduce(geom.max) - qn.reduce(geom.min) < eps) {
+    return -1;
+  }
+  return 0;
 };
 
-geom.sepNormal = function(t1, t2, eps) {
-  var d, e1, e2, i, k, l, len, len1, len2, len3, len4, m, n, o, p, q, r, ref, ref1, ref2, ref3, ref4, t, w, x1, x2;
+geom.separatingDirection2D = function(t1, t2, n, eps) {
+  var i, j, k, l, len, len1, len2, m, o, p, q, ref, sign, t;
   if (eps == null) {
     eps = EPS;
   }
-  ref = geom.dimension(t1.concat(t2)), d = ref[0], n = ref[1];
-  console.log([d, n]);
-  switch (d) {
-    case 0:
-      return [d, true, n];
-    case 1:
-      return [d, true, n];
-    case 2:
-      ref1 = [t1, t2];
-      for (k = 0, len = ref1.length; k < len; k++) {
-        t = ref1[k];
-        for (i = l = 0, len1 = t.length; l < len1; i = ++l) {
-          p = t[i];
-          m = geom.unit(geom.cross(geom.unit(geom.sub(t[geom.next(i, 3)], p)), n));
-          if (geom.above(t1, t2, m, eps)) {
-            return [d, true, m];
-          }
-          if (geom.above(t2, t1, m, eps)) {
-            return [d, true, geom.mul(m, -1)];
+  ref = [t1, t2];
+  for (k = 0, len = ref.length; k < len; k++) {
+    t = ref[k];
+    for (i = l = 0, len1 = t.length; l < len1; i = ++l) {
+      p = t[i];
+      for (j = o = 0, len2 = t.length; o < len2; j = ++o) {
+        q = t[j];
+        if (!(i < j)) {
+          continue;
+        }
+        m = geom.unit(geom.cross(geom.sub(p, q), n));
+        if (m != null) {
+          sign = geom.above(t1, t2, m, eps);
+          if (sign !== 0) {
+            return geom.mul(m, sign);
           }
         }
       }
-      break;
-    case 3:
-      ref2 = [[t1, t2], [t2, t1]];
-      for (o = 0, len2 = ref2.length; o < len2; o++) {
-        ref3 = ref2[o], x1 = ref3[0], x2 = ref3[1];
-        for (i = r = 0, len3 = x1.length; r < len3; i = ++r) {
-          p = x1[i];
-          for (w = 0, len4 = x2.length; w < len4; w++) {
-            q = x2[w];
-            ref4 = [geom.sub(x1[geom.next(i, 3)], p), geom.sub(q, p)], e1 = ref4[0], e2 = ref4[1];
-            if (geom.magsq(e1) > eps && geom.magsq(e2) > eps && !geom.parallel(e1, e2)) {
-              m = geom.unit(geom.cross(e1, e2));
-              if (geom.above(t1, t2, m, eps)) {
-                return [d, true, m];
-              }
-              if (geom.above(t2, t1, m, eps)) {
-                return [d, true, geom.mul(m, -1)];
-              }
+    }
+  }
+  return null;
+};
+
+geom.separatingDirection3D = function(t1, t2, eps) {
+  var i, j, k, l, len, len1, len2, len3, m, o, p, q1, q2, r, ref, ref1, sign, x1, x2;
+  if (eps == null) {
+    eps = EPS;
+  }
+  ref = [[t1, t2], [t2, t1]];
+  for (k = 0, len = ref.length; k < len; k++) {
+    ref1 = ref[k], x1 = ref1[0], x2 = ref1[1];
+    for (l = 0, len1 = x1.length; l < len1; l++) {
+      p = x1[l];
+      for (i = o = 0, len2 = x2.length; o < len2; i = ++o) {
+        q1 = x2[i];
+        for (j = r = 0, len3 = x2.length; r < len3; j = ++r) {
+          q2 = x2[j];
+          if (!(i < j)) {
+            continue;
+          }
+          m = geom.unit(geom.cross(geom.sub(p, q1), geom.sub(p, q2)));
+          if (m != null) {
+            sign = geom.above(t1, t2, m, eps);
+            if (sign !== 0) {
+              return geom.mul(m, sign);
             }
           }
         }
       }
+    }
   }
-  return [d, false, n];
+  return null;
 };
 
 geom.circleCross = function(d, r1, r2) {
@@ -1370,7 +1420,8 @@ STYLES = {
   B: "stroke: black;",
   V: "stroke: blue;",
   M: "stroke: red;",
-  U: "stroke: white",
+  U: "stroke: white;",
+  F: "stroke: gray;",
   ax: "stroke: blue;",
   ay: "stroke: red;",
   az: "stroke: green;"
@@ -1378,41 +1429,6 @@ STYLES = {
 
 
 /* UTILITIES */
-
-viewer.processInput = function(text, view) {
-  view.fold = JSON.parse(text);
-  view.model = viewer.makeModel(view.fold);
-  viewer.addRotation(view);
-  viewer.draw(view);
-  return viewer.update(view);
-};
-
-viewer.importURL = function(url, view) {
-  var xhr;
-  xhr = new XMLHttpRequest();
-  xhr.onload = (function(_this) {
-    return function(e) {
-      return viewer.processInput(e.target.responseText, view);
-    };
-  })(this);
-  xhr.open('GET', url);
-  return xhr.send();
-};
-
-viewer.getId = function(id) {
-  return document.getElementById(id);
-};
-
-viewer.importFile = function(file, view) {
-  var file_reader;
-  file_reader = new FileReader();
-  file_reader.onload = (function(_this) {
-    return function(e) {
-      return viewer.processInput(e.target.result, view);
-    };
-  })(this);
-  return file_reader.readAsText(file);
-};
 
 viewer.setAttrs = function(el, attrs) {
   var k, v;
@@ -1433,19 +1449,12 @@ viewer.appendSVG = function(el, tag, attrs) {
   return el.appendChild(viewer.setAttrs(document.createElementNS(SVGNS, tag), attrs));
 };
 
-viewer.appendButton = function(el, value, callback) {
-  return viewer.appendHTML(el, 'input', {
-    type: 'button',
-    value: value
-  }).addEventListener('click', callback);
-};
-
 viewer.makePath = function(coords) {
   var c, i;
   return ((function() {
-    var len, o, results;
+    var l, len, results;
     results = [];
-    for (i = o = 0, len = coords.length; o < len; i = ++o) {
+    for (i = l = 0, len = coords.length; l < len; i = ++l) {
       c = coords[i];
       results.push((i === 0 ? 'M' : 'L') + " " + c[0] + " " + c[1] + " ");
     }
@@ -1454,90 +1463,57 @@ viewer.makePath = function(coords) {
 };
 
 
-/* CAMERA FUNCTIONS */
+/* INTERFACE */
 
-viewer.initCam = function() {
-  return {
-    c: [0, 0, 0],
-    x: [1, 0, 0],
-    y: [0, 1, 0],
-    z: [0, 0, 1],
-    rad: 1,
-    last: null,
-    show: {
-      'Faces': true,
-      'Edges': true,
-      'Vertices': false,
-      'Face Text': false
+viewer.processInput = function(text, view) {
+  var k;
+  view.fold = JSON.parse(text);
+  view.model = viewer.makeModel(view.fold);
+  viewer.addRotation(view);
+  viewer.draw(view);
+  viewer.update(view);
+  if (view.options.properties) {
+    view.properties.innerHTML = '';
+    for (k in view.fold) {
+      if (view.options.properties) {
+        viewer.appendHTML(view.properties, 'option', {
+          value: k
+        }).innerHTML = k;
+      }
     }
-  };
-};
-
-viewer.proj = function(p, cam) {
-  return [geom.dot(geom.sub(p, cam.c), cam.x), -geom.dot(geom.sub(p, cam.c), cam.y), 0];
-};
-
-viewer.setCamXY = function(cam, x, y) {
-  var ref;
-  return ref = [x, y, geom.cross(x, y)], cam.x = ref[0], cam.y = ref[1], cam.z = ref[2], ref;
-};
-
-viewer.addRotation = function(view) {
-  var cam, len, o, ref, s, svg;
-  svg = view.svg, cam = view.cam;
-  ref = ['contextmenu', 'selectstart', 'dragstart'];
-  for (o = 0, len = ref.length; o < len; o++) {
-    s = ref[o];
-    svg.addEventListener(s, function(e) {
-      return e.preventDefault();
-    });
+    return viewer.updateProperties(view);
   }
-  svg.addEventListener('mousedown', (function(_this) {
-    return function(e) {
-      return cam.last = [e.clientX, e.clientY];
-    };
-  })(this));
-  svg.addEventListener('mousemove', (function(_this) {
-    return function(e) {
-      return viewer.rotateCam([e.clientX, e.clientY], view);
-    };
-  })(this));
-  return svg.addEventListener('mouseup', (function(_this) {
-    return function(e) {
-      viewer.rotateCam([e.clientX, e.clientY], view);
-      return cam.last = null;
-    };
-  })(this));
 };
 
-viewer.rotateCam = function(p, view) {
-  var c, cam, d, ref, u, x, y;
-  cam = view.cam;
-  if (cam.last == null) {
-    return;
-  }
-  d = geom.sub(p, cam.last);
-  if (!geom.mag(d) > 0) {
-    return;
-  }
-  u = geom.unit(geom.plus(geom.mul(cam.x, -d[1]), geom.mul(cam.y, -d[0])));
-  ref = (function() {
-    var len, o, ref, results;
-    ref = ['x', 'y'];
-    results = [];
-    for (o = 0, len = ref.length; o < len; o++) {
-      c = ref[o];
-      results.push(geom.rotate(cam[c], u, geom.mag(d) * 0.01));
-    }
-    return results;
-  })(), x = ref[0], y = ref[1];
-  viewer.setCamXY(cam, x, y);
-  cam.last = p;
-  return viewer.update(view);
+viewer.updateProperties = function(view) {
+  var s, v;
+  v = view.fold[view.properties.value];
+  s = v.length != null ? v.length + " elements: " : '';
+  return view.data.innerHTML = s + JSON.stringify(v);
 };
 
+viewer.importURL = function(url, view) {
+  var xhr;
+  xhr = new XMLHttpRequest();
+  xhr.onload = (function(_this) {
+    return function(e) {
+      return viewer.processInput(e.target.responseText, view);
+    };
+  })(this);
+  xhr.open('GET', url);
+  return xhr.send();
+};
 
-/* VIEWER FUNCTIONS */
+viewer.importFile = function(file, view) {
+  var file_reader;
+  file_reader = new FileReader();
+  file_reader.onload = (function(_this) {
+    return function(e) {
+      return viewer.processInput(e.target.result, view);
+    };
+  })(this);
+  return file_reader.readAsText(file);
+};
 
 DEFAULTS = {
   viewButtons: true,
@@ -1545,24 +1521,80 @@ DEFAULTS = {
   attrViewer: true,
   examples: true,
   "import": true,
-  "export": true
+  "export": true,
+  properties: true
 };
 
-viewer.addViewer = function(div, fold, options) {
-  var buttonDiv, i, inputDiv, k, len, o, ref, ref1, select, t, toggleDiv, v, val, view;
-  if (fold == null) {
-    fold = null;
-  }
+viewer.addViewer = function(div, options) {
+  var buttonDiv, i, inputDiv, k, l, len, ref, ref1, select, t, toggleDiv, v, val, view;
   if (options == null) {
     options = {};
   }
   view = {
     cam: viewer.initCam(),
-    fold: fold,
     options: DEFAULTS
   };
-  viewer.setAttrs(view.options, options);
-  document.addEventListener('click', (function(_this) {
+  for (k in options) {
+    v = options[k];
+    view.options[k] = v;
+  }
+  if (view.options.viewButtons) {
+    toggleDiv = viewer.appendHTML(div, 'div');
+    toggleDiv.innerHtml = '';
+    toggleDiv.innerHtml += 'Toggle: ';
+    ref = view.cam.show;
+    for (k in ref) {
+      v = ref[k];
+      t = viewer.appendHTML(toggleDiv, 'input', {
+        type: 'checkbox',
+        value: k
+      });
+      if (v) {
+        t.setAttribute('checked', '');
+      }
+      toggleDiv.innerHTML += k + ' ';
+    }
+  }
+  if (view.options.axisButtons) {
+    buttonDiv = viewer.appendHTML(div, 'div');
+    buttonDiv.innerHTML += 'View: ';
+    ref1 = ['x', 'y', 'z'];
+    for (i = l = 0, len = ref1.length; l < len; i = ++l) {
+      val = ref1[i];
+      viewer.appendHTML(buttonDiv, 'input', {
+        type: 'button',
+        value: val
+      });
+    }
+  }
+  if (view.options.properties) {
+    buttonDiv.innerHTML += ' Property:';
+    view.properties = viewer.appendHTML(buttonDiv, 'select');
+    view.data = viewer.appendHTML(buttonDiv, 'div', {
+      style: 'width: 300; padding: 10px; overflow: auto; border: 1px solid black; display: inline-block; white-space: nowrap;'
+    });
+  }
+  if (view.options.examples || view.options["import"]) {
+    inputDiv = viewer.appendHTML(div, 'div');
+    if (view.options.examples) {
+      inputDiv.innerHTML = 'Example: ';
+      select = viewer.appendHTML(inputDiv, 'select');
+      viewer.appendHTML(select, 'option', {
+        value: '../examples/simple.fold'
+      }).innerHTML = 'Default';
+      viewer.appendHTML(select, 'option', {
+        value: '../examples/box.fold'
+      }).innerHTML = 'Flexicube Unit';
+      viewer.importURL(select.value, view);
+    }
+    if (view.options["import"]) {
+      inputDiv.innerHTML += ' Import: ';
+      viewer.appendHTML(inputDiv, 'input', {
+        type: 'file'
+      });
+    }
+  }
+  document.onclick = (function(_this) {
     return function(e) {
       if (e.target.type === 'checkbox') {
         if (e.target.hasAttribute('checked')) {
@@ -1587,135 +1619,128 @@ viewer.addViewer = function(div, fold, options) {
         return viewer.update(view);
       }
     };
-  })(this));
-  if (view.options.viewButtons) {
-    toggleDiv = viewer.appendHTML(div, 'div');
-    toggleDiv.innerHtml = '';
-    toggleDiv.innerHtml += 'Toggle: ';
-    ref = view.cam.show;
-    for (k in ref) {
-      v = ref[k];
-      t = viewer.appendHTML(toggleDiv, 'input', {
-        type: 'checkbox',
-        value: k
-      });
-      if (v) {
-        t.setAttribute('checked', '');
+  })(this);
+  document.onchange = (function(_this) {
+    return function(e) {
+      if (e.target.type === 'file') {
+        viewer.importFile(e.target.files[0], view);
       }
-      toggleDiv.innerHTML += k + ' ';
-    }
-  }
-  if (view.options.axisButtons) {
-    buttonDiv = viewer.appendHTML(div, 'div');
-    buttonDiv.innerHTML += 'View: ';
-    ref1 = ['x', 'y', 'z'];
-    for (i = o = 0, len = ref1.length; o < len; i = ++o) {
-      val = ref1[i];
-      viewer.appendHTML(buttonDiv, 'input', {
-        type: 'button',
-        value: val
-      });
-    }
-  }
-  if (view.options.examples || view.options["import"]) {
-    inputDiv = viewer.appendHTML(div, 'div');
-    if (view.options.examples) {
-      select = viewer.appendHTML(inputDiv, 'select');
-      select.addEventListener('change', (function(_this) {
-        return function(e) {
-          return viewer.importURL(select.value, view);
-        };
-      })(this));
-      viewer.appendHTML(select, 'option', {
-        value: '../examples/simple.fold'
-      }).innerHTML = 'Default';
-      viewer.appendHTML(select, 'option', {
-        value: '../examples/box.fold'
-      }).innerHTML = 'Flexicube Unit';
-    }
-    if (view.options["import"]) {
-      viewer.appendHTML(inputDiv, 'input', {
-        type: 'file'
-      }).addEventListener('change', (function(_this) {
-        return function(e) {
-          return viewer.importFile(e.target.files[0], view);
-        };
-      })(this));
-    }
-  }
+      if (e.target.type === 'select-one') {
+        if (e.target === view.properties) {
+          return viewer.updateProperties(view);
+        } else {
+          return viewer.importURL(e.target.value, view);
+        }
+      }
+    };
+  })(this);
   view.svg = viewer.appendSVG(div, 'svg', {
-    xmlns: SVGNS
+    xmlns: SVGNS,
+    width: 600
   });
-  return viewer.importURL(select.value, view);
+  return view;
 };
 
-viewer.faceAbove = function(f1, f2, n) {
-  var disjoint, dp, dv, f, np, nv, ord, p1, p2, ref, ref1, ref2, ref3, v, v1, v2;
-  ref = (function() {
-    var len, o, ref, results;
-    ref = [f1, f2];
-    results = [];
-    for (o = 0, len = ref.length; o < len; o++) {
-      f = ref[o];
-      results.push((function() {
-        var len1, q, ref1, results1;
-        ref1 = f.vs;
-        results1 = [];
-        for (q = 0, len1 = ref1.length; q < len1; q++) {
-          v = ref1[q];
-          results1.push(v.ps);
-        }
-        return results1;
-      })());
+
+/* CAMERA */
+
+viewer.initCam = function() {
+  return {
+    c: [0, 0, 0],
+    x: [1, 0, 0],
+    y: [0, 1, 0],
+    z: [0, 0, 1],
+    r: 1,
+    last: null,
+    show: {
+      'Faces': true,
+      'Edges': true,
+      'Vertices': false,
+      'Face Text': false
     }
-    return results;
-  })(), p1 = ref[0], p2 = ref[1];
-  ref1 = geom.sepNormal(p1, p2), dp = ref1[0], disjoint = ref1[1], np = ref1[2];
-  if (disjoint) {
-    return null;
-  }
-  ref2 = (function() {
-    var len, o, ref2, results;
-    ref2 = [f1, f2];
-    results = [];
-    for (o = 0, len = ref2.length; o < len; o++) {
-      f = ref2[o];
-      results.push((function() {
-        var len1, q, ref3, results1;
-        ref3 = f.vs;
-        results1 = [];
-        for (q = 0, len1 = ref3.length; q < len1; q++) {
-          v = ref3[q];
-          results1.push(v.cs);
-        }
-        return results1;
-      })());
-    }
-    return results;
-  })(), v1 = ref2[0], v2 = ref2[1];
-  ref3 = geom.sepNormal(v1, v2), dv = ref3[0], disjoint = ref3[1], nv = ref3[2];
-  if ((dv === 3) && disjoint) {
-    return 0 > geom.dot(nv, n);
-  }
-  ord = f1.ord["" + f2.i];
-  if ((dv === 2) && (ord != null)) {
-    return 0 < geom.dot(f1.n, n) * ord;
-  }
-  return null;
+  };
 };
+
+viewer.proj = function(p, cam) {
+  var q;
+  q = geom.mul(geom.sub(p, cam.c), 1 / cam.r);
+  return [geom.dot(q, cam.x), -geom.dot(q, cam.y), 0];
+};
+
+viewer.setCamXY = function(cam, x, y) {
+  var ref;
+  return ref = [x, y, geom.cross(x, y)], cam.x = ref[0], cam.y = ref[1], cam.z = ref[2], ref;
+};
+
+viewer.addRotation = function(view) {
+  var cam, l, len, ref, s, svg;
+  svg = view.svg, cam = view.cam;
+  ref = ['contextmenu', 'selectstart', 'dragstart'];
+  for (l = 0, len = ref.length; l < len; l++) {
+    s = ref[l];
+    svg["on" + s] = function(e) {
+      return e.preventDefault();
+    };
+  }
+  svg.onmousedown = svg.ontouchstart = (function(_this) {
+    return function(e) {
+      return cam.last = [e.clientX, e.clientY];
+    };
+  })(this);
+  svg.onmousemove = svg.touchmove = (function(_this) {
+    return function(e) {
+      return viewer.rotateCam([e.clientX, e.clientY], view);
+    };
+  })(this);
+  return svg.onmouseup = svg.touchend = (function(_this) {
+    return function(e) {
+      viewer.rotateCam([e.clientX, e.clientY], view);
+      return cam.last = null;
+    };
+  })(this);
+};
+
+viewer.rotateCam = function(p, view) {
+  var cam, d, e, ref, u, x, y;
+  cam = view.cam;
+  if (cam.last == null) {
+    return;
+  }
+  d = geom.sub(p, cam.last);
+  if (!geom.mag(d) > 0) {
+    return;
+  }
+  u = geom.unit(geom.plus(geom.mul(cam.x, -d[1]), geom.mul(cam.y, -d[0])));
+  ref = (function() {
+    var l, len, ref, results;
+    ref = ['x', 'y'];
+    results = [];
+    for (l = 0, len = ref.length; l < len; l++) {
+      e = ref[l];
+      results.push(geom.rotate(cam[e], u, geom.mag(d) * 0.01));
+    }
+    return results;
+  })(), x = ref[0], y = ref[1];
+  viewer.setCamXY(cam, x, y);
+  cam.last = p;
+  return viewer.update(view);
+};
+
+
+/* RENDERING */
 
 viewer.makeModel = function(fold) {
-  var a, b, cs, f, i, i1, j, j1, l, len, len1, len2, len3, len4, len5, m, o, q, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, v, vs, w, z;
+  var a, as, b, cs, f, f1, f2, i, i1, j, j1, k1, l, len, len1, len2, len3, len4, len5, m, normRel, o, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, v, vs, w, z;
   m = {
     vs: null,
     fs: null,
     es: {}
   };
   m.vs = (function() {
-    var len, o, ref, results;
+    var l, len, ref, results;
     ref = fold.vertices_coords;
     results = [];
-    for (i = o = 0, len = ref.length; o < len; i = ++o) {
+    for (i = l = 0, len = ref.length; l < len; i = ++l) {
       cs = ref[i];
       results.push({
         i: i,
@@ -1725,25 +1750,25 @@ viewer.makeModel = function(fold) {
     return results;
   })();
   ref = m.vs;
-  for (i = o = 0, len = ref.length; o < len; i = ++o) {
+  for (i = l = 0, len = ref.length; l < len; i = ++l) {
     v = ref[i];
     if (v.cs.length === 2) {
       m.vs[i].cs[2] = 0;
     }
   }
   m.fs = (function() {
-    var len1, q, ref1, results;
+    var len1, r, ref1, results;
     ref1 = fold.faces_vertices;
     results = [];
-    for (i = q = 0, len1 = ref1.length; q < len1; i = ++q) {
+    for (i = r = 0, len1 = ref1.length; r < len1; i = ++r) {
       vs = ref1[i];
       results.push({
         i: i,
         vs: (function() {
-          var len2, r, results1;
+          var len2, results1, z;
           results1 = [];
-          for (r = 0, len2 = vs.length; r < len2; r++) {
-            v = vs[r];
+          for (z = 0, len2 = vs.length; z < len2; z++) {
+            v = vs[z];
             results1.push(m.vs[v]);
           }
           return results1;
@@ -1754,21 +1779,22 @@ viewer.makeModel = function(fold) {
   })();
   if (fold.edges_vertices != null) {
     ref1 = fold.edges_vertices;
-    for (i = q = 0, len1 = ref1.length; q < len1; i = ++q) {
+    for (i = r = 0, len1 = ref1.length; r < len1; i = ++r) {
       v = ref1[i];
       ref2 = v[0] > v[1] ? [v[1], v[0]] : [v[0], v[1]], a = ref2[0], b = ref2[1];
+      as = fold.edges_assignment[i] != null ? fold.edges_assignment[i] : 'U';
       m.es["e" + a + "e" + b] = {
         v1: m.vs[a],
         v2: m.vs[b],
-        as: fold.edges_assignment[i]
+        as: as
       };
     }
   } else {
     ref3 = m.fs;
-    for (i = r = 0, len2 = ref3.length; r < len2; i = ++r) {
+    for (i = z = 0, len2 = ref3.length; z < len2; i = ++z) {
       f = ref3[i];
       ref4 = f.vs;
-      for (j = z = 0, len3 = ref4.length; z < len3; j = ++z) {
+      for (j = i1 = 0, len3 = ref4.length; i1 < len3; j = ++i1) {
         v = ref4[j];
         w = f.vs[geom.next(j, f.vs.length)];
         ref5 = v.i > w.i ? [w, v] : [v, w], a = ref5[0], b = ref5[1];
@@ -1781,34 +1807,34 @@ viewer.makeModel = function(fold) {
     }
   }
   ref6 = m.fs;
-  for (i = i1 = 0, len4 = ref6.length; i1 < len4; i = ++i1) {
+  for (i = j1 = 0, len4 = ref6.length; j1 < len4; i = ++j1) {
     f = ref6[i];
-    m.fs[i].n = geom.triangleNormal.apply(geom, (function() {
-      var j1, len5, ref7, results;
+    m.fs[i].n = geom.polygonNormal((function() {
+      var k1, len5, ref7, results;
       ref7 = f.vs;
       results = [];
-      for (j1 = 0, len5 = ref7.length; j1 < len5; j1++) {
-        v = ref7[j1];
+      for (k1 = 0, len5 = ref7.length; k1 < len5; k1++) {
+        v = ref7[k1];
         results.push(v.cs);
       }
       return results;
     })());
     m.fs[i].c = geom.centroid((function() {
-      var j1, len5, ref7, results;
+      var k1, len5, ref7, results;
       ref7 = f.vs;
       results = [];
-      for (j1 = 0, len5 = ref7.length; j1 < len5; j1++) {
-        v = ref7[j1];
+      for (k1 = 0, len5 = ref7.length; k1 < len5; k1++) {
+        v = ref7[k1];
         results.push(v.cs);
       }
       return results;
     })());
     m.fs[i].es = {};
     m.fs[i].es = (function() {
-      var j1, len5, ref7, ref8, results;
+      var k1, len5, ref7, ref8, results;
       ref7 = f.vs;
       results = [];
-      for (j = j1 = 0, len5 = ref7.length; j1 < len5; j = ++j1) {
+      for (j = k1 = 0, len5 = ref7.length; k1 < len5; j = ++k1) {
         v = ref7[j];
         w = f.vs[geom.next(j, f.vs.length)];
         ref8 = v.i > w.i ? [w, v] : [v, w], a = ref8[0], b = ref8[1];
@@ -1820,41 +1846,128 @@ viewer.makeModel = function(fold) {
   }
   if (fold.faceOrders != null) {
     ref7 = fold.faceOrders;
-    for (j1 = 0, len5 = ref7.length; j1 < len5; j1++) {
-      l = ref7[j1];
-      if (l[2] !== 0) {
-        m.fs[l[0]].ord["" + l[1]] = l[2];
+    for (k1 = 0, len5 = ref7.length; k1 < len5; k1++) {
+      ref8 = ref7[k1], f1 = ref8[0], f2 = ref8[1], o = ref8[2];
+      if (o !== 0) {
+        if (geom.parallel(m.fs[f1].n, m.fs[f2].n)) {
+          normRel = geom.dot(m.fs[f1].n, m.fs[f2].n) > 0 ? 1 : -1;
+          if (m.fs[f1].ord["f" + f2] != null) {
+            console.log("Warning: duplicate ordering input information for faces " + f1 + " and " + f2 + ". Using first found in the faceOrder list.");
+            if (m.fs[f1].ord["f" + f2] !== o) {
+              console.log("Error: duplicat ordering [" + f1 + "," + f2 + "," + o + "] is inconsistant with a previous entry.");
+            }
+          } else {
+            m.fs[f1].ord["f" + f2] = o;
+            m.fs[f2].ord["f" + f1] = -o * normRel;
+          }
+        } else {
+          console.log("Warning: order for non-parallel faces [" + f1 + "," + f2 + "]");
+        }
       }
     }
   }
   return m;
 };
 
-viewer.orderFaces = function(faces, direction) {
-  var c, f, f1, f1_above, f2, i, j, len, len1, len2, o, p, q, r, ref;
-  for (o = 0, len = faces.length; o < len; o++) {
-    f = faces[o];
+viewer.faceAbove = function(f1, f2, n) {
+  var basis, dir, f, ord, p1, p2, ref, ref1, sepDir, v, v1, v2;
+  ref = (function() {
+    var l, len, ref, results;
+    ref = [f1, f2];
+    results = [];
+    for (l = 0, len = ref.length; l < len; l++) {
+      f = ref[l];
+      results.push((function() {
+        var len1, r, ref1, results1;
+        ref1 = f.vs;
+        results1 = [];
+        for (r = 0, len1 = ref1.length; r < len1; r++) {
+          v = ref1[r];
+          results1.push(v.ps);
+        }
+        return results1;
+      })());
+    }
+    return results;
+  })(), p1 = ref[0], p2 = ref[1];
+  sepDir = geom.separatingDirection2D(p1, p2, [0, 0, 1]);
+  if (sepDir != null) {
+    return null;
+  }
+  ref1 = (function() {
+    var l, len, ref1, results;
+    ref1 = [f1, f2];
+    results = [];
+    for (l = 0, len = ref1.length; l < len; l++) {
+      f = ref1[l];
+      results.push((function() {
+        var len1, r, ref2, results1;
+        ref2 = f.vs;
+        results1 = [];
+        for (r = 0, len1 = ref2.length; r < len1; r++) {
+          v = ref2[r];
+          results1.push(v.cs);
+        }
+        return results1;
+      })());
+    }
+    return results;
+  })(), v1 = ref1[0], v2 = ref1[1];
+  basis = geom.basis(v1.concat(v2));
+  if (basis.length === 3) {
+    dir = geom.separatingDirection3D(v1, v2);
+    if (dir != null) {
+      return 0 > geom.dot(n, dir);
+    }
+  }
+  if (basis.length === 2) {
+    ord = f1.ord["f" + f2.i];
+    if (ord != null) {
+      return 0 < geom.dot(f1.n, n) * ord;
+    }
+  }
+  return null;
+};
+
+viewer.orderFaces = function(view) {
+  var c, direction, f, f1, f1_above, f2, faces, i, i1, j, j1, l, len, len1, len2, len3, len4, p, r, ref, ref1, ref2, results, z;
+  faces = view.model.fs;
+  direction = geom.mul(view.cam.z, -1);
+  for (l = 0, len = faces.length; l < len; l++) {
+    f = faces[l];
     f.children = [];
   }
-  for (i = q = 0, len1 = faces.length; q < len1; i = ++q) {
+  for (i = r = 0, len1 = faces.length; r < len1; i = ++r) {
     f1 = faces[i];
-    for (j = r = 0, len2 = faces.length; r < len2; j = ++r) {
+    for (j = z = 0, len2 = faces.length; z < len2; j = ++z) {
       f2 = faces[j];
-      if (!(j > i)) {
+      if (!(i < j)) {
         continue;
       }
-      f1_above = viewer.faceAbove(f1, f2, geom.mul(direction, -1));
+      f1_above = viewer.faceAbove(f1, f2, direction);
       if (f1_above != null) {
         ref = f1_above ? [f1, f2] : [f2, f1], p = ref[0], c = ref[1];
         p.children = p.children.concat([c]);
       }
     }
   }
-  return geom.topologicalSort(faces);
+  view.model.fs = geom.topologicalSort(faces);
+  ref1 = view.model.fs;
+  for (i1 = 0, len3 = ref1.length; i1 < len3; i1++) {
+    f = ref1[i1];
+    f.g.parentNode.removeChild(f.g);
+  }
+  ref2 = view.model.fs;
+  results = [];
+  for (j1 = 0, len4 = ref2.length; j1 < len4; j1++) {
+    f = ref2[j1];
+    results.push(view.svg.appendChild(f.g));
+  }
+  return results;
 };
 
 viewer.draw = function(arg) {
-  var c, cam, e, f, g, i, j, k, len, len1, len2, len3, max, min, model, o, pc, q, r, ref, ref1, ref2, ref3, results, style, svg, t, v, z;
+  var c, cam, e, f, i, i1, j, k, l, len, len1, len2, len3, max, min, model, r, ref, ref1, ref2, ref3, results, style, svg, t, v, z;
   svg = arg.svg, cam = arg.cam, model = arg.model;
   svg.innerHTML = '';
   style = viewer.appendSVG(svg, 'style');
@@ -1863,17 +1976,17 @@ viewer.draw = function(arg) {
     style.innerHTML += "." + k + "{" + v + "}\n";
   }
   min = (function() {
-    var len, o, ref, results;
+    var l, len, ref, results;
     ref = [0, 1, 2];
     results = [];
-    for (o = 0, len = ref.length; o < len; o++) {
-      i = ref[o];
+    for (l = 0, len = ref.length; l < len; l++) {
+      i = ref[l];
       results.push(((function() {
-        var len1, q, ref1, results1;
+        var len1, r, ref1, results1;
         ref1 = model.vs;
         results1 = [];
-        for (q = 0, len1 = ref1.length; q < len1; q++) {
-          v = ref1[q];
+        for (r = 0, len1 = ref1.length; r < len1; r++) {
+          v = ref1[r];
           results1.push(v.cs[i]);
         }
         return results1;
@@ -1882,17 +1995,17 @@ viewer.draw = function(arg) {
     return results;
   })();
   max = (function() {
-    var len, o, ref, results;
+    var l, len, ref, results;
     ref = [0, 1, 2];
     results = [];
-    for (o = 0, len = ref.length; o < len; o++) {
-      i = ref[o];
+    for (l = 0, len = ref.length; l < len; l++) {
+      i = ref[l];
       results.push(((function() {
-        var len1, q, ref1, results1;
+        var len1, r, ref1, results1;
         ref1 = model.vs;
         results1 = [];
-        for (q = 0, len1 = ref1.length; q < len1; q++) {
-          v = ref1[q];
+        for (r = 0, len1 = ref1.length; r < len1; r++) {
+          v = ref1[r];
           results1.push(v.cs[i]);
         }
         return results1;
@@ -1902,13 +2015,13 @@ viewer.draw = function(arg) {
   })();
   cam.c = geom.mul(geom.plus(min, max), 0.5);
   cam.r = geom.mag(geom.sub(max, min)) / 2 * 1.05;
-  pc = viewer.proj(cam.c, cam);
+  c = viewer.proj(cam.c, cam);
   viewer.setAttrs(svg, {
-    viewBox: (pc[0] - cam.r) + "," + (pc[1] - cam.r) + "," + (2 * cam.r) + "," + (2 * cam.r)
+    viewBox: "-1,-1,2,2"
   });
   t = "translate(0,0.01)";
   ref = model.fs;
-  for (i = o = 0, len = ref.length; o < len; i = ++o) {
+  for (i = l = 0, len = ref.length; l < len; i = ++l) {
     f = ref[i];
     f.g = viewer.appendSVG(svg, 'g');
     f.path = viewer.appendSVG(f.g, 'path');
@@ -1917,38 +2030,35 @@ viewer.draw = function(arg) {
       transform: t
     });
     f.text.innerHTML = "f" + f.i;
+    f.eg = [];
     ref1 = f.es;
-    for (j = q = 0, len1 = ref1.length; q < len1; j = ++q) {
+    for (j = r = 0, len1 = ref1.length; r < len1; j = ++r) {
       e = ref1[j];
-      if (e.path == null) {
-        e.path = viewer.appendSVG(f.g, 'path');
-      }
+      f.eg[j] = viewer.appendSVG(f.g, 'path');
     }
+    f.vg = [];
     ref2 = f.vs;
-    for (j = r = 0, len2 = ref2.length; r < len2; j = ++r) {
+    for (j = z = 0, len2 = ref2.length; z < len2; j = ++z) {
       v = ref2[j];
-      if (!(v.path == null)) {
-        continue;
-      }
-      v.g = viewer.appendSVG(f.g, 'g');
-      v.path = viewer.appendSVG(v.g, 'circle', {
+      f.vg[j] = viewer.appendSVG(f.g, 'g');
+      f.vg[j].path = viewer.appendSVG(f.vg[j], 'circle', {
         "class": 'vert'
       });
-      v.text = viewer.appendSVG(v.g, 'text', {
+      f.vg[j].text = viewer.appendSVG(f.vg[j], 'text', {
         transform: 'translate(0, 0.01)',
         "class": 'text'
       });
-      v.text.innerHTML = "" + v.i;
+      f.vg[j].text.innerHTML = "" + v.i;
     }
   }
-  g = viewer.appendSVG(svg, 'g', {
+  cam.axis = viewer.appendSVG(svg, 'g', {
     transform: 'translate(-0.9,-0.9)'
   });
   ref3 = ['x', 'y', 'z'];
   results = [];
-  for (z = 0, len3 = ref3.length; z < len3; z++) {
-    c = ref3[z];
-    results.push(viewer.appendSVG(g, 'path', {
+  for (i1 = 0, len3 = ref3.length; i1 < len3; i1++) {
+    c = ref3[i1];
+    results.push(cam.axis[c] = viewer.appendSVG(cam.axis, 'path', {
       id: "a" + c,
       "class": "a" + c + " axis"
     }));
@@ -1956,20 +2066,20 @@ viewer.draw = function(arg) {
   return results;
 };
 
-viewer.update = function(arg) {
-  var c, cam, e, end, f, i, i1, j, k, len, len1, len2, len3, len4, model, o, p, q, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, results, show, svg, v, visibleSide, z;
-  model = arg.model, cam = arg.cam, svg = arg.svg;
+viewer.update = function(view) {
+  var c, cam, e, end, f, i, i1, j, j1, k, l, len, len1, len2, len3, len4, model, p, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, results, show, svg, v, visibleSide, z;
+  model = view.model, cam = view.cam, svg = view.svg;
   ref = model.vs;
-  for (i = o = 0, len = ref.length; o < len; i = ++o) {
+  for (i = l = 0, len = ref.length; l < len; i = ++l) {
     v = ref[i];
     model.vs[i].ps = viewer.proj(v.cs, cam);
   }
   ref1 = model.fs;
-  for (i = q = 0, len1 = ref1.length; q < len1; i = ++q) {
+  for (i = r = 0, len1 = ref1.length; r < len1; i = ++r) {
     f = ref1[i];
     model.fs[i].c2 = viewer.proj(f.c, cam);
   }
-  viewer.orderFaces(model.fs, cam.z);
+  viewer.orderFaces(view);
   show = {};
   ref2 = cam.show;
   for (k in ref2) {
@@ -1977,7 +2087,7 @@ viewer.update = function(arg) {
     show[k] = v ? 'visible' : 'hidden';
   }
   ref3 = model.fs;
-  for (i = r = 0, len2 = ref3.length; r < len2; i = ++r) {
+  for (i = z = 0, len2 = ref3.length; z < len2; i = ++z) {
     f = ref3[i];
     if (!(f.path != null)) {
       continue;
@@ -1990,11 +2100,11 @@ viewer.update = function(arg) {
     });
     viewer.setAttrs(f.path, {
       d: viewer.makePath((function() {
-        var len3, ref4, results, z;
+        var i1, len3, ref4, results;
         ref4 = f.vs;
         results = [];
-        for (z = 0, len3 = ref4.length; z < len3; z++) {
-          v = ref4[z];
+        for (i1 = 0, len3 = ref4.length; i1 < len3; i1++) {
+          v = ref4[i1];
           results.push(v.ps);
         }
         return results;
@@ -2003,26 +2113,26 @@ viewer.update = function(arg) {
       "class": "face " + visibleSide
     });
     ref4 = f.es;
-    for (j = z = 0, len3 = ref4.length; z < len3; j = ++z) {
+    for (j = i1 = 0, len3 = ref4.length; i1 < len3; j = ++i1) {
       e = ref4[j];
-      viewer.setAttrs(e.path, {
+      viewer.setAttrs(f.eg[j], {
         d: viewer.makePath([e.v1.ps, e.v2.ps]),
         visibility: show['Edges'],
         "class": "edge " + e.as
       });
     }
     ref5 = f.vs;
-    for (j = i1 = 0, len4 = ref5.length; i1 < len4; j = ++i1) {
+    for (j = j1 = 0, len4 = ref5.length; j1 < len4; j = ++j1) {
       v = ref5[j];
-      viewer.setAttrs(v.g, {
+      viewer.setAttrs(f.vg[j], {
         visibility: show['Vertices']
       });
-      viewer.setAttrs(v.path, {
+      viewer.setAttrs(f.vg[j].path, {
         cx: v.ps[0],
         cy: v.ps[1]
       });
-      viewer.setAttrs(v.text, {
-        x: v.ps[1],
+      viewer.setAttrs(f.vg[j].text, {
+        x: v.ps[0],
         y: v.ps[1]
       });
     }
@@ -2035,14 +2145,14 @@ viewer.update = function(arg) {
   results = [];
   for (c in ref6) {
     v = ref6[c];
-    end = geom.plus(geom.mul(v, 0.05), cam.c);
-    results.push(viewer.setAttrs(document.getElementById("a" + c), {
+    end = geom.plus(geom.mul(v, 0.05 * cam.r), cam.c);
+    results.push(viewer.setAttrs(cam.axis[c], {
       d: viewer.makePath((function() {
-        var j1, len5, ref7, results1;
+        var k1, len5, ref7, results1;
         ref7 = [cam.c, end];
         results1 = [];
-        for (j1 = 0, len5 = ref7.length; j1 < len5; j1++) {
-          p = ref7[j1];
+        for (k1 = 0, len5 = ref7.length; k1 < len5; k1++) {
+          p = ref7[k1];
           results1.push(viewer.proj(p, cam));
         }
         return results1;
