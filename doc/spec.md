@@ -191,6 +191,7 @@ The values of the following properties are zero-indexed arrays by edge ID.
   * `"V"`: valley fold
   * `"F"`: flat (unfolded) fold
   * `"U"`: unassigned/unknown
+
   For example, this property can be used to specify a full mountain-valley
   assignment (consisting of `"M"`, `"V"`, and `"B"`), or just to label
   which edges are boundary edges (consisting of `"U"` or `"B"`).
