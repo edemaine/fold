@@ -1730,7 +1730,7 @@ viewer.rotateCam = function(p, view) {
 /* RENDERING */
 
 viewer.makeModel = function(fold) {
-  var a, as, b, cs, f, f1, f2, i, i1, j, j1, k1, l, len, len1, len2, len3, len4, len5, m, normRel, o, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, v, vs, w, z;
+  var a, as, b, cs, edge, f, f1, f2, i, i1, j, j1, k1, l, len, len1, len2, len3, len4, len5, m, normRel, o, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, v, vs, w, z;
   m = {
     vs: null,
     fs: null,
@@ -1801,7 +1801,7 @@ viewer.makeModel = function(fold) {
         m.es["e" + a.i + "e" + b.i] = {
           v1: a,
           v2: b,
-          as: 'B'
+          as: 'U'
         };
       }
     }
@@ -1838,7 +1838,15 @@ viewer.makeModel = function(fold) {
         v = ref7[j];
         w = f.vs[geom.next(j, f.vs.length)];
         ref8 = v.i > w.i ? [w, v] : [v, w], a = ref8[0], b = ref8[1];
-        results.push(m.es["e" + a.i + "e" + b.i]);
+        edge = m.es["e" + a.i + "e" + b.i];
+        if (edge == null) {
+          edge = {
+            v1: a,
+            v2: b,
+            as: 'U'
+          };
+        }
+        results.push(edge);
       }
       return results;
     })();
