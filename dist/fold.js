@@ -1682,21 +1682,18 @@ viewer.addRotation = function(view) {
       return e.preventDefault();
     };
   }
-  svg.onmousedown = svg.ontouchstart = (function(_this) {
+  svg.onmousedown = (function(_this) {
     return function(e) {
-      e.preventDefault();
       return cam.last = [e.clientX, e.clientY];
     };
   })(this);
-  svg.onmousemove = svg.touchmove = (function(_this) {
+  svg.onmousemove = (function(_this) {
     return function(e) {
-      e.preventDefault();
       return viewer.rotateCam([e.clientX, e.clientY], view);
     };
   })(this);
-  return svg.onmouseup = svg.touchend = (function(_this) {
+  return svg.onmouseup = (function(_this) {
     return function(e) {
-      e.preventDefault();
       viewer.rotateCam([e.clientX, e.clientY], view);
       return cam.last = null;
     };

@@ -37,6 +37,11 @@ In addition, FOLD can support **linkages** (with 1D edges but no 2D faces).
 * [2-page paper describing FOLD](http://erikdemaine.org/papers/FOLD_CGW2016/)
 * [Examples of .fold files](https://github.com/edemaine/fold/tree/master/examples/)
 
+## FOLD Software Tools
+
+* [FOLD viewer](https://edemaine.github.io/fold/examples/foldviewer.html)
+  loads and display a given .fold file, useful for visualization and testing
+
 ## [FOLD JavaScript Library](https://github.com/edemaine/fold/tree/master/doc/api.md)
 
 For simple web apps, add this tag to your HTML:
