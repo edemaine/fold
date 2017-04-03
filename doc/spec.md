@@ -221,11 +221,11 @@ The values of the following properties are zero-indexed arrays by face ID.
   around the face *in counterclockwise order*.  This array can repeat the
   same vertex multiple times (e.g., if the face has a "slit" in it).
   **Recommended** in any frame having faces.
-* `faces_edges`: For each face, an array of edges IDs for the edges around
+* `faces_edges`: For each face, an array of edge IDs for the edges around
   the face *in counterclockwise order*.  In addition to the matching cyclic
   order, `faces_vertices` and `faces_edges` should align in start so that
-  `faces_edges[i]` is the edge connecting `faces_vertices[i]` and
-  `faces_vertices[(i+1)%d]` where `d` is the degree of the face.
+  `faces_edges[f][i]` is the edge connecting `faces_vertices[f][i]` and
+  `faces_vertices[f][(i+1)%d]` where `d` is the degree of face `f`.
 
 The counterclockwise ordering of each face defines the side/sign of its
 **normal vector**.
