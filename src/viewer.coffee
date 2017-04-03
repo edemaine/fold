@@ -176,7 +176,7 @@ viewer.makeModel = (fold) ->
       for v, j in f.vs
         w = f.vs[geom.next(j,f.vs.length)]
         [a,b] = if v.i > w.i then [w,v] else [v,w]
-        m.es["e#{a.i}e#{b.i}"] = {v1: a, v2: b, as: 'B'}
+        m.es["e#{a.i}e#{b.i}"] = {v1: a, v2: b, as: 'U'}
   for f, i in m.fs
     m.fs[i].n = geom.polygonNormal(v.cs for v in f.vs)
     m.fs[i].c = geom.centroid(v.cs for v in f.vs)
@@ -184,7 +184,10 @@ viewer.makeModel = (fold) ->
     m.fs[i].es = (for v, j in f.vs
       w = f.vs[geom.next(j, f.vs.length)]
       [a,b] = if v.i > w.i then [w,v] else [v,w]
-      m.es["e#{a.i}e#{b.i}"])
+      edge = m.es["e#{a.i}e#{b.i}"]
+      unless edge?
+        edge = {v1: a, v2: b, as: 'U'}
+      edge)
     m.fs[i].ord = {}
   if fold.faceOrders?
     for [f1, f2, o] in fold.faceOrders when o isnt 0
