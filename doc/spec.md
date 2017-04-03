@@ -178,19 +178,29 @@ The values of the following properties are zero-indexed arrays by edge ID.
   but is used to define the ordering of `edges_faces`.)
   **Recommended** in frames having any `edges_...` property
   (e.g., to represent mountain-valley assignment).
-* `edges_faces`:
+* `edges_faces`: For each edge, an array of face IDs for the faces incident
+  to the edge.  The faces should be listed in counterclockwise order around
+  the edge.  For manifolds, this array has length 1 (for boundary edges)
+  or 2 (for nonboundary edges).  When the array has length 2, the canonical
+  ordering is to start with the face locally to the left of the edge
+  (as defined by its orientation in `edges_vertices`).
 * `edges_assignment`: For each edge, a string representing its fold
   direction assignment:
+  * `"B"`: border/boundary edge (only one incident face)
   * `"M"`: mountain fold
-    (for orientable manifolds, moving face normals away from each other)
   * `"V"`: valley fold
-    (for orientable manifolds, bringing together face normals)
   * `"F"`: flat (unfolded) fold
   * `"U"`: unassigned/unknown
-  * `"B"`: border/boundary edge
   For example, this property can be used to specify a full mountain-valley
   assignment (consisting of `"M"`, `"V"`, and `"B"`), or just to label
   which edges are boundary edges (consisting of `"U"` or `"B"`).
+
+  For orientable manifolds, a valley fold points the two face normals into
+  each other, while a mountain fold makes them point away from each other.
+  For nonorientable manifolds, a valley fold is defined as bringing the normal
+  of the face to the left of the edge (listed first in `edges_faces`) to point
+  into the adjacent face (when fully folded), while a mountain fold has the
+  same normal point away from the adjacent face.
 * `edges_foldAngles`: For each edge, the fold angle (deviation from flatness)
   along each edge of the pattern.  The fold angle is a number in degrees
   lying in the range [&minus;180, 180].  The fold angle is positive for
