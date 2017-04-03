@@ -232,8 +232,26 @@ The counterclockwise ordering of each face defines the side/sign of its
 
 ## Layer information: `faceOrders` and `edgeOrders`
 
-* `faceOrders`
-* `edgeOrders`
+* `faceOrders`: An array of triples `[f, g, s]` where `f` and `g` are face IDs
+  and `s` is an integer between &minus;1 and 1:
+  * +1 indicates that face `f` lies *above* face `g`, relative to face `g`'s orientation
+  * &minus;1 indicates that face `f` lies *below* face `g`, relative to face `g`'s orientation
+  * 0 indicates that `f` and `g` have unknown stacking order
+    (e.g., they do not overlap in their interiors).
+
+  **Recommended** for frames with interior-overlapping faces.
+
+* `edgeOrders`: An array of triples `[e, f, s]` where `e` and `f` are edge IDs
+  and `s` is an integer between &minus;1 and 1:
+  * +1 indicates that edge `e` lies locally on the *left* side of edge `f`
+    (relative to edge `f`'s orientation given by `edges_vertices`)
+  * &minus;1 indicates that edge `e` lies locally on the *right* side of edge
+    `f` (relative to edge `f`'s orientation given by `edges_vertices`)
+  * 0 indicates that `e` and `f` have unknown stacking order
+    (e.g., they do not overlap in their interiors).
+
+  This property makes sense only in 2D.
+  **Recommended** for linkage configurations with interior-overlapping edges.
 
 ## Multiple Frames
 
