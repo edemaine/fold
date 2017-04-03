@@ -234,10 +234,23 @@ The counterclockwise ordering of each face defines the side/sign of its
 
 * `faceOrders`: An array of triples `[f, g, s]` where `f` and `g` are face IDs
   and `s` is an integer between &minus;1 and 1:
-  * +1 indicates that face `f` lies *above* face `g`, relative to face `g`'s orientation
-  * &minus;1 indicates that face `f` lies *below* face `g`, relative to face `g`'s orientation
+  * +1 indicates that face `f` lies *above* face `g`,
+    i.e., on the side pointed to by `g`'s normal vector in the folded state.
+  * &minus;1 indicates that face `f` lies *below* face `g`,
+    i.e., on the side opposite `g`'s normal vector in the folded state.
   * 0 indicates that `f` and `g` have unknown stacking order
     (e.g., they do not overlap in their interiors).
+
+  Omitting a triple `[f, g, s]` for two faces `f` and `g` is the same as
+  specifying `s = 0`, so generally triples will have `s` either +1 or &minus;1.
+  If triple `[f, g, s]` appears in `faceOrders`, the corresponding triple
+  `[g, f, t]` may or may not appear; if it does, `t` should be `s` if
+  `f` and `g` have the same normal direction in the folded state,
+  and `t` should be `-s` if `f` and `g` have opposite normal directions
+  in the folded state.
+  If faces `f`, `g`, and `h` all share a common point, then triples
+  `[f, g, s]` and `[g, h, t]` suffice; the ordering between `f` and `h`
+  can be derived, or explicitly specified.
 
   **Recommended** for frames with interior-overlapping faces.
 
