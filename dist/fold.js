@@ -1585,6 +1585,9 @@ viewer.addViewer = function(div, opts) {
       viewer.appendHTML(select, 'option', {
         value: '../examples/box.fold'
       }).innerHTML = 'Flexicube Unit';
+      viewer.appendHTML(select, 'option', {
+        value: '../examples/squaretwist.fold'
+      }).innerHTML = 'Square Twist';
       viewer.importURL(select.value, view);
     }
     if (view.opts["import"]) {
