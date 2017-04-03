@@ -2,6 +2,7 @@
 
 The FOLD API consists of several modules under the `FOLD` namespace:
 
+* `FOLD.viewer`: Visualize FOLD format in browser in SVG
 * `FOLD.filter`: Select existing parts of, or compute new features of,
   a given FOLD object.
 * `FOLD.convert`: Augment an existing FOLD object with additional fields,
@@ -10,6 +11,11 @@ The FOLD API consists of several modules under the `FOLD` namespace:
 * `FOLD.geom`: Basic geometry tools (manipulation of vectors, angles,
   lines, segments, etc.).  Basically whatever we needed to implement other
   features, but which you might find helpful too.
+
+## FOLD.viewer
+
+See [source code](https://github.com/edemaine/fold/blob/master/src/viewer.coffee)
+for details.
 
 ## FOLD.filter
 
