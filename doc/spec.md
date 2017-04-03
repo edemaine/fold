@@ -81,7 +81,7 @@ File-level (as opposed to [frame-level](#frame-metadata-frame_))
 metadata properties can be included *only* in the top-level JSON dictionary.
 They include:
 
-* `file_version`: The version of the FOLD spec that the file assumes
+* `file_spec`: The version of the FOLD spec that the file assumes
   (a number).  See the top of this spec for the current value.
   **Strongly recommended**, in case we ever have to make
   backward-incompatible changes.
