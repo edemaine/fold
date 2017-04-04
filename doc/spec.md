@@ -147,22 +147,18 @@ metadata properties in the FOLD format include
     intersecting faces
   * Custom attributes should have a colon in them;
     see [Custom Properties](#custom-properties) below.
-* `frame_unit`: Base physical or logical unit that all coordinates are
-  relative to (a string).  Standard allowed values are as follows;
-  use `frame_unitScale` below to scale these units.
+* `frame_unit`: Physical or logical unit that all coordinates are
+  relative to (a string).  Standard defined values are as follows.
+  You can also use a custom string, but it will probably not be
+  understood by software.
   * `"unit"` (equivalent to not specifying a unit): no physical meaning
   * `"in"`: inches (25.4 mm)
+  * `"pt"`: desktop publishing/PostScript points (1/72 in)
   * `"m"`: meters (1/299,792,458 light seconds)
   * `"cm"`: centimeters (1/100 meters)
   * `"mm"`: microns (1/1000 meters)
   * `"um"`: microns (1/1,000,000 meters)
   * `"nm"`: nanometers (1/1,000,000,000 meters)
-* `frame_unitScale`: Scaling applied to the unit in `frame_unit` (a number).
-  For example, a `frame_unitScale` of 0.013888888888888888 with
-  `frame_unit` of `"in"` simulates a unit of "big points" (1/72 of an inch,
-  bp in LaTeX, often used in Adobe products).
-  Similarly, a `frame_unitScale` of 1e-9 transforms the unit into the nano
-  version of that unit, e.g., meters into nanometers.
 
 ## Vertex information: `vertices_...`
 
