@@ -153,7 +153,7 @@ metadata properties in the FOLD format include
   understood by software.
   * `"unit"` (equivalent to not specifying a unit): no physical meaning
   * `"in"`: inches (25.4 mm)
-  * `"pt"`: desktop publishing/PostScript points (1/72 in)
+  * `"pt"`: desktop publishing/PostScript [points](https://en.wikipedia.org/wiki/Point_(typography)) (1/72 in)
   * `"m"`: meters (1/299,792,458 light seconds)
   * `"cm"`: centimeters (1/100 meters)
   * `"mm"`: microns (1/1000 meters)
