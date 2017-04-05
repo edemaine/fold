@@ -1934,7 +1934,7 @@ viewer.faceAbove = function(f1, f2, n) {
   if (basis.length === 2) {
     ord = f1.ord["f" + f2.i];
     if (ord != null) {
-      return 0 < geom.dot(f1.n, n) * ord;
+      return 0 > geom.dot(f2.n, n) * ord;
     }
   }
   return null;

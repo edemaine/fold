@@ -222,7 +222,7 @@ viewer.faceAbove = (f1, f2, n) ->
   if basis.length is 2
     ord = f1.ord["f#{f2.i}"]
     if ord?
-      return 0 < geom.dot(f1.n, n) * ord # faces coplanar and have order
+      return 0 > geom.dot(f2.n, n) * ord # faces coplanar and have order
   return null
 
 viewer.orderFaces = (view) ->
