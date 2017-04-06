@@ -181,7 +181,11 @@ The values of the following properties are zero-indexed arrays by vertex ID.
   `edges_vertices` as needed).
 * `vertices_faces`: For each vertex, an array of face IDs for the faces
   incident to the vertex.  If the frame represents an orientable manifold,
-  this list should be ordered counterclockwise around the vertex.
+  this list should be ordered counterclockwise around the vertex
+  (possibly repeating a face more than once).  If the frame is a nonorientable
+  manifold, this list shoudl be cyclicly ordered around the vertex
+  (possibly repeating a vertex), and matching the cyclic order of
+  `vertices_vertices` (if both are specified).
   In addition to the matching cyclic order, `vertices_vertices` and
   `vertices_faces` should align in start so that
   `vertices_faces[v][i]` contains vertices `vertices_vertices[v][i]` and
