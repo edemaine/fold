@@ -1,4 +1,4 @@
-# FOLD [[spec](doc/spec.md), [viewer](examples/foldviewer.html), [API](doc/api.md)]
+# FOLD [[spec](doc/spec.md), [viewer](https://edemaine.github.io/fold/examples/foldviewer.html), [API](doc/api.md)]
 
 **FOLD** (Flexible Origami List Datastructure) is a file format (with extension
 `.fold`) for describing **origami models**: crease patterns, mountain-valley
