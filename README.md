@@ -1,4 +1,5 @@
-# FOLD
+# FOLD [[spec](doc/spec.md), [viewer](examples/foldviewer.html), [API](doc/api.md)]
+
 **FOLD** (Flexible Origami List Datastructure) is a file format (with extension
 `.fold`) for describing **origami models**: crease patterns, mountain-valley
 patterns, folded states, etc.  Mainly, a FOLD file can store a **mesh** with
