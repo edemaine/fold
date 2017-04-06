@@ -1,4 +1,4 @@
-= FOLD Tutorial
+# FOLD Tutorial
 
 In this tutorial, we'll walk through the steps of defining a `.fold` file
 that encodes a preliminary base, both its crease pattern and the self-touching
@@ -6,7 +6,7 @@ that encodes a preliminary base, both its crease pattern and the self-touching
 
 xxx figures
 
-== JSON and Metadata
+## JSON and Metadata
 
 A FOLD file is a special type of [JSON](http://json.org/).  Basically,
 a JSON value is of one of the following forms:
@@ -67,14 +67,14 @@ and
 [at the frame level](https://github.com/edemaine/fold/blob/master/doc/spec.md#frame-metadata-frame_),
 but this is plenty for this example.
 
-== Vertices, Edges, and Faces
+## Vertices, Edges, and Faces
 
 Folded structures are defined by vertices, edges, and faces.  **Faces** are
 the polygons (here, triangles) that make up the structure/material.
 **Edges** are the segments/hinges/creases that connect these faces.
 **Vertices** are the points where edges end/come together.
 
-=== Vertex Coordinates
+### Vertex Coordinates
 
 In the case of the unfolded preliminary base crease pattern, the vertices
 form a 3 &times; 3 grid of points in the square.  Let's start by defining
@@ -107,7 +107,7 @@ coordinates (0, &minus; 1), etc.
 
 xxx figure
 
-=== Edges
+### Edges
 
 Next let's define the creases in the crease pattern, as well as the
 boundary edges of the square.  Together, these are the **edges** of the
@@ -152,7 +152,7 @@ the edges can be listed in any order you want.
 
 xxx figure
 
-=== Faces
+### Faces
 
 xxx manual listing
 
@@ -160,8 +160,8 @@ xxx automatic approach
 
 xxx figure
 
-=== Frames
+## Frames
 
-=== 3D Geometry
+## 3D Geometry
 
-=== Face Ordering
+## Face Ordering
