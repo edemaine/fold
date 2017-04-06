@@ -86,6 +86,8 @@ They include:
   **Strongly recommended**, in case we ever have to make
   backward-incompatible changes.
 * `file_creator`: The software that created the file (a string).
+  **Recommended** for files output by computer software;
+  less important for files made by hand.
 * `file_author`: The human author (a string).
 * `file_classes`: A subjective interpretation about what the entire file
   represents (array of strings).  Some standard file classes include
