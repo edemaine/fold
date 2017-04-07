@@ -89,6 +89,8 @@ They include:
   **Recommended** for files output by computer software;
   less important for files made by hand.
 * `file_author`: The human author (a string).
+* `file_title`: A title for the entire file (a string).
+* `file_description`: A description of the entire file (a string).
 * `file_classes`: A subjective interpretation about what the entire file
   represents (array of strings).  Some standard file classes include
   * `"singleModel"`: A single origami model, possibly still in multiple frames
@@ -108,9 +110,9 @@ They include:
 Frame-level (as opposed to [file-level](#file-metadata-file_))
 metadata properties in the FOLD format include
 
+* `frame_author`: The human author (a string).
 * `frame_title`: A title for the frame (a string).
 * `frame_description`: A description of the frame (a string).
-* `frame_author`: The human author (a string).
 * `frame_classes`: A subjective interpretation about what the frame represents
   (array of strings).  Some standard frame classes:
   * `"creasePattern"`: a crease pattern (unfolded)
