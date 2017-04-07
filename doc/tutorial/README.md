@@ -32,7 +32,8 @@ that define some "metadata" describing the folding we'd like to build:
 {
   "file_spec": 1,
   "file_creator": "text editor",
-  "file_author": "FOLD Tutorial",
+  "file_author": "Erik Demaine",
+  "file_title": "Preliminary Base",
   "file_classes": ["singleModel"],
   "frame_title": "Preliminary Base Crease Pattern",
   "frame_classes": ["creasePattern"],
@@ -46,16 +47,17 @@ These are all optional, but here is their meaning:
 * `"file_creator": "text editor"` says that we used a text editor
   to write this file by hand.  This metadata is more interesting when
   computer software generates the file.
-* `"file_author": "FOLD Tutorial"` says that the FOLD Tutorial authored
-  this file.  Normally this would be a person's name.  In general,
-  it's just a string meant to be read by humans.
+* `"file_author": "Erik Demaine"` names the person/people who authored
+  this file.  In general, this is just a string meant to be read by humans.
+* `"file_title": "Preliminary Base"` titles the overall file.
+  This is just a string meant to be read by humans.
 * `"file_classes": ["singleModel"]` says that this `.fold` file describes
   a single origami model, though we'll end up including two instances of
   that model (unfolded and folded).  Classes are special values meant
   to aid computer software to understand the intended meaning of a file.
 * `"frame_title": "Preliminary Base Crease Pattern"` titles the first
-  instance of the model, which will be the crease pattern.  This is
-  just a string meant to be read by humans.
+  instance of the model within the file, which will be the crease pattern.
+  This is again just a string meant to be read by humans.
 * `"frame_classes": ["creasePattern"]` says that this first instance
   of the model is a crease pattern.  Again, this is a special value to
   help computer software understand the meaning (without understanding
@@ -84,7 +86,8 @@ their coordinates:
 {
   "file_spec": 1,
   "file_creator": "text editor",
-  "file_author": "FOLD Tutorial",
+  "file_author": "Erik Demaine",
+  "file_title": "Preliminary Base",
   "file_classes": ["singleModel"],
   "frame_title": "Preliminary Base Crease Pattern",
   "frame_classes": ["creasePattern"],
@@ -123,7 +126,8 @@ FOLD file:
 {
   "file_spec": 1,
   "file_creator": "text editor",
-  "file_author": "FOLD Tutorial",
+  "file_author": "Erik Demaine",
+  "file_title": "Preliminary Base",
   "file_classes": ["singleModel"],
   "frame_title": "Preliminary Base Crease Pattern",
   "frame_classes": ["creasePattern"],
