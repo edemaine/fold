@@ -1,10 +1,10 @@
 {
   "name": "fold",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "FOLD file format for origami models, crease patterns, etc.",
   "main": "lib/index.js",
   "bin": {
-    "fold-convert": "lib/convert_file.js"
+    "fold-convert": "lib/file.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
