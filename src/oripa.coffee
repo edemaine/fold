@@ -127,7 +127,7 @@ oripa.toFold = (oripaStr) ->
   filter.collapseNearbyVertices fold, oripa.POINT_EPS
   filter.subdivideCrossingEdges_vertices fold, oripa.POINT_EPS
   ## In particular, convert.removeLoopEdges fold
-  convert.vertices_vertices_to_faces_vertices fold
+  convert.edges_vertices_to_faces_vertices fold
   fold
 
 oripa.fromFold = (fold) ->

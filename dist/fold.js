@@ -12,7 +12,7 @@ filter = require('./filter');
 
 convert = exports;
 
-convert.edges_vertices_to_vertices_vertices = function(fold) {
+convert.edges_vertices_to_vertices_vertices_unsorted = function(fold) {
 
   /*
   Works for abstract structures, so NOT SORTED.
@@ -20,6 +20,11 @@ convert.edges_vertices_to_vertices_vertices = function(fold) {
    */
   fold.vertices_vertices = filter.edges_vertices_to_vertices_vertices(fold);
   return fold;
+};
+
+convert.edges_vertices_to_vertices_vertices_sorted = function(fold) {
+  convert.edges_vertices_to_vertices_vertices_unsorted(fold);
+  return convert.sort_vertices_vertices(fold);
 };
 
 convert.sort_vertices_vertices = function(fold) {
@@ -49,17 +54,11 @@ convert.sort_vertices_vertices = function(fold) {
 };
 
 convert.vertices_vertices_to_faces_vertices = function(fold) {
-  var face, i, j, k, key, len, len1, neighbors, next, ref, ref1, ref2, ref3, ref4, ref5, u, uv, v, w, x;
-  if (((ref = fold.vertices_coords) != null ? (ref1 = ref[0]) != null ? ref1.length : void 0 : void 0) !== 2) {
-    throw new Error("vertices_vertices_to_faces_vertices: Vertex coordinates missing or not two dimensional");
-  }
-  if (fold.vertices_vertices == null) {
-    convert.sort_vertices_vertices(fold);
-  }
+  var face, i, j, k, key, len, len1, neighbors, next, ref, ref1, ref2, ref3, u, uv, v, w, x;
   next = {};
-  ref2 = fold.vertices_vertices;
-  for (v in ref2) {
-    neighbors = ref2[v];
+  ref = fold.vertices_vertices;
+  for (v in ref) {
+    neighbors = ref[v];
     v = parseInt(v);
     for (i = j = 0, len = neighbors.length; j < len; i = ++j) {
       u = neighbors[i];
@@ -67,7 +66,7 @@ convert.vertices_vertices_to_faces_vertices = function(fold) {
     }
   }
   fold.faces_vertices = [];
-  ref3 = (function() {
+  ref1 = (function() {
     var results;
     results = [];
     for (key in next) {
@@ -75,14 +74,14 @@ convert.vertices_vertices_to_faces_vertices = function(fold) {
     }
     return results;
   })();
-  for (k = 0, len1 = ref3.length; k < len1; k++) {
-    uv = ref3[k];
+  for (k = 0, len1 = ref1.length; k < len1; k++) {
+    uv = ref1[k];
     w = next[uv];
     if (w == null) {
       continue;
     }
     next[uv] = null;
-    ref4 = uv.split(','), u = ref4[0], v = ref4[1];
+    ref2 = uv.split(','), u = ref2[0], v = ref2[1];
     u = parseInt(u);
     v = parseInt(v);
     face = [u, v];
@@ -92,7 +91,7 @@ convert.vertices_vertices_to_faces_vertices = function(fold) {
         break;
       }
       face.push(w);
-      ref5 = [v, w], u = ref5[0], v = ref5[1];
+      ref3 = [v, w], u = ref3[0], v = ref3[1];
       w = next[u + "," + v];
       next[u + "," + v] = null;
     }
@@ -110,6 +109,11 @@ convert.vertices_vertices_to_faces_vertices = function(fold) {
     }
   }
   return fold;
+};
+
+convert.edges_vertices_to_faces_vertices = function(fold) {
+  convert.edges_vertices_to_vertices_vertices_sorted(fold);
+  return convert.vertices_vertices_to_faces_vertices(fold);
 };
 
 convert.faces_vertices_to_edges = function(mesh) {
@@ -1340,7 +1344,7 @@ oripa.toFold = function(oripaStr) {
   }
   filter.collapseNearbyVertices(fold, oripa.POINT_EPS);
   filter.subdivideCrossingEdges_vertices(fold, oripa.POINT_EPS);
-  convert.vertices_vertices_to_faces_vertices(fold);
+  convert.edges_vertices_to_faces_vertices(fold);
   return fold;
 };
 

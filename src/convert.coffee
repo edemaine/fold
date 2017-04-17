@@ -4,13 +4,17 @@ geom = require './geom'
 filter = require './filter'
 convert = exports
 
-convert.edges_vertices_to_vertices_vertices = (fold) ->
+convert.edges_vertices_to_vertices_vertices_unsorted = (fold) ->
   ###
   Works for abstract structures, so NOT SORTED.
   Use sort_vertices_vertices to sort in counterclockwise order.
   ###
   fold.vertices_vertices = filter.edges_vertices_to_vertices_vertices fold
   fold
+
+convert.edges_vertices_to_vertices_vertices_sorted = (fold) ->
+  convert.edges_vertices_to_vertices_vertices_unsorted fold
+  convert.sort_vertices_vertices fold
 
 convert.sort_vertices_vertices = (fold) ->
   ###
@@ -27,10 +31,6 @@ convert.sort_vertices_vertices = (fold) ->
     geom.sortByAngle neighbors, v, (x) -> fold.vertices_coords[x]
 
 convert.vertices_vertices_to_faces_vertices = (fold) ->
-  unless fold.vertices_coords?[0]?.length == 2
-    throw new Error "vertices_vertices_to_faces_vertices: Vertex coordinates missing or not two dimensional"
-  unless fold.vertices_vertices?
-    convert.sort_vertices_vertices fold
   next = {}
   for v, neighbors of fold.vertices_vertices
     v = parseInt v
@@ -63,6 +63,10 @@ convert.vertices_vertices_to_faces_vertices = (fold) ->
     #else
     #  console.log face, 'clockwise'
   fold
+
+convert.edges_vertices_to_faces_vertices = (fold) ->
+  convert.edges_vertices_to_vertices_vertices_sorted fold
+  convert.vertices_vertices_to_faces_vertices fold
 
 convert.faces_vertices_to_edges = (mesh) ->
   mesh.edges_vertices = []
