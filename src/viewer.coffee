@@ -219,6 +219,9 @@ viewer.faceAbove = (f1, f2, n) ->
     dir = geom.separatingDirection3D(v1, v2)
     if dir?
       return 0 > geom.dot(n, dir) # faces are separable in 3D
+    else
+      console.log "Warning: faces #{f1.i} and #{f2.i} properly intersect. 
+        Ordering is unresolved."
   if basis.length is 2
     ord = f1.ord["f#{f2.i}"]
     if ord?
@@ -233,7 +236,7 @@ viewer.orderFaces = (view) ->
     for f2, j in faces when i < j
       f1_above = viewer.faceAbove(f1, f2, direction)
       if f1_above?
-        ([p,c] = if f1_above then [f1,f2] else [f2,f1])
+        [p,c] = if f1_above then [f1,f2] else [f2,f1]
         p.children = p.children.concat([c])
   view.model.fs = geom.topologicalSort(faces)
   f.g.parentNode.removeChild(f.g) for f in view.model.fs
