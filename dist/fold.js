@@ -1933,6 +1933,8 @@ viewer.faceAbove = function(f1, f2, n) {
     dir = geom.separatingDirection3D(v1, v2);
     if (dir != null) {
       return 0 > geom.dot(n, dir);
+    } else {
+      console.log("Warning: faces " + f1.i + " and " + f2.i + " properly intersect. Ordering is unresolved.");
     }
   }
   if (basis.length === 2) {
