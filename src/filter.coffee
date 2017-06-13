@@ -95,8 +95,8 @@ class RepeatedPointsDS
 
   key: (coord) ->
     [x, y] = coord
-    xr = Math.round(x * @epsilon)
-    yr = Math.round(y * @epsilon)
+    xr = Math.round(x / @epsilon)
+    yr = Math.round(y / @epsilon)
     key = "#{xr},#{yr}"
 
   insert: (coord) ->
