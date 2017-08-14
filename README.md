@@ -40,8 +40,14 @@ In addition, FOLD can support **linkages** (with 1D edges but no 2D faces).
 
 ## FOLD Software Tools
 
+Here is software supporting the FOLD format, built both within this project
+and by other people:
+
 * [FOLD viewer](https://edemaine.github.io/fold/examples/foldviewer.html)
   loads and display a given .fold file, useful for visualization and testing
+* Amanda Ghassaei's
+  [Origami Simulator](https://github.com/amandaghassaei/OrigamiSimulator)
+  supports FOLD input and output
 
 ## [FOLD JavaScript Library](https://github.com/edemaine/fold/tree/master/doc/api.md)
 
