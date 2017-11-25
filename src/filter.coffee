@@ -12,7 +12,7 @@ filter.flatEdges = (fold) ->
 filter.boundaryEdges = (fold) ->
   assignment.edgesAssigned fold, 'B'
 filter.unassignedEdges = (fold) ->
-  assignment.edgesAssigned fold, 'F'
+  assignment.edgesAssigned fold, 'U'
 
 filter.keysStartingWith = (fold, prefix) ->
   key for key of fold when key[...prefix.length] == prefix
@@ -27,9 +27,9 @@ filter.remapField = (fold, field, old2new) ->
   new2old = []
   for j, i in old2new  ## later overwrites earlier
     new2old[j] = i if j?
-  for key in filter.keysStartingWith fold, field + '_'
+  for key in filter.keysStartingWith fold, "#{field}_"
     fold[key] = (fold[key][old] for old in new2old)
-  for key in filter.keysEndingWith fold, '_' + field
+  for key in filter.keysEndingWith fold, "_#{field}"
     fold[key] = (old2new[old] for old in array for array in fold[key])
   fold
 
@@ -42,6 +42,25 @@ filter.remapFieldSubset = (fold, field, keep) ->
       else
         null  ## remove
   filter.remapField fold, field, old2new
+
+filter.numType = (fold, type) ->
+  ###
+  Count the maximum number of objects of a given type, by looking at all
+  fields with key of the form `type_...`.
+  ###
+  counts =
+    for key in filter.keysStartingWith fold, type
+      value = fold[key]
+      continue unless value.length?
+      value.length
+  if counts.length == 0
+    null  ## nothing of this type
+  else
+    Math.max counts...
+
+filter.numVertices = (fold) -> filter.numType fold, 'vertices'
+filter.numEdges = (fold) -> filter.numType fold, 'edges'
+filter.numFaces = (fold) -> filter.numType fold, 'faces'
 
 filter.removeDuplicateEdges_vertices = (fold) ->
   seen = {}
@@ -130,6 +149,17 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
   Takes quadratic time.  xxx Should be O(n log n) via plane sweep.
   ###
 
+  addEdge = (v1, v2, oldEdgeIndex) ->
+    ## Add an edge between v1 and v2, and copy data from old edge
+    for key in filter.keysStartingWith fold, 'edges_'
+      switch key[6..]
+        when 'vertices'
+          fold.edges_vertices.push [v1, v2]
+        when 'edges', 'faces'
+          ## Leaving these broken
+        else
+          fold[key].push fold[key][oldEdgeIndex]
+
   ## Handle overlapping edges by subdividing edges at any vertices on them.
   for p, v in fold.vertices_coords
     for e, i in fold.edges_vertices
@@ -137,7 +167,7 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
       s = (fold.vertices_coords[u] for u in e)
       if geom.pointStrictlyInSegment p, s  ## implicit epsilon
         #console.log p, 'in', s
-        fold.edges_vertices.push [v, e[1]]
+        addEdge v, e[1], i
         e[1] = v
   filter.removeDuplicateEdges_vertices fold
   filter.removeLoopEdges fold
@@ -158,14 +188,13 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon) ->
         unless crossI in e1 and crossI in e2  ## don't add endpoint again
           #console.log e1, e2, '->'
           unless crossI in e1
-            fold.edges_vertices.push [crossI, e1[1]]
+            addEdge crossI, e1[1], i1
             e1[1] = crossI
             #console.log '->', e1, fold.edges_vertices[fold.edges_vertices.length-1]
           unless crossI in e2
-            fold.edges_vertices.push [crossI, e2[1]]
+            addEdge crossI, e2[1], i2
             e2[1] = crossI
             #console.log '->', e2, fold.edges_vertices[fold.edges_vertices.length-1]
-  # xxx should renumber other edges arrays?
   fold
 
 filter.edges_vertices_to_vertices_vertices = (fold) ->
@@ -173,7 +202,14 @@ filter.edges_vertices_to_vertices_vertices = (fold) ->
   Works for abstract structures, so NOT SORTED.
   Use sort_vertices_vertices to sort in counterclockwise order.
   ###
-  vertices_vertices = []
+  ## If there are no vertices_... fields, use largest vertex specified in
+  ## edges_vertices (which must exist in this function).
+  numVertices = filter.numVertices(fold) ?
+    Math.max (
+      for edge in fold.edges_vertices
+        Math.max edge[0], edge[1]
+    )...
+  vertices_vertices = ([] for v in [0...numVertices])
   for edge in fold.edges_vertices
     [v, w] = edge
     while v >= vertices_vertices.length
