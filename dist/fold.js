@@ -251,7 +251,7 @@ filter.boundaryEdges = function(fold) {
 };
 
 filter.unassignedEdges = function(fold) {
-  return assignment.edgesAssigned(fold, 'F');
+  return assignment.edgesAssigned(fold, 'U');
 };
 
 filter.keysStartingWith = function(fold, prefix) {
@@ -289,7 +289,7 @@ filter.remapField = function(fold, field, old2new) {
       new2old[j] = i;
     }
   }
-  ref = filter.keysStartingWith(fold, field + '_');
+  ref = filter.keysStartingWith(fold, field + "_");
   for (l = 0, len1 = ref.length; l < len1; l++) {
     key = ref[l];
     fold[key] = (function() {
@@ -302,7 +302,7 @@ filter.remapField = function(fold, field, old2new) {
       return results;
     })();
   }
-  ref1 = filter.keysEndingWith(fold, '_' + field);
+  ref1 = filter.keysEndingWith(fold, "_" + field);
   for (m = 0, len2 = ref1.length; m < len2; m++) {
     key = ref1[m];
     fold[key] = (function() {
@@ -344,6 +344,46 @@ filter.remapFieldSubset = function(fold, field, keep) {
     return results;
   })();
   return filter.remapField(fold, field, old2new);
+};
+
+filter.numType = function(fold, type) {
+
+  /*
+  Count the maximum number of objects of a given type, by looking at all
+  fields with key of the form `type_...`.
+   */
+  var counts, key, value;
+  counts = (function() {
+    var k, len, ref, results;
+    ref = filter.keysStartingWith(fold, type);
+    results = [];
+    for (k = 0, len = ref.length; k < len; k++) {
+      key = ref[k];
+      value = fold[key];
+      if (value.length == null) {
+        continue;
+      }
+      results.push(value.length);
+    }
+    return results;
+  })();
+  if (counts.length === 0) {
+    return null;
+  } else {
+    return Math.max.apply(Math, counts);
+  }
+};
+
+filter.numVertices = function(fold) {
+  return filter.numType(fold, 'vertices');
+};
+
+filter.numEdges = function(fold) {
+  return filter.numType(fold, 'edges');
+};
+
+filter.numFaces = function(fold) {
+  return filter.numType(fold, 'faces');
 };
 
 filter.removeDuplicateEdges_vertices = function(fold) {
@@ -493,7 +533,26 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon) {
   /*
   Takes quadratic time.  xxx Should be O(n log n) via plane sweep.
    */
-  var cross, crossI, e, e1, e2, i, i1, i2, k, l, len, len1, len2, len3, m, n, p, ref, ref1, ref2, ref3, s, s1, s2, u, v, vertices;
+  var addEdge, cross, crossI, e, e1, e2, i, i1, i2, k, l, len, len1, len2, len3, m, n, p, ref, ref1, ref2, ref3, s, s1, s2, u, v, vertices;
+  addEdge = function(v1, v2, oldEdgeIndex) {
+    var k, key, len, ref, results;
+    ref = filter.keysStartingWith(fold, 'edges_');
+    results = [];
+    for (k = 0, len = ref.length; k < len; k++) {
+      key = ref[k];
+      switch (key.slice(6)) {
+        case 'vertices':
+          results.push(fold.edges_vertices.push([v1, v2]));
+          break;
+        case 'edges':
+        case 'faces':
+          break;
+        default:
+          results.push(fold[key].push(fold[key][oldEdgeIndex]));
+      }
+    }
+    return results;
+  };
   ref = fold.vertices_coords;
   for (v = k = 0, len = ref.length; k < len; v = ++k) {
     p = ref[v];
@@ -513,7 +572,7 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon) {
         return results;
       })();
       if (geom.pointStrictlyInSegment(p, s)) {
-        fold.edges_vertices.push([v, e[1]]);
+        addEdge(v, e[1], i);
         e[1] = v;
       }
     }
@@ -550,11 +609,11 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon) {
         crossI = vertices.insert(cross);
         if (!(indexOf.call(e1, crossI) >= 0 && indexOf.call(e2, crossI) >= 0)) {
           if (indexOf.call(e1, crossI) < 0) {
-            fold.edges_vertices.push([crossI, e1[1]]);
+            addEdge(crossI, e1[1], i1);
             e1[1] = crossI;
           }
           if (indexOf.call(e2, crossI) < 0) {
-            fold.edges_vertices.push([crossI, e2[1]]);
+            addEdge(crossI, e2[1], i2);
             e2[1] = crossI;
           }
         }
@@ -570,11 +629,28 @@ filter.edges_vertices_to_vertices_vertices = function(fold) {
   Works for abstract structures, so NOT SORTED.
   Use sort_vertices_vertices to sort in counterclockwise order.
    */
-  var edge, k, len, ref, v, vertices_vertices, w;
-  vertices_vertices = [];
-  ref = fold.edges_vertices;
-  for (k = 0, len = ref.length; k < len; k++) {
-    edge = ref[k];
+  var edge, k, len, numVertices, ref, ref1, v, vertices_vertices, w;
+  numVertices = (ref = filter.numVertices(fold)) != null ? ref : Math.max.apply(Math, (function() {
+    var k, len, ref1, results;
+    ref1 = fold.edges_vertices;
+    results = [];
+    for (k = 0, len = ref1.length; k < len; k++) {
+      edge = ref1[k];
+      results.push(Math.max(edge[0], edge[1]));
+    }
+    return results;
+  })());
+  vertices_vertices = (function() {
+    var k, ref1, results;
+    results = [];
+    for (v = k = 0, ref1 = numVertices; 0 <= ref1 ? k < ref1 : k > ref1; v = 0 <= ref1 ? ++k : --k) {
+      results.push([]);
+    }
+    return results;
+  })();
+  ref1 = fold.edges_vertices;
+  for (k = 0, len = ref1.length; k < len; k++) {
+    edge = ref1[k];
     v = edge[0], w = edge[1];
     while (v >= vertices_vertices.length) {
       vertices_vertices.push([]);
@@ -871,7 +947,7 @@ geom.polygonNormal = function(points, eps) {
       results.push(geom.cross(p, points[geom.next(i, points.length)]));
     }
     return results;
-  })()).reduce(geom.plus));
+  })()).reduce(geom.plus), eps);
 };
 
 geom.twiceSignedArea = function(points) {
@@ -1469,9 +1545,13 @@ viewer.makePath = function(coords) {
 
 /* INTERFACE */
 
-viewer.processInput = function(text, view) {
+viewer.processInput = function(input, view) {
   var k;
-  view.fold = JSON.parse(text);
+  if (typeof input === 'string') {
+    view.fold = JSON.parse(input);
+  } else {
+    view.fold = input;
+  }
   view.model = viewer.makeModel(view.fold);
   viewer.addRotation(view);
   viewer.draw(view);

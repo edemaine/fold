@@ -33,8 +33,11 @@ viewer.makePath = (coords) ->
 
 ### INTERFACE ###
 
-viewer.processInput = (text, view) ->
-  view.fold = JSON.parse(text)
+viewer.processInput = (input, view) ->
+  if typeof input == 'string'
+    view.fold = JSON.parse(input)
+  else
+    view.fold = input
   view.model = viewer.makeModel(view.fold)
   viewer.addRotation(view)
   viewer.draw(view)

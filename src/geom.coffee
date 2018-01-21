@@ -159,7 +159,7 @@ geom.polygonNormal = (points, eps = EPS) ->
   ## Returns the right handed normal unit vector to the polygon defined by
   ## points in 3D. Assumes the points are planar.
   return geom.unit((for p, i in points
-    geom.cross(p, points[geom.next(i, points.length)])).reduce(geom.plus))
+    geom.cross(p, points[geom.next(i, points.length)])).reduce(geom.plus), eps)
 
 geom.twiceSignedArea = (points) ->
   ## Returns twice signed area of polygon defined by input points.
