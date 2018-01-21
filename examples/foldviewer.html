@@ -6,7 +6,13 @@
 <script type='text/javascript'>
   FOLD = require('fold');
   window.onload = function(e) {
-    view1 = FOLD.viewer.addViewer(document.getElementById('view1'));
+    view1 = FOLD.viewer.addViewer(document.getElementById('view1'), {
+      examples: {
+        'Default': 'simple.fold',
+        'Flexicube Unit': 'box.fold',
+        'Square Twist': 'squaretwist.fold',
+      }
+    });
   }
 </script>
 </head>

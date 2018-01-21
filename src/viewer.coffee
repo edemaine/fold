@@ -66,7 +66,7 @@ viewer.importFile = (file, view) ->
 
 DEFAULTS = {
   viewButtons: true, axisButtons: true, attrViewer: true
-  examples: true, import: true, export: true, properties: true}
+  examples: false, import: true, export: true, properties: true}
 
 viewer.addViewer = (div, opts = {}) ->
   view = {cam: viewer.initCam(), opts: DEFAULTS}
@@ -95,12 +95,8 @@ viewer.addViewer = (div, opts = {}) ->
     if view.opts.examples
       inputDiv.innerHTML = 'Example: '
       select = viewer.appendHTML(inputDiv, 'select')
-      viewer.appendHTML(select, 'option', {
-        value: '../examples/simple.fold'}).innerHTML = 'Default'
-      viewer.appendHTML(select, 'option', {
-        value: '../examples/box.fold'}).innerHTML = 'Flexicube Unit'
-      viewer.appendHTML(select, 'option', {
-        value: '../examples/squaretwist.fold'}).innerHTML = 'Square Twist'
+      for title, url of view.opts.examples
+        viewer.appendHTML(select, 'option', {value: url}).innerHTML = title
       viewer.importURL(select.value, view)
     if view.opts.import
       inputDiv.innerHTML += ' Import: '

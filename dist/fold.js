@@ -1603,14 +1603,14 @@ DEFAULTS = {
   viewButtons: true,
   axisButtons: true,
   attrViewer: true,
-  examples: true,
+  examples: false,
   "import": true,
   "export": true,
   properties: true
 };
 
 viewer.addViewer = function(div, opts) {
-  var buttonDiv, i, inputDiv, k, l, len, ref, ref1, select, t, toggleDiv, v, val, view;
+  var buttonDiv, i, inputDiv, k, l, len, ref, ref1, ref2, select, t, title, toggleDiv, url, v, val, view;
   if (opts == null) {
     opts = {};
   }
@@ -1663,15 +1663,13 @@ viewer.addViewer = function(div, opts) {
     if (view.opts.examples) {
       inputDiv.innerHTML = 'Example: ';
       select = viewer.appendHTML(inputDiv, 'select');
-      viewer.appendHTML(select, 'option', {
-        value: '../examples/simple.fold'
-      }).innerHTML = 'Default';
-      viewer.appendHTML(select, 'option', {
-        value: '../examples/box.fold'
-      }).innerHTML = 'Flexicube Unit';
-      viewer.appendHTML(select, 'option', {
-        value: '../examples/squaretwist.fold'
-      }).innerHTML = 'Square Twist';
+      ref2 = view.opts.examples;
+      for (title in ref2) {
+        url = ref2[title];
+        viewer.appendHTML(select, 'option', {
+          value: url
+        }).innerHTML = title;
+      }
       viewer.importURL(select.value, view);
     }
     if (view.opts["import"]) {
