@@ -229,16 +229,16 @@ The values of the following properties are zero-indexed arrays by edge ID.
   of the face to the left of the edge (listed first in `edges_faces`) to point
   into the adjacent face (when fully folded), while a mountain fold has the
   same normal point away from the adjacent face.
-* `edges_foldAngles`: For each edge, the fold angle (deviation from flatness)
+* `edges_foldAngle`: For each edge, the fold angle (deviation from flatness)
   along each edge of the pattern.  The fold angle is a number in degrees
   lying in the range [&minus;180, 180].  The fold angle is positive for
   valley folds, negative for mountain folds, and zero for flat, unassigned,
-  and border folds.  Accordingly, the sign of `edge_foldAngles` should match
+  and border folds.  Accordingly, the sign of `edge_foldAngle` should match
   `edges_assignment` if both are specified.
-* `edges_lengths`: For each edge, the length of the edge (a number).
+* `edges_length`: For each edge, the length of the edge (a number).
   This is mainly useful for defining the intrinsic geometry of
   abstract complexes where `vertices_coords` are unspecified;
-  otherwise, `edges_lengths` can be computed from `vertices_coords`.
+  otherwise, `edges_length` can be computed from `vertices_coords`.
 
 ## Face information: `faces_...`
 
