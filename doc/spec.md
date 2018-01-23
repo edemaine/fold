@@ -1,4 +1,8 @@
-# [FOLD](https://github.com/edemaine/fold/) Specification (version 1 DRAFT)
+# [FOLD](https://github.com/edemaine/fold/) Specification (version 1.1)
+
+This specification is still considered a rough draft, with everything subject
+to change.  But we will increment version numbers when breaking changes or
+major new features are added.  See the [history of past versions](history.md).
 
 ## Design
 
