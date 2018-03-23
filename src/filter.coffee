@@ -4,15 +4,15 @@ filter = exports
 filter.edgesAssigned = (fold, target) ->
   i for assignment, i in fold.edges_assignment when assignment == target
 filter.mountainEdges = (fold) ->
-  assignment.edgesAssigned fold, 'M'
+  filter.edgesAssigned fold, 'M'
 filter.valleyEdges = (fold) ->
-  assignment.edgesAssigned fold, 'V'
+  filter.edgesAssigned fold, 'V'
 filter.flatEdges = (fold) ->
-  assignment.edgesAssigned fold, 'F'
+  filter.edgesAssigned fold, 'F'
 filter.boundaryEdges = (fold) ->
-  assignment.edgesAssigned fold, 'B'
+  filter.edgesAssigned fold, 'B'
 filter.unassignedEdges = (fold) ->
-  assignment.edgesAssigned fold, 'U'
+  filter.edgesAssigned fold, 'U'
 
 filter.keysStartingWith = (fold, prefix) ->
   key for key of fold when key[...prefix.length] == prefix
