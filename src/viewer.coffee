@@ -169,7 +169,7 @@ viewer.makeModel = (fold) ->
   if fold.edges_vertices?
     for v, i in fold.edges_vertices
       [a,b] = if v[0] > v[1] then [v[1],v[0]] else [v[0],v[1]]
-      as = if fold.edges_assignment[i]? then fold.edges_assignment[i] else 'U'
+      as = if fold.edges_assignment?[i]? then fold.edges_assignment[i] else 'U'
       m.es["e#{a}e#{b}"] = {
         v1: m.vs[a], v2: m.vs[b], as: as}
   else
