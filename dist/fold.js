@@ -116,6 +116,34 @@ convert.edges_vertices_to_faces_vertices = function(fold) {
   return convert.vertices_vertices_to_faces_vertices(fold);
 };
 
+convert.edges_vertices_faces_vertices_to_faces_edges = function(fold) {
+  var edge, edgeMap, face, i, j, len, ref, ref1, v1, v2, vertices;
+  edgeMap = {};
+  ref = fold.edges_vertices;
+  for (edge = j = 0, len = ref.length; j < len; edge = ++j) {
+    ref1 = ref[edge], v1 = ref1[0], v2 = ref1[1];
+    edgeMap[v1 + "," + v2] = edge;
+    edgeMap[v2 + "," + v1] = edge;
+  }
+  return fold.faces_edges = (function() {
+    var k, len1, ref2, results;
+    ref2 = fold.faces_vertices;
+    results = [];
+    for (face = k = 0, len1 = ref2.length; k < len1; face = ++k) {
+      vertices = ref2[face];
+      results.push((function() {
+        var l, ref3, results1;
+        results1 = [];
+        for (i = l = 0, ref3 = vertices.length; 0 <= ref3 ? l < ref3 : l > ref3; i = 0 <= ref3 ? ++l : --l) {
+          results1.push(edgeMap[vertices[i] + "," + vertices[(i + 1) % vertices.length]]);
+        }
+        return results1;
+      })());
+    }
+    return results;
+  })();
+};
+
 convert.faces_vertices_to_edges = function(mesh) {
   var edge, edgeMap, face, i, key, ref, v1, v2, vertices;
   mesh.edges_vertices = [];
