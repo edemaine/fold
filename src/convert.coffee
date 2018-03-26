@@ -68,6 +68,16 @@ convert.edges_vertices_to_faces_vertices = (fold) ->
   convert.edges_vertices_to_vertices_vertices_sorted fold
   convert.vertices_vertices_to_faces_vertices fold
 
+convert.vertices_vertices_to_vertices_edges = (fold) ->
+  edgeMap = {}
+  for [v1, v2], edge in fold.edges_vertices
+    edgeMap["#{v1},#{v2}"] = edge
+    edgeMap["#{v2},#{v1}"] = edge
+  fold.vertices_edges =
+    for vertices, vertex in fold.vertices_vertices
+      for i in [0...vertices.length]
+        edgeMap["#{vertex},#{vertices[i]}"]
+
 convert.edges_vertices_faces_vertices_to_faces_edges = (fold) ->
   edgeMap = {}
   for [v1, v2], edge in fold.edges_vertices
