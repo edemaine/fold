@@ -235,23 +235,23 @@ filter.edgesAssigned = function(fold, target) {
 };
 
 filter.mountainEdges = function(fold) {
-  return assignment.edgesAssigned(fold, 'M');
+  return filter.edgesAssigned(fold, 'M');
 };
 
 filter.valleyEdges = function(fold) {
-  return assignment.edgesAssigned(fold, 'V');
+  return filter.edgesAssigned(fold, 'V');
 };
 
 filter.flatEdges = function(fold) {
-  return assignment.edgesAssigned(fold, 'F');
+  return filter.edgesAssigned(fold, 'F');
 };
 
 filter.boundaryEdges = function(fold) {
-  return assignment.edgesAssigned(fold, 'B');
+  return filter.edgesAssigned(fold, 'B');
 };
 
 filter.unassignedEdges = function(fold) {
-  return assignment.edgesAssigned(fold, 'U');
+  return filter.edgesAssigned(fold, 'U');
 };
 
 filter.keysStartingWith = function(fold, prefix) {
@@ -1815,7 +1815,7 @@ viewer.rotateCam = function(p, view) {
 /* RENDERING */
 
 viewer.makeModel = function(fold) {
-  var a, as, b, cs, edge, f, f1, f2, i, i1, j, j1, k1, l, len, len1, len2, len3, len4, len5, m, normRel, o, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, v, vs, w, z;
+  var a, as, b, cs, edge, f, f1, f2, i, i1, j, j1, k1, l, len, len1, len2, len3, len4, len5, m, normRel, o, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, v, vs, w, z;
   m = {
     vs: null,
     fs: null,
@@ -1867,7 +1867,7 @@ viewer.makeModel = function(fold) {
     for (i = r = 0, len1 = ref1.length; r < len1; i = ++r) {
       v = ref1[i];
       ref2 = v[0] > v[1] ? [v[1], v[0]] : [v[0], v[1]], a = ref2[0], b = ref2[1];
-      as = fold.edges_assignment[i] != null ? fold.edges_assignment[i] : 'U';
+      as = ((ref3 = fold.edges_assignment) != null ? ref3[i] : void 0) != null ? fold.edges_assignment[i] : 'U';
       m.es["e" + a + "e" + b] = {
         v1: m.vs[a],
         v2: m.vs[b],
@@ -1875,14 +1875,14 @@ viewer.makeModel = function(fold) {
       };
     }
   } else {
-    ref3 = m.fs;
-    for (i = z = 0, len2 = ref3.length; z < len2; i = ++z) {
-      f = ref3[i];
-      ref4 = f.vs;
-      for (j = i1 = 0, len3 = ref4.length; i1 < len3; j = ++i1) {
-        v = ref4[j];
+    ref4 = m.fs;
+    for (i = z = 0, len2 = ref4.length; z < len2; i = ++z) {
+      f = ref4[i];
+      ref5 = f.vs;
+      for (j = i1 = 0, len3 = ref5.length; i1 < len3; j = ++i1) {
+        v = ref5[j];
         w = f.vs[geom.next(j, f.vs.length)];
-        ref5 = v.i > w.i ? [w, v] : [v, w], a = ref5[0], b = ref5[1];
+        ref6 = v.i > w.i ? [w, v] : [v, w], a = ref6[0], b = ref6[1];
         m.es["e" + a.i + "e" + b.i] = {
           v1: a,
           v2: b,
@@ -1891,38 +1891,38 @@ viewer.makeModel = function(fold) {
       }
     }
   }
-  ref6 = m.fs;
-  for (i = j1 = 0, len4 = ref6.length; j1 < len4; i = ++j1) {
-    f = ref6[i];
+  ref7 = m.fs;
+  for (i = j1 = 0, len4 = ref7.length; j1 < len4; i = ++j1) {
+    f = ref7[i];
     m.fs[i].n = geom.polygonNormal((function() {
-      var k1, len5, ref7, results;
-      ref7 = f.vs;
+      var k1, len5, ref8, results;
+      ref8 = f.vs;
       results = [];
-      for (k1 = 0, len5 = ref7.length; k1 < len5; k1++) {
-        v = ref7[k1];
+      for (k1 = 0, len5 = ref8.length; k1 < len5; k1++) {
+        v = ref8[k1];
         results.push(v.cs);
       }
       return results;
     })());
     m.fs[i].c = geom.centroid((function() {
-      var k1, len5, ref7, results;
-      ref7 = f.vs;
+      var k1, len5, ref8, results;
+      ref8 = f.vs;
       results = [];
-      for (k1 = 0, len5 = ref7.length; k1 < len5; k1++) {
-        v = ref7[k1];
+      for (k1 = 0, len5 = ref8.length; k1 < len5; k1++) {
+        v = ref8[k1];
         results.push(v.cs);
       }
       return results;
     })());
     m.fs[i].es = {};
     m.fs[i].es = (function() {
-      var k1, len5, ref7, ref8, results;
-      ref7 = f.vs;
+      var k1, len5, ref8, ref9, results;
+      ref8 = f.vs;
       results = [];
-      for (j = k1 = 0, len5 = ref7.length; k1 < len5; j = ++k1) {
-        v = ref7[j];
+      for (j = k1 = 0, len5 = ref8.length; k1 < len5; j = ++k1) {
+        v = ref8[j];
         w = f.vs[geom.next(j, f.vs.length)];
-        ref8 = v.i > w.i ? [w, v] : [v, w], a = ref8[0], b = ref8[1];
+        ref9 = v.i > w.i ? [w, v] : [v, w], a = ref9[0], b = ref9[1];
         edge = m.es["e" + a.i + "e" + b.i];
         if (edge == null) {
           edge = {
@@ -1938,9 +1938,9 @@ viewer.makeModel = function(fold) {
     m.fs[i].ord = {};
   }
   if (fold.faceOrders != null) {
-    ref7 = fold.faceOrders;
-    for (k1 = 0, len5 = ref7.length; k1 < len5; k1++) {
-      ref8 = ref7[k1], f1 = ref8[0], f2 = ref8[1], o = ref8[2];
+    ref8 = fold.faceOrders;
+    for (k1 = 0, len5 = ref8.length; k1 < len5; k1++) {
+      ref9 = ref8[k1], f1 = ref9[0], f2 = ref9[1], o = ref9[2];
       if (o !== 0) {
         if (geom.parallel(m.fs[f1].n, m.fs[f2].n)) {
           normRel = geom.dot(m.fs[f1].n, m.fs[f2].n) > 0 ? 1 : -1;
