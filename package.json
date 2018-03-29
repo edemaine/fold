@@ -1,6 +1,6 @@
 {
   "name": "fold",
-  "version": "0.9.10",
+  "version": "0.9.11",
   "description": "FOLD file format for origami models, crease patterns, etc.",
   "main": "lib/index.js",
   "bin": {
@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "coffee --no-header --bare -o lib -c src",
+    "prepare": "npm run coffee && npm run dist",
+    "coffee": "coffee --no-header --bare -o lib -c src",
     "dist": "browserify -t coffeeify --extension=.coffee -r ./src/index.coffee:fold -o dist/fold.js"
   },
   "repository": {
