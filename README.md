@@ -48,6 +48,9 @@ and by other people:
 * Amanda Ghassaei's
   [Origami Simulator](https://github.com/amandaghassaei/OrigamiSimulator)
   supports FOLD input and output
+* Tomohiro Tachi's
+  [Freeform Origami](http://origami.c.u-tokyo.ac.jp/~tachi/software/#ffo)
+  supports FOLD input and output
 
 ## [FOLD JavaScript Library](https://github.com/edemaine/fold/tree/master/doc/api.md)
 
