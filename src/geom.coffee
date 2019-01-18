@@ -98,6 +98,16 @@ geom.dist = (a, b) ->
   ## same dimension.
   Math.sqrt(geom.distsq(a, b))
 
+geom.closestIndex = (a, bs) ->
+  ## Finds the closest point to `a` among points in `bs`, and returns the
+  ## index of that point in `bs`.  Returns `undefined` if `bs` is empty.
+  minDist = Infinity
+  for b, i in bs
+    if minDist > dist = geom.dist a, b
+      minDist = dist
+      minI = i
+  minI
+
 geom.dir = (a, b) ->
   ## Returns a unit vector in the direction from vector a to vector b, in the
   ## same dimension as a and b.

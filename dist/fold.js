@@ -1,4 +1,4 @@
-require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+require=(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 
 },{}],2:[function(require,module,exports){
 
@@ -565,6 +565,31 @@ filter.collapseNearbyVertices = function(fold, epsilon) {
   return filter.remapField(fold, 'vertices', old2new);
 };
 
+filter.addVertex = function(fold, coords, epsilon) {
+
+  /*
+  Add a new vertex at coordinates `coords` and return its (last) index,
+  unless there is already such a vertex within distance `epsilon`,
+  in which case return the closest such vertex's index.
+   */
+  var i, vertex;
+  i = geom.closestIndex(coords, (function() {
+    var k, len, ref, results;
+    ref = fold.vertices_coords;
+    results = [];
+    for (k = 0, len = ref.length; k < len; k++) {
+      vertex = ref[k];
+      results.push(vertex);
+    }
+    return results;
+  })());
+  if ((i != null) && epsilon >= geom.dist(coords, fold.vertices_coords[i])) {
+    return i;
+  } else {
+    return fold.vertices_coords.push(coords) - 1;
+  }
+};
+
 filter.removeLoopEdges = function(fold) {
 
   /*
@@ -584,14 +609,34 @@ filter.removeLoopEdges = function(fold) {
   })());
 };
 
-filter.subdivideCrossingEdges_vertices = function(fold, epsilon) {
+filter.subdivideCrossingEdges_vertices = function(fold, epsilon, involvingEdgesFrom) {
 
   /*
-  Takes quadratic time.  xxx Should be O(n log n) via plane sweep.
+  Using just `vertices_coords` and `edges_vertices` and assuming all in 2D,
+  subdivides all crossing/touching edges to form a planar graph.
+  
+  If called without `involvingEdgesFrom`, does all subdivision in quadratic
+  time.  xxx Should be O(n log n) via plane sweep.
+  In this case, all duplicate and loop edges are also removed.
+  In this case, returns an array of indices of all edges that were subdivided
+  (both modified old edges and new edges).
+  
+  If called with `involvingEdgesFrom`, does all subdivision involving an
+  edge numbered `involvingEdgesFrom` or higher.  For example, after adding an
+  edge with largest number, call with `involvingEdgesFrom =
+  edges_vertices.length - 1`; then this will run in linear time.
+  In this case, there should already be no duplicate or loop edges; see
+  `filter.removeDuplicateEdges_vertices` and `filter.removeLoopEdges`.
+  In this case, returns two arrays of edges: the first array are all subdivided
+  from the "involved" edges, while the second array is the remaining subdivided
+  edges.
    */
-  var addEdge, cross, crossI, e, e1, e2, i, i1, i2, k, l, len, len1, len2, len3, m, n, p, ref, ref1, ref2, ref3, s, s1, s2, u, v, vertices;
-  addEdge = function(v1, v2, oldEdgeIndex) {
-    var k, key, len, ref, results;
+  var addEdge, changedEdges, cross, crossI, e, e1, e2, i, i1, i2, k, l, len, len1, len2, len3, m, n, p, ref, ref1, ref2, ref3, s, s1, s2, u, v, vertices;
+  changedEdges = [[], []];
+  addEdge = function(v1, v2, oldEdgeIndex, which) {
+    var eNew, k, key, len, ref, results;
+    eNew = fold.edges_vertices.length;
+    changedEdges[which].push(oldEdgeIndex, fold.edges_vertices.length);
     ref = filter.keysStartingWith(fold, 'edges_');
     results = [];
     for (k = 0, len = ref.length; k < len; k++) {
@@ -601,10 +646,9 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon) {
           results.push(fold.edges_vertices.push([v1, v2]));
           break;
         case 'edges':
-        case 'faces':
           break;
         default:
-          results.push(fold[key].push(fold[key][oldEdgeIndex]));
+          results.push(fold[key][eNew] = fold[key][oldEdgeIndex]);
       }
     }
     return results;
@@ -612,11 +656,14 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon) {
   ref = fold.vertices_coords;
   for (v = k = 0, len = ref.length; k < len; v = ++k) {
     p = ref[v];
-    ref1 = fold.edges_vertices;
+    ref1 = fold.edges_vertices.slice(involvingEdgesFrom != null ? involvingEdgesFrom : 0);
     for (i = l = 0, len1 = ref1.length; l < len1; i = ++l) {
       e = ref1[i];
       if (indexOf.call(e, v) >= 0) {
         continue;
+      }
+      if (involvingEdgesFrom != null) {
+        i += involvingEdgesFrom;
       }
       s = (function() {
         var len2, m, results;
@@ -628,17 +675,22 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon) {
         return results;
       })();
       if (geom.pointStrictlyInSegment(p, s)) {
-        addEdge(v, e[1], i);
+        addEdge(v, e[1], i, 0);
         e[1] = v;
       }
     }
   }
-  filter.removeDuplicateEdges_vertices(fold);
-  filter.removeLoopEdges(fold);
+  if (involvingEdgesFrom == null) {
+    filter.removeDuplicateEdges_vertices(fold);
+    filter.removeLoopEdges(fold);
+  }
   vertices = new RepeatedPointsDS(fold.vertices_coords, epsilon);
-  ref2 = fold.edges_vertices;
+  ref2 = fold.edges_vertices.slice(involvingEdgesFrom != null ? involvingEdgesFrom : 0);
   for (i1 = m = 0, len2 = ref2.length; m < len2; i1 = ++m) {
     e1 = ref2[i1];
+    if (involvingEdgesFrom != null) {
+      i1 += involvingEdgesFrom;
+    }
     s1 = (function() {
       var len3, n, results;
       results = [];
@@ -665,18 +717,59 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon) {
         crossI = vertices.insert(cross);
         if (!(indexOf.call(e1, crossI) >= 0 && indexOf.call(e2, crossI) >= 0)) {
           if (indexOf.call(e1, crossI) < 0) {
-            addEdge(crossI, e1[1], i1);
+            addEdge(crossI, e1[1], i1, 0);
             e1[1] = crossI;
           }
           if (indexOf.call(e2, crossI) < 0) {
-            addEdge(crossI, e2[1], i2);
+            addEdge(crossI, e2[1], i2, 1);
             e2[1] = crossI;
           }
         }
       }
     }
   }
-  return fold;
+  if (involvingEdgesFrom != null) {
+    return changedEdges;
+  } else {
+    return changedEdges[0].concat(changedEdges[1]);
+  }
+};
+
+filter.addEdge = function(fold, v1, v2, epsilon) {
+
+  /*
+  Add an edge between vertex indices or points `v1` and `v2`, subdivide
+  as necessary, and return an array of all the subdivided parts of this edge.
+  If the edge is a loop or a duplicate, the array will be empty.
+   */
+  var changedEdges1, e, i, k, len, ref;
+  if (v1.length != null) {
+    v1 = filter.addVertex(fold, v1, epsilon);
+  }
+  if (v2.length != null) {
+    v2 = filter.addVertex(fold, v2, epsilon);
+  }
+  if (v1 === v2) {
+    return [];
+  }
+  ref = fold.edges_vertices;
+  for (i = k = 0, len = ref.length; k < len; i = ++k) {
+    e = ref[i];
+    if ((e[0] === v1 && e[1] === v2) || (e[0] === v2 && e[1] === v1)) {
+      return [];
+    }
+  }
+  e = fold.edges_vertices.push([v1, v2]) - 1;
+  if (e) {
+    changedEdges1 = filter.subdivideCrossingEdges_vertices(fold, epsilon, e)[0];
+    if (changedEdges1.length) {
+      if (indexOf.call(changedEdges1, e) < 0) {
+        changedEdges1.push(e);
+      }
+      return changedEdges1;
+    }
+  }
+  return [e];
 };
 
 filter.edges_vertices_to_vertices_vertices = function(fold) {
@@ -886,6 +979,19 @@ geom.distsq = function(a, b) {
 
 geom.dist = function(a, b) {
   return Math.sqrt(geom.distsq(a, b));
+};
+
+geom.closestIndex = function(a, bs) {
+  var b, dist, i, k, len, minDist, minI;
+  minDist = 2e308;
+  for (i = k = 0, len = bs.length; k < len; i = ++k) {
+    b = bs[i];
+    if (minDist > (dist = geom.dist(a, b))) {
+      minDist = dist;
+      minI = i;
+    }
+  }
+  return minI;
 };
 
 geom.dir = function(a, b) {

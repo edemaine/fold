@@ -19,10 +19,34 @@ for details.
 
 ## FOLD.filter
 
+These operations all modify a FOLD object in-place.
 See [source code](https://github.com/edemaine/fold/blob/master/src/filter.coffee)
 for details.
 
+* `FOLD.filter.subdivideCrossingEdges_vertices(fold, epsilon)`:
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices`,
+  subdivides all crossing/touching edges to form a planar graph.
+  All duplicate and loop edges are also removed.
+* `FOLD.filter.addVertex(fold, coords, epsilon)`:
+  Given a FOLD object with `vertices_coords`, adds a new vertex with
+  coordinates `coords` and returns its (last) index, unless there is already
+  such a vertex within distance `epsilon`, in which case return the closest
+  such vertex's index.  The new vertex has no new properties except
+  `vertex_coords`.
+* `FOLD.filter.addEdge(fold, v1, v2, epsilon)`:
+  Given a FOLD object with `vertices_coords` and `edges_vertices`,
+  adds an edge between vertex indices or points `v1` and `v2`
+  (calling `FOLD.filter.addVertex` when they are points),
+  subdividing if necessary (via an efficient use of
+  `FOLD.filter.subdivideCrossingEdges_vertices`),
+  and returns an array of all the subdivided parts of the added edge.
+  If the edge is a loop or a duplicate, the returned array is empty.
+  The new edge(s) have no properties except `edges_vertices`.
+
 ## FOLD.convert
+
+See [source code](https://github.com/edemaine/fold/blob/master/src/convert.coffee)
+for details.
 
 * `FOLD.convert.edges_vertices_to_vertices_vertices_unsorted(fold)`:
   Given a FOLD object with `edges_vertices` property (defining edge
