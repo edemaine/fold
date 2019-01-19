@@ -399,7 +399,8 @@ filter.remapFieldSubset = function(fold, field, keep) {
     }
     return results;
   })();
-  return filter.remapField(fold, field, old2new);
+  filter.remapField(fold, field, old2new);
+  return old2new;
 };
 
 filter.numType = function(fold, type) {
@@ -466,7 +467,8 @@ filter.removeDuplicateEdges_vertices = function(fold) {
     }
     return results;
   })();
-  return filter.remapField(fold, 'edges', old2new);
+  filter.remapField(fold, 'edges', old2new);
+  return old2new;
 };
 
 filter.edges_verticesIncident = function(e1, e2) {
@@ -482,18 +484,14 @@ filter.edges_verticesIncident = function(e1, e2) {
 
 RepeatedPointsDS = (function() {
   function RepeatedPointsDS(vertices_coords, epsilon1) {
-    var coord, k, key, len, ref, v;
+    var base, coord, k, len, name, ref, v;
     this.vertices_coords = vertices_coords;
     this.epsilon = epsilon1;
     this.hash = {};
     ref = this.vertices_coords;
     for (v = k = 0, len = ref.length; k < len; v = ++k) {
       coord = ref[v];
-      key = this.key(coord);
-      if (!(key in this.hash)) {
-        this.hash[key] = [];
-      }
-      this.hash[key].push(v);
+      ((base = this.hash)[name = this.key(coord)] != null ? base[name] : base[name] = []).push(v);
     }
     null;
   }
@@ -531,16 +529,12 @@ RepeatedPointsDS = (function() {
   };
 
   RepeatedPointsDS.prototype.insert = function(coord) {
-    var key, v;
+    var base, name, v;
     v = this.lookup(coord);
     if (v != null) {
       return v;
     }
-    key = this.key(coord);
-    if (!(key in this.hash)) {
-      this.hash[key] = [];
-    }
-    this.hash[key].push(v = this.vertices_coords.length);
+    ((base = this.hash)[name = this.key(coord)] != null ? base[name] : base[name] = []).push(v = this.vertices_coords.length);
     this.vertices_coords.push(coord);
     return v;
   };
@@ -614,10 +608,10 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon, involvingEdgesF
   /*
   Using just `vertices_coords` and `edges_vertices` and assuming all in 2D,
   subdivides all crossing/touching edges to form a planar graph.
+  In particular, all duplicate and loop edges are also removed.
   
   If called without `involvingEdgesFrom`, does all subdivision in quadratic
   time.  xxx Should be O(n log n) via plane sweep.
-  In this case, all duplicate and loop edges are also removed.
   In this case, returns an array of indices of all edges that were subdivided
   (both modified old edges and new edges).
   
@@ -625,13 +619,11 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon, involvingEdgesF
   edge numbered `involvingEdgesFrom` or higher.  For example, after adding an
   edge with largest number, call with `involvingEdgesFrom =
   edges_vertices.length - 1`; then this will run in linear time.
-  In this case, there should already be no duplicate or loop edges; see
-  `filter.removeDuplicateEdges_vertices` and `filter.removeLoopEdges`.
   In this case, returns two arrays of edges: the first array are all subdivided
   from the "involved" edges, while the second array is the remaining subdivided
   edges.
    */
-  var addEdge, changedEdges, cross, crossI, e, e1, e2, i, i1, i2, k, l, len, len1, len2, len3, m, n, p, ref, ref1, ref2, ref3, s, s1, s2, u, v, vertices;
+  var addEdge, changedEdges, cross, crossI, e, e1, e2, i, i1, i2, k, l, len, len1, len2, len3, m, n, old2new, p, ref, ref1, ref2, ref3, s, s1, s2, u, v, vertices;
   changedEdges = [[], []];
   addEdge = function(v1, v2, oldEdgeIndex, which) {
     var eNew, k, key, len, ref, results;
@@ -653,23 +645,20 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon, involvingEdgesF
     }
     return results;
   };
-  ref = fold.vertices_coords;
-  for (v = k = 0, len = ref.length; k < len; v = ++k) {
-    p = ref[v];
-    ref1 = fold.edges_vertices.slice(involvingEdgesFrom != null ? involvingEdgesFrom : 0);
-    for (i = l = 0, len1 = ref1.length; l < len1; i = ++l) {
-      e = ref1[i];
+  i = involvingEdgesFrom != null ? involvingEdgesFrom : 0;
+  while (i < fold.edges_vertices.length) {
+    e = fold.edges_vertices[i];
+    ref = fold.vertices_coords;
+    for (v = k = 0, len = ref.length; k < len; v = ++k) {
+      p = ref[v];
       if (indexOf.call(e, v) >= 0) {
         continue;
       }
-      if (involvingEdgesFrom != null) {
-        i += involvingEdgesFrom;
-      }
       s = (function() {
-        var len2, m, results;
+        var l, len1, results;
         results = [];
-        for (m = 0, len2 = e.length; m < len2; m++) {
-          u = e[m];
+        for (l = 0, len1 = e.length; l < len1; l++) {
+          u = e[l];
           results.push(fold.vertices_coords[u]);
         }
         return results;
@@ -679,46 +668,44 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon, involvingEdgesF
         e[1] = v;
       }
     }
-  }
-  if (involvingEdgesFrom == null) {
-    filter.removeDuplicateEdges_vertices(fold);
-    filter.removeLoopEdges(fold);
+    i++;
   }
   vertices = new RepeatedPointsDS(fold.vertices_coords, epsilon);
-  ref2 = fold.edges_vertices.slice(involvingEdgesFrom != null ? involvingEdgesFrom : 0);
-  for (i1 = m = 0, len2 = ref2.length; m < len2; i1 = ++m) {
-    e1 = ref2[i1];
-    if (involvingEdgesFrom != null) {
-      i1 += involvingEdgesFrom;
-    }
+  i1 = involvingEdgesFrom != null ? involvingEdgesFrom : 0;
+  while (i1 < fold.edges_vertices.length) {
+    e1 = fold.edges_vertices[i1];
     s1 = (function() {
-      var len3, n, results;
+      var l, len1, results;
       results = [];
-      for (n = 0, len3 = e1.length; n < len3; n++) {
-        v = e1[n];
+      for (l = 0, len1 = e1.length; l < len1; l++) {
+        v = e1[l];
         results.push(fold.vertices_coords[v]);
       }
       return results;
     })();
-    ref3 = fold.edges_vertices.slice(0, i1);
-    for (i2 = n = 0, len3 = ref3.length; n < len3; i2 = ++n) {
-      e2 = ref3[i2];
+    ref1 = fold.edges_vertices.slice(0, i1);
+    for (i2 = l = 0, len1 = ref1.length; l < len1; i2 = ++l) {
+      e2 = ref1[i2];
       s2 = (function() {
-        var len4, o, results;
+        var len2, m, results;
         results = [];
-        for (o = 0, len4 = e2.length; o < len4; o++) {
-          v = e2[o];
+        for (m = 0, len2 = e2.length; m < len2; m++) {
+          v = e2[m];
           results.push(fold.vertices_coords[v]);
         }
         return results;
       })();
       if (!filter.edges_verticesIncident(e1, e2) && geom.segmentsCross(s1, s2)) {
         cross = geom.lineIntersectLine(s1, s2);
+        if (cross == null) {
+          continue;
+        }
         crossI = vertices.insert(cross);
         if (!(indexOf.call(e1, crossI) >= 0 && indexOf.call(e2, crossI) >= 0)) {
           if (indexOf.call(e1, crossI) < 0) {
             addEdge(crossI, e1[1], i1, 0);
             e1[1] = crossI;
+            s1[1] = fold.vertices_coords[crossI];
           }
           if (indexOf.call(e2, crossI) < 0) {
             addEdge(crossI, e2[1], i2, 1);
@@ -727,6 +714,41 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon, involvingEdgesF
         }
       }
     }
+    i1++;
+  }
+  old2new = filter.removeDuplicateEdges_vertices(fold);
+  ref2 = [0, 1];
+  for (m = 0, len2 = ref2.length; m < len2; m++) {
+    i = ref2[m];
+    changedEdges[i] = (function() {
+      var len3, n, ref3, results;
+      ref3 = changedEdges[i];
+      results = [];
+      for (n = 0, len3 = ref3.length; n < len3; n++) {
+        e = ref3[n];
+        if (old2new[e] != null) {
+          results.push(old2new[e]);
+        }
+      }
+      return results;
+    })();
+  }
+  old2new = filter.removeLoopEdges(fold);
+  ref3 = [0, 1];
+  for (n = 0, len3 = ref3.length; n < len3; n++) {
+    i = ref3[n];
+    changedEdges[i] = (function() {
+      var len4, o, ref4, results;
+      ref4 = changedEdges[i];
+      results = [];
+      for (o = 0, len4 = ref4.length; o < len4; o++) {
+        e = ref4[o];
+        if (old2new[e] != null) {
+          results.push(old2new[e]);
+        }
+      }
+      return results;
+    })();
   }
   if (involvingEdgesFrom != null) {
     return changedEdges;
@@ -817,7 +839,7 @@ filter.edges_vertices_to_vertices_vertices = function(fold) {
 },{"./geom":4}],4:[function(require,module,exports){
 
 /* BASIC GEOMETRY */
-var EPS, geom,
+var geom,
   modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
 
 geom = exports;
@@ -827,7 +849,7 @@ geom = exports;
     Utilities
  */
 
-EPS = 0.000001;
+geom.EPS = 0.000001;
 
 geom.sum = function(a, b) {
   return a + b;
@@ -913,7 +935,7 @@ geom.mag = function(a) {
 geom.unit = function(a, eps) {
   var length;
   if (eps == null) {
-    eps = EPS;
+    eps = geom.EPS;
   }
   length = geom.magsq(a);
   if (length < eps) {
@@ -924,7 +946,7 @@ geom.unit = function(a, eps) {
 
 geom.ang2D = function(a, eps) {
   if (eps == null) {
-    eps = EPS;
+    eps = geom.EPS;
   }
   if (geom.magsq(a) < eps) {
     return null;
@@ -1039,7 +1061,7 @@ geom.cross = function(a, b) {
 geom.parallel = function(a, b, eps) {
   var ref, ua, ub, v;
   if (eps == null) {
-    eps = EPS;
+    eps = geom.EPS;
   }
   ref = (function() {
     var k, len, ref, results;
@@ -1099,7 +1121,7 @@ geom.triangleNormal = function(a, b, c) {
 geom.polygonNormal = function(points, eps) {
   var i, p;
   if (eps == null) {
-    eps = EPS;
+    eps = geom.EPS;
   }
   return geom.unit(((function() {
     var k, len, results;
@@ -1193,7 +1215,7 @@ geom.lineIntersectLine = function(l1, l2) {
 geom.pointStrictlyInSegment = function(p, s, eps) {
   var v0, v1;
   if (eps == null) {
-    eps = EPS;
+    eps = geom.EPS;
   }
   v0 = geom.sub(p, s[0]);
   v1 = geom.sub(p, s[1]);
@@ -1207,7 +1229,7 @@ geom.centroid = function(points) {
 geom.basis = function(ps, eps) {
   var d, ds, n, ns, p, x, y, z;
   if (eps == null) {
-    eps = EPS;
+    eps = geom.EPS;
   }
   if (((function() {
     var k, len, results;
@@ -1285,7 +1307,7 @@ geom.basis = function(ps, eps) {
 geom.above = function(ps, qs, n, eps) {
   var pn, qn, ref, v, vs;
   if (eps == null) {
-    eps = EPS;
+    eps = geom.EPS;
   }
   ref = (function() {
     var k, len, ref, results;
@@ -1317,7 +1339,7 @@ geom.above = function(ps, qs, n, eps) {
 geom.separatingDirection2D = function(t1, t2, n, eps) {
   var i, j, k, l, len, len1, len2, m, o, p, q, ref, sign, t;
   if (eps == null) {
-    eps = EPS;
+    eps = geom.EPS;
   }
   ref = [t1, t2];
   for (k = 0, len = ref.length; k < len; k++) {
@@ -1345,7 +1367,7 @@ geom.separatingDirection2D = function(t1, t2, n, eps) {
 geom.separatingDirection3D = function(t1, t2, eps) {
   var i, j, k, l, len, len1, len2, len3, m, o, p, q1, q2, r, ref, ref1, sign, x1, x2;
   if (eps == null) {
-    eps = EPS;
+    eps = geom.EPS;
   }
   ref = [[t1, t2], [t2, t1]];
   for (k = 0, len = ref.length; k < len; k++) {
@@ -1383,7 +1405,7 @@ geom.circleCross = function(d, r1, r2) {
 geom.creaseDir = function(u1, u2, a, b, eps) {
   var b1, b2, x, y, z, zmag;
   if (eps == null) {
-    eps = EPS;
+    eps = geom.EPS;
   }
   b1 = Math.cos(a) + Math.cos(b);
   b2 = Math.cos(a) - Math.cos(b);

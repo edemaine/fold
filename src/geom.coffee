@@ -6,7 +6,7 @@ geom = exports
     Utilities
 ###
 
-EPS = 0.000001
+geom.EPS = 0.000001
 
 geom.sum = (a, b) -> a + b
 
@@ -53,14 +53,14 @@ geom.mag = (a) ->
   ## Returns the magnitude of vector a having arbitrary dimension.
   Math.sqrt(geom.magsq(a))
 
-geom.unit = (a, eps = EPS) ->
+geom.unit = (a, eps = geom.EPS) ->
   ## Returns the unit vector in the direction of vector a having arbitrary
   ## dimension. Returns null if magnitude of a is zero.
   length = geom.magsq(a)
   return null if length < eps
   geom.mul(a, 1 / geom.mag(a))
 
-geom.ang2D = (a, eps = EPS) ->
+geom.ang2D = (a, eps = geom.EPS) ->
   ## Returns the angle of a 2D vector relative to the standard
   #3 east-is-0-degrees rule.
   return null if geom.magsq(a) < eps
@@ -127,7 +127,7 @@ geom.cross = (a, b) ->
     return (a[i] * b[j] - a[j] * b[i] for [i, j] in [[1, 2], [2, 0], [0, 1]])
   return null
 
-geom.parallel = (a, b, eps = EPS) ->
+geom.parallel = (a, b, eps = geom.EPS) ->
   ## Return if vectors are parallel, up to accuracy eps
   [ua, ub] = (geom.unit(v) for v in [a,b])
   return null unless ua? and ub?
@@ -165,7 +165,7 @@ geom.triangleNormal = (a, b, c) ->
   ## the triangle is degenerate, returns null.
   geom.unit geom.cross(geom.sub(b, a), geom.sub(c, b))
 
-geom.polygonNormal = (points, eps = EPS) ->
+geom.polygonNormal = (points, eps = geom.EPS) ->
   ## Returns the right handed normal unit vector to the polygon defined by
   ## points in 3D. Assumes the points are planar.
   return geom.unit((for p, i in points
@@ -235,7 +235,7 @@ geom.lineIntersectLine = (l1, l2) ->
   else
     null
 
-geom.pointStrictlyInSegment = (p, s, eps = EPS) ->
+geom.pointStrictlyInSegment = (p, s, eps = geom.EPS) ->
   v0 = geom.sub p, s[0]
   v1 = geom.sub p, s[1]
   geom.parallel(v0, v1, eps) and geom.dot(v0, v1) < 0
@@ -244,7 +244,7 @@ geom.centroid = (points) ->
   ## Returns the centroid of a set of points having the same dimension.
   geom.mul(points.reduce(geom.plus), 1.0 / points.length)
 
-geom.basis = (ps, eps = EPS) ->
+geom.basis = (ps, eps = geom.EPS) ->
   ## Returns a basis of a 3D point set.
   ##  - [] if the points are all the same point (0 dimensional)
   ##  - [x] if the points lie on a line with basis direction x
@@ -262,13 +262,13 @@ geom.basis = (ps, eps = EPS) ->
   return [x, y] if (geom.parallel(n, z, eps) for n in ns).reduce(geom.all)
   return [x, y, z]
 
-geom.above = (ps, qs, n, eps = EPS) ->
+geom.above = (ps, qs, n, eps = geom.EPS) ->
   [pn,qn] = ((geom.dot(v, n) for v in vs) for vs in [ps,qs])
   return  1 if qn.reduce(geom.max) - pn.reduce(geom.min) < eps
   return -1 if pn.reduce(geom.max) - qn.reduce(geom.min) < eps
   return 0
 
-geom.separatingDirection2D = (t1, t2, n, eps = EPS) ->
+geom.separatingDirection2D = (t1, t2, n, eps = geom.EPS) ->
   ## If points are contained in a common plane with normal n and a separating 
   ## direction exists, a direction perpendicular to some pair of points from 
   ## the same set is also a separating direction.
@@ -281,7 +281,7 @@ geom.separatingDirection2D = (t1, t2, n, eps = EPS) ->
           return geom.mul(m, sign) if sign isnt 0
   return null
 
-geom.separatingDirection3D = (t1, t2, eps = EPS) ->
+geom.separatingDirection3D = (t1, t2, eps = geom.EPS) ->
   ## If points are not contained in a common plane and a separating direction
   ## exists, a plane spanning two points from one set and one point from the
   ## other set is a separating plane, with its normal a separating direction. 
@@ -304,7 +304,7 @@ geom.circleCross = (d, r1, r2) ->
   y = Math.sqrt(r1 * r1 - x * x)
   return [x, y]
 
-geom.creaseDir = (u1, u2, a, b, eps = EPS) ->
+geom.creaseDir = (u1, u2, a, b, eps = geom.EPS) ->
   b1 = Math.cos(a) + Math.cos(b)
   b2 = Math.cos(a) - Math.cos(b)
   x = geom.plus(u1, u2)
