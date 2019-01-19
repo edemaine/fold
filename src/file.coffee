@@ -30,7 +30,7 @@ file.toFile = (fold, output, converter = null) ->
       return
   result = converter fold
   if typeof result != 'string'
-    result = JSON.stringify result, null, 1
+    result = convert.toJSON result
   fs.writeFileSync output, result, 'utf-8'
 
 file.fileToFile = (input, output, converter = null) ->
@@ -59,7 +59,7 @@ file.fileToFile = (input, output, converter = null) ->
     console.log input, '->', output
     result = converter fs.readFileSync input, 'utf-8'
     if typeof result != 'string'
-      result = JSON.stringify result, null, 1
+      result = convert.toJSON result
     fs.writeFileSync output, result, 'utf-8'
 
 file.main = (args = process.argv[2..]) ->

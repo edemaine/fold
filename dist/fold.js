@@ -220,6 +220,27 @@ convert.faces_vertices_to_edges = function(mesh) {
   return mesh;
 };
 
+convert.toJSON = function(fold) {
+  var key, obj, value;
+  return "{\n" + ((function() {
+    var results;
+    results = [];
+    for (key in fold) {
+      value = fold[key];
+      results.push(("  " + (JSON.stringify(key)) + ": ") + (Array.isArray(value) ? "[\n" + ((function() {
+        var j, len, results1;
+        results1 = [];
+        for (j = 0, len = value.length; j < len; j++) {
+          obj = value[j];
+          results1.push("    " + (JSON.stringify(obj)));
+        }
+        return results1;
+      })()).join(',\n') + "\n  ]" : JSON.stringify(value)));
+    }
+    return results;
+  })()).join(',\n') + "\n}\n";
+};
+
 convert.extensions = {};
 
 convert.converters = {};

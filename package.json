@@ -1,6 +1,6 @@
 {
   "name": "fold",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "FOLD file format for origami models, crease patterns, etc.",
   "main": "lib/index.js",
   "bin": {

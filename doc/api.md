@@ -76,6 +76,8 @@ for details.
 
 File format conversion (supported formats are `"fold"` and `"opx"`):
 
+* `FOLD.convert.toJSON(fold)`:
+  Given a FOLD object, convert into a nicely formatted JSON string.
 * `FOLD.convert.convertFromTo(data, fromFormat, toFormat)`: Convert the
   specified data from one format to another.
 * `FOLD.convert.convertFrom(data, fromFormat)`: Convert the specified data

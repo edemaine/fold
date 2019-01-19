@@ -122,6 +122,20 @@ convert.faces_vertices_to_edges = (mesh) ->
     )
   mesh
 
+convert.toJSON = (fold) ->
+  ## Convert FOLD object into nicely formatted JSON
+  "{\n" +
+  (for key, value of fold
+    "  #{JSON.stringify key}: " +
+    if Array.isArray value
+      "[\n" +
+      ("    #{JSON.stringify(obj)}" for obj in value).join(',\n') +
+      "\n  ]"
+    else
+      JSON.stringify value
+  ).join(',\n') +
+  "\n}\n"
+
 convert.extensions = {}
 convert.converters = {}
 convert.getConverter = (fromExt, toExt) ->
