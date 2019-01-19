@@ -133,7 +133,7 @@ filter.collapseNearbyVertices = (fold, epsilon) ->
   filter.remapField fold, 'vertices', old2new
   ## In particular: fold.vertices_coords = vertices.vertices_coords
 
-filter.addVertex = (fold, coords, epsilon) ->
+filter.maybeAddVertex = (fold, coords, epsilon) ->
   ###
   Add a new vertex at coordinates `coords` and return its (last) index,
   unless there is already such a vertex within distance `epsilon`,
@@ -246,14 +246,14 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon, involvingEdgesFrom) ->
   else
     changedEdges[0].concat changedEdges[1]
 
-filter.addEdge = (fold, v1, v2, epsilon) ->
+filter.addEdgeAndSubdivide = (fold, v1, v2, epsilon) ->
   ###
   Add an edge between vertex indices or points `v1` and `v2`, subdivide
   as necessary, and return an array of all the subdivided parts of this edge.
   If the edge is a loop or a duplicate, the array will be empty.
   ###
-  v1 = filter.addVertex fold, v1, epsilon if v1.length?
-  v2 = filter.addVertex fold, v2, epsilon if v2.length?
+  v1 = filter.maybeAddVertex fold, v1, epsilon if v1.length?
+  v2 = filter.maybeAddVertex fold, v2, epsilon if v2.length?
   if v1 == v2  ## Ignore loop edges
     return []
   for e, i in fold.edges_vertices

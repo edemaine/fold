@@ -559,7 +559,7 @@ filter.collapseNearbyVertices = function(fold, epsilon) {
   return filter.remapField(fold, 'vertices', old2new);
 };
 
-filter.addVertex = function(fold, coords, epsilon) {
+filter.maybeAddVertex = function(fold, coords, epsilon) {
 
   /*
   Add a new vertex at coordinates `coords` and return its (last) index,
@@ -757,7 +757,7 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon, involvingEdgesF
   }
 };
 
-filter.addEdge = function(fold, v1, v2, epsilon) {
+filter.addEdgeAndSubdivide = function(fold, v1, v2, epsilon) {
 
   /*
   Add an edge between vertex indices or points `v1` and `v2`, subdivide
@@ -766,10 +766,10 @@ filter.addEdge = function(fold, v1, v2, epsilon) {
    */
   var changedEdges1, e, i, k, len, ref;
   if (v1.length != null) {
-    v1 = filter.addVertex(fold, v1, epsilon);
+    v1 = filter.maybeAddVertex(fold, v1, epsilon);
   }
   if (v2.length != null) {
-    v2 = filter.addVertex(fold, v2, epsilon);
+    v2 = filter.maybeAddVertex(fold, v2, epsilon);
   }
   if (v1 === v2) {
     return [];
