@@ -33,15 +33,28 @@ for details.
   such a vertex within distance `epsilon`, in which case return the closest
   such vertex's index.  The new vertex has no new properties except
   `vertex_coords`.
+* `FOLD.filter.addVertexAndSubdivide(fold, coords, epsilon)`:
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices`,
+  maybe adds a new vertex like `FOLD.filter.maybeAddVertex`, and then
+  subdivides if necessary (via an efficient use of
+  `FOLD.filter.subdivideCrossingEdges_vertices`).
+* `FOLD.filter.addEdgeLike(fold, v1, v2, oldEdgeIndex)`:
+  Given a FOLD object with `edges_vertices`, adds a new edge connecting
+  vertices v1 and v2, and copy all other `edges_...` attributes to be like
+  the existing edge `oldEdgeIndex`.  Returns the new edge index.
 * `FOLD.filter.addEdgeAndSubdivide(fold, v1, v2, epsilon)`:
-  Given a FOLD object with `vertices_coords` and `edges_vertices`,
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices`,
   adds an edge between vertex indices or points `v1` and `v2`
-  (calling `FOLD.filter.maybeAddVertex` when they are points),
+  (calling `FOLD.filter.addVertexAndSubdivide` when they are points),
   subdividing if necessary (via an efficient use of
-  `FOLD.filter.subdivideCrossingEdges_vertices`),
-  and returns an array of all the subdivided parts of the added edge.
-  If the edge is a loop or a duplicate, the returned array is empty.
-  The new edge(s) have no properties except `edges_vertices`.
+  `FOLD.filter.subdivideCrossingEdges_vertices`).
+  Returns two arrays: one with the indices of all the subdivided parts of the
+  added edge, and the other with the indices of all other changed edges.
+  The new edge(s) have no properties except `edges_vertices`, so the first
+  array tells you which edges to set the properties of.
+  If the edge is a loop, the returned arrays are empty.
+  If the edge is a duplicate, the first array has the old edge index and the
+  second array is empty.
 
 ## FOLD.convert
 

@@ -605,6 +605,55 @@ filter.maybeAddVertex = function(fold, coords, epsilon) {
   }
 };
 
+filter.addEdgeLike = function(fold, v1, v2, oldEdgeIndex) {
+  var eNew, k, key, len, ref;
+  eNew = fold.edges_vertices.length;
+  ref = filter.keysStartingWith(fold, 'edges_');
+  for (k = 0, len = ref.length; k < len; k++) {
+    key = ref[k];
+    switch (key.slice(6)) {
+      case 'vertices':
+        fold.edges_vertices.push([v1, v2]);
+        break;
+      case 'edges':
+        break;
+      default:
+        fold[key][eNew] = fold[key][oldEdgeIndex];
+    }
+  }
+  return eNew;
+};
+
+filter.addVertexAndSubdivide = function(fold, coords, epsilon) {
+  var changedEdges, e, i, iNew, k, len, ref, s, u, v;
+  v = filter.maybeAddVertex(fold, coords, epsilon);
+  changedEdges = [];
+  if (v === fold.vertices_coords.length - 1) {
+    ref = fold.edges_vertices;
+    for (i = k = 0, len = ref.length; k < len; i = ++k) {
+      e = ref[i];
+      if (indexOf.call(e, v) >= 0) {
+        continue;
+      }
+      s = (function() {
+        var l, len1, results;
+        results = [];
+        for (l = 0, len1 = e.length; l < len1; l++) {
+          u = e[l];
+          results.push(fold.vertices_coords[u]);
+        }
+        return results;
+      })();
+      if (geom.pointStrictlyInSegment(coords, s)) {
+        iNew = filter.addEdgeLike(fold, v, e[1], i);
+        changedEdges.push(i, iNew);
+        e[1] = v;
+      }
+    }
+  }
+  return [v, changedEdges];
+};
+
 filter.removeLoopEdges = function(fold) {
 
   /*
@@ -647,43 +696,28 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon, involvingEdgesF
   var addEdge, changedEdges, cross, crossI, e, e1, e2, i, i1, i2, k, l, len, len1, len2, len3, m, n, old2new, p, ref, ref1, ref2, ref3, s, s1, s2, u, v, vertices;
   changedEdges = [[], []];
   addEdge = function(v1, v2, oldEdgeIndex, which) {
-    var eNew, k, key, len, ref, results;
-    eNew = fold.edges_vertices.length;
-    changedEdges[which].push(oldEdgeIndex, fold.edges_vertices.length);
-    ref = filter.keysStartingWith(fold, 'edges_');
-    results = [];
-    for (k = 0, len = ref.length; k < len; k++) {
-      key = ref[k];
-      switch (key.slice(6)) {
-        case 'vertices':
-          results.push(fold.edges_vertices.push([v1, v2]));
-          break;
-        case 'edges':
-          break;
-        default:
-          results.push(fold[key][eNew] = fold[key][oldEdgeIndex]);
-      }
-    }
-    return results;
+    var eNew;
+    eNew = filter.addEdgeLike(fold, v1, v2, oldEdgeIndex);
+    return changedEdges[which].push(oldEdgeIndex, eNew);
   };
   i = involvingEdgesFrom != null ? involvingEdgesFrom : 0;
   while (i < fold.edges_vertices.length) {
     e = fold.edges_vertices[i];
+    s = (function() {
+      var k, len, results;
+      results = [];
+      for (k = 0, len = e.length; k < len; k++) {
+        u = e[k];
+        results.push(fold.vertices_coords[u]);
+      }
+      return results;
+    })();
     ref = fold.vertices_coords;
     for (v = k = 0, len = ref.length; k < len; v = ++k) {
       p = ref[v];
       if (indexOf.call(e, v) >= 0) {
         continue;
       }
-      s = (function() {
-        var l, len1, results;
-        results = [];
-        for (l = 0, len1 = e.length; l < len1; l++) {
-          u = e[l];
-          results.push(fold.vertices_coords[u]);
-        }
-        return results;
-      })();
       if (geom.pointStrictlyInSegment(p, s)) {
         addEdge(v, e[1], i, 0);
         e[1] = v;
@@ -747,9 +781,7 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon, involvingEdgesF
       results = [];
       for (n = 0, len3 = ref3.length; n < len3; n++) {
         e = ref3[n];
-        if (old2new[e] != null) {
-          results.push(old2new[e]);
-        }
+        results.push(old2new[e]);
       }
       return results;
     })();
@@ -764,9 +796,7 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon, involvingEdgesF
       results = [];
       for (o = 0, len4 = ref4.length; o < len4; o++) {
         e = ref4[o];
-        if (old2new[e] != null) {
-          results.push(old2new[e]);
-        }
+        results.push(old2new[e]);
       }
       return results;
     })();
@@ -782,37 +812,43 @@ filter.addEdgeAndSubdivide = function(fold, v1, v2, epsilon) {
 
   /*
   Add an edge between vertex indices or points `v1` and `v2`, subdivide
-  as necessary, and return an array of all the subdivided parts of this edge.
-  If the edge is a loop or a duplicate, the array will be empty.
+  as necessary, and return two arrays: all the subdivided parts of this edge,
+  and all the other edges that change.
+  If the edge is a loop or a duplicate, both arrays will be empty.
    */
-  var changedEdges1, e, i, k, len, ref;
+  var changedEdges, changedEdges1, changedEdges2, e, i, iNew, k, len, ref, ref1, ref2, ref3, ref4;
   if (v1.length != null) {
-    v1 = filter.maybeAddVertex(fold, v1, epsilon);
+    ref = filter.addVertexAndSubdivide(fold, v1, epsilon), v1 = ref[0], changedEdges1 = ref[1];
   }
   if (v2.length != null) {
-    v2 = filter.maybeAddVertex(fold, v2, epsilon);
+    ref1 = filter.addVertexAndSubdivide(fold, v2, epsilon), v2 = ref1[0], changedEdges2 = ref1[1];
   }
   if (v1 === v2) {
-    return [];
+    return [[], []];
   }
-  ref = fold.edges_vertices;
-  for (i = k = 0, len = ref.length; k < len; i = ++k) {
-    e = ref[i];
+  ref2 = fold.edges_vertices;
+  for (i = k = 0, len = ref2.length; k < len; i = ++k) {
+    e = ref2[i];
     if ((e[0] === v1 && e[1] === v2) || (e[0] === v2 && e[1] === v1)) {
-      return [];
+      return [[i], []];
     }
   }
-  e = fold.edges_vertices.push([v1, v2]) - 1;
-  if (e) {
-    changedEdges1 = filter.subdivideCrossingEdges_vertices(fold, epsilon, e)[0];
-    if (changedEdges1.length) {
-      if (indexOf.call(changedEdges1, e) < 0) {
-        changedEdges1.push(e);
-      }
-      return changedEdges1;
+  iNew = fold.edges_vertices.push([v1, v2]) - 1;
+  if (iNew) {
+    changedEdges = filter.subdivideCrossingEdges_vertices(fold, epsilon, iNew);
+    if (indexOf.call(changedEdges[0], iNew) < 0) {
+      changedEdges[0].push(iNew);
     }
+  } else {
+    changedEdges = [[iNew], []];
   }
-  return [e];
+  if (changedEdges1 != null) {
+    (ref3 = changedEdges[1]).push.apply(ref3, changedEdges1);
+  }
+  if (changedEdges2 != null) {
+    (ref4 = changedEdges[1]).push.apply(ref4, changedEdges2);
+  }
+  return changedEdges;
 };
 
 filter.edges_vertices_to_vertices_vertices = function(fold) {

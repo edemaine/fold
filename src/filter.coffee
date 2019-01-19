@@ -145,6 +145,35 @@ filter.maybeAddVertex = (fold, coords, epsilon) ->
   else
     fold.vertices_coords.push(coords) - 1
 
+filter.addEdgeLike = (fold, v1, v2, oldEdgeIndex) ->
+  ## Add an edge between v1 and v2, and copy data from old edge.
+  ## Must have `edges_vertices` property.
+  eNew = fold.edges_vertices.length
+  for key in filter.keysStartingWith fold, 'edges_'
+    switch key[6..]
+      when 'vertices'
+        fold.edges_vertices.push [v1, v2]
+      when 'edges'
+        ## Leaving these broken
+      else
+        fold[key][eNew] = fold[key][oldEdgeIndex]
+  eNew
+
+filter.addVertexAndSubdivide = (fold, coords, epsilon) ->
+  v = filter.maybeAddVertex fold, coords, epsilon
+  changedEdges = []
+  if v == fold.vertices_coords.length - 1
+    ## Similar to "Handle overlapping edges" case:
+    for e, i in fold.edges_vertices
+      continue if v in e  # shouldn't happen
+      s = (fold.vertices_coords[u] for u in e)
+      if geom.pointStrictlyInSegment coords, s  ## implicit epsilon
+        #console.log coords, 'in', s
+        iNew = filter.addEdgeLike fold, v, e[1], i
+        changedEdges.push i, iNew
+        e[1] = v
+  [v, changedEdges]
+
 filter.removeLoopEdges = (fold) ->
   ###
   Remove edges whose endpoints are identical.  After collapsing via
@@ -176,27 +205,18 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon, involvingEdgesFrom) ->
 
   changedEdges = [[], []]
   addEdge = (v1, v2, oldEdgeIndex, which) ->
-    eNew = fold.edges_vertices.length
     #console.log 'adding', oldEdgeIndex, fold.edges_vertices.length, 'to', which
-    changedEdges[which].push oldEdgeIndex, fold.edges_vertices.length
-    ## Add an edge between v1 and v2, and copy data from old edge
-    for key in filter.keysStartingWith fold, 'edges_'
-      switch key[6..]
-        when 'vertices'
-          fold.edges_vertices.push [v1, v2]
-        when 'edges'
-          ## Leaving these broken
-        else
-          fold[key][eNew] = fold[key][oldEdgeIndex]
+    eNew = filter.addEdgeLike fold, v1, v2, oldEdgeIndex
+    changedEdges[which].push oldEdgeIndex, eNew
 
   ## Handle overlapping edges by subdividing edges at any vertices on them.
   ## We use a while loop instead of a for loop to process newly added edges.
   i = involvingEdgesFrom ? 0
   while i < fold.edges_vertices.length
     e = fold.edges_vertices[i]
+    s = (fold.vertices_coords[u] for u in e)
     for p, v in fold.vertices_coords
       continue if v in e
-      s = (fold.vertices_coords[u] for u in e)
       if geom.pointStrictlyInSegment p, s  ## implicit epsilon
         #console.log p, 'in', s
         addEdge v, e[1], i, 0
@@ -235,10 +255,10 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon, involvingEdgesFrom) ->
 
   old2new = filter.removeDuplicateEdges_vertices fold
   for i in [0, 1]
-    changedEdges[i] = (old2new[e] for e in changedEdges[i] when old2new[e]?)
+    changedEdges[i] = (old2new[e] for e in changedEdges[i])
   old2new = filter.removeLoopEdges fold
   for i in [0, 1]
-    changedEdges[i] = (old2new[e] for e in changedEdges[i] when old2new[e]?)
+    changedEdges[i] = (old2new[e] for e in changedEdges[i])
 
   #fold
   if involvingEdgesFrom?
@@ -249,24 +269,29 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon, involvingEdgesFrom) ->
 filter.addEdgeAndSubdivide = (fold, v1, v2, epsilon) ->
   ###
   Add an edge between vertex indices or points `v1` and `v2`, subdivide
-  as necessary, and return an array of all the subdivided parts of this edge.
-  If the edge is a loop or a duplicate, the array will be empty.
+  as necessary, and return two arrays: all the subdivided parts of this edge,
+  and all the other edges that change.
+  If the edge is a loop or a duplicate, both arrays will be empty.
   ###
-  v1 = filter.maybeAddVertex fold, v1, epsilon if v1.length?
-  v2 = filter.maybeAddVertex fold, v2, epsilon if v2.length?
+  if v1.length?
+    [v1, changedEdges1] = filter.addVertexAndSubdivide fold, v1, epsilon
+  if v2.length?
+    [v2, changedEdges2] = filter.addVertexAndSubdivide fold, v2, epsilon
   if v1 == v2  ## Ignore loop edges
-    return []
+    return [[], []]
   for e, i in fold.edges_vertices
     if (e[0] == v1 and e[1] == v2) or
        (e[0] == v2 and e[1] == v1)
-      return []  ## Ignore duplicate edges
-  e = fold.edges_vertices.push([v1, v2]) - 1
-  if e
-    [changedEdges1] = filter.subdivideCrossingEdges_vertices(fold, epsilon, e)
-    if changedEdges1.length
-      changedEdges1.push e unless e in changedEdges1
-      return changedEdges1
-  [e]
+      return [[i], []]  ## Ignore duplicate edges
+  iNew = fold.edges_vertices.push([v1, v2]) - 1
+  if iNew
+    changedEdges = filter.subdivideCrossingEdges_vertices(fold, epsilon, iNew)
+    changedEdges[0].push iNew unless iNew in changedEdges[0]
+  else
+    changedEdges = [[iNew], []]
+  changedEdges[1].push changedEdges1... if changedEdges1?
+  changedEdges[1].push changedEdges2... if changedEdges2?
+  changedEdges
 
 filter.edges_vertices_to_vertices_vertices = (fold) ->
   ###
