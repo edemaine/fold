@@ -13,8 +13,23 @@ convert.edges_vertices_to_vertices_vertices_unsorted = (fold) ->
   fold
 
 convert.edges_vertices_to_vertices_vertices_sorted = (fold) ->
+  ###
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices` property
+  (defining edge endpoints), automatically computes the `vertices_vertices`
+  property and sorts them counterclockwise by angle in the plane.
+  ###
   convert.edges_vertices_to_vertices_vertices_unsorted fold
   convert.sort_vertices_vertices fold
+
+convert.edges_vertices_to_vertices_edges_sorted = (fold) ->
+  ###
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices` property
+  (defining edge endpoints), automatically computes the `vertices_edges`
+  and `vertices_vertices` property and sorts them counterclockwise by angle
+  in the plane.
+  ###
+  convert.edges_vertices_to_vertices_vertices_sorted fold
+  convert.vertices_vertices_to_vertices_edges fold
 
 convert.sort_vertices_vertices = (fold) ->
   ###
@@ -29,11 +44,16 @@ convert.sort_vertices_vertices = (fold) ->
     convert.edges_vertices_to_vertices_vertices fold
   for v, neighbors of fold.vertices_vertices
     geom.sortByAngle neighbors, v, (x) -> fold.vertices_coords[x]
+  fold
 
 convert.vertices_vertices_to_faces_vertices = (fold) ->
+  ###
+  Given a FOLD object with counterclockwise-sorted `vertices_vertices`
+  property, constructs the implicitly defined faces, setting `faces_vertices`
+  property.
+  ###
   next = {}
-  for v, neighbors of fold.vertices_vertices
-    v = parseInt v
+  for neighbors, v in fold.vertices_vertices
     for u, i in neighbors
       next["#{u},#{v}"] = neighbors[(i-1) %% neighbors.length]
       #console.log u, v, neighbors[(i-1) %% neighbors.length]
@@ -49,7 +69,7 @@ convert.vertices_vertices_to_faces_vertices = (fold) ->
     face = [u, v]
     until w == face[0]
       unless w?
-        console.warn 'Confusion with face', face
+        console.warn "Confusion with face #{face}"
         break
       face.push w
       [u, v] = [v, w]
@@ -64,11 +84,76 @@ convert.vertices_vertices_to_faces_vertices = (fold) ->
     #  console.log face, 'clockwise'
   fold
 
+convert.vertices_edges_to_faces_vertices_edges = (fold) ->
+  ###
+  Given a FOLD object with counterclockwise-sorted `vertices_edges` property,
+  constructs the implicitly defined faces, setting both `faces_vertices`
+  and `faces_edges` properties.  Handles multiple edges to the same vertex
+  (unlike `FOLD.convert.vertices_vertices_to_faces_vertices`).
+  ###
+  next = []
+  for neighbors, v in fold.vertices_edges
+    next[v] = {}
+    for e, i in neighbors
+      next[v][e] = neighbors[(i-1) %% neighbors.length]
+      #console.log e, neighbors[(i-1) %% neighbors.length]
+  fold.faces_vertices = []
+  fold.faces_edges = []
+  for nexts, vertex in next
+    for e1, e2 of nexts
+      continue unless e2?
+      e1 = parseInt e1
+      nexts[e1] = null
+      edges = [e1]
+      vertices = [filter.edges_verticesIncident fold.edges_vertices[e1],
+                                                fold.edges_vertices[e2]]
+      unless vertices[0]?
+        throw new Error "Confusion at edges #{e1} and #{e2}"
+      until e2 == edges[0]
+        unless e2?
+          console.warn "Confusion with face containing edges #{edges}"
+          break
+        edges.push e2
+        for v in fold.edges_vertices[e2]
+          if v != vertices[vertices.length-1]
+            vertices.push v
+            break
+        e1 = e2
+        e2 = next[v][e1]
+        next[v][e1] = null
+      ## Outside face is clockwise; exclude it.
+      if e2? and geom.polygonOrientation(fold.vertices_coords[x] for x in vertices) > 0
+        #console.log vertices, edges
+        fold.faces_vertices.push vertices
+        fold.faces_edges.push edges
+      #else
+      #  console.log face, 'clockwise'
+  fold
+
 convert.edges_vertices_to_faces_vertices = (fold) ->
+  ###
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices`,
+  computes a counterclockwise-sorted `vertices_vertices` property and
+  constructs the implicitly defined faces, setting `faces_vertices` property.
+  ###
   convert.edges_vertices_to_vertices_vertices_sorted fold
   convert.vertices_vertices_to_faces_vertices fold
 
+convert.edges_vertices_to_faces_vertices_edges = (fold) ->
+  ###
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices`,
+  computes counterclockwise-sorted `vertices_vertices` and `vertices_edges`
+  properties and constructs the implicitly defined faces, setting
+  both `faces_vertices` and `faces_edges` property.
+  ###
+  convert.edges_vertices_to_vertices_edges_sorted fold
+  convert.vertices_edges_to_faces_vertices fold
+
 convert.vertices_vertices_to_vertices_edges = (fold) ->
+  ###
+  Given a FOLD object with `vertices_vertices` and `edges_vertices`,
+  fills in the corresponding `vertices_edges` property (preserving order).
+  ###
   edgeMap = {}
   for [v1, v2], edge in fold.edges_vertices
     edgeMap["#{v1},#{v2}"] = edge
@@ -78,7 +163,11 @@ convert.vertices_vertices_to_vertices_edges = (fold) ->
       for i in [0...vertices.length]
         edgeMap["#{vertex},#{vertices[i]}"]
 
-convert.edges_vertices_faces_vertices_to_faces_edges = (fold) ->
+convert.faces_vertices_to_faces_edges = (fold) ->
+  ###
+  Given a FOLD object with `faces_vertices` and `edges_vertices`,
+  fills in the corresponding `faces_edges` property (preserving order).
+  ###
   edgeMap = {}
   for [v1, v2], edge in fold.edges_vertices
     edgeMap["#{v1},#{v2}"] = edge
@@ -89,6 +178,10 @@ convert.edges_vertices_faces_vertices_to_faces_edges = (fold) ->
         edgeMap["#{vertices[i]},#{vertices[(i+1) % vertices.length]}"]
 
 convert.faces_vertices_to_edges = (mesh) ->
+  ###
+  Given a FOLD object with just `faces_vertices`, automatically fills in
+  `edges_vertices`, `edges_faces`, `faces_edges`, and `edges_assignment`.
+  ###
   mesh.edges_vertices = []
   mesh.edges_faces = []
   mesh.faces_edges = []
@@ -122,8 +215,21 @@ convert.faces_vertices_to_edges = (mesh) ->
     )
   mesh
 
+convert.deepCopy = (fold) ->
+  ## Given a FOLD object, make a copy that shares no pointers with the original.
+  if typeof fold in ['number', 'string', 'boolean']
+    fold
+  else if Array.isArray fold
+    for item in fold
+      convert.deepCopy item
+  else # Object
+    copy = {}
+    for own key, value of fold
+      copy[key] = convert.deepCopy value
+    copy
+
 convert.toJSON = (fold) ->
-  ## Convert FOLD object into nicely formatted JSON
+  ## Convert FOLD object into a nicely formatted JSON string.
   "{\n" +
   (for key, value of fold
     "  #{JSON.stringify key}: " +

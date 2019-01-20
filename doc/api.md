@@ -38,10 +38,16 @@ for details.
   maybe adds a new vertex like `FOLD.filter.maybeAddVertex`, and then
   subdivides if necessary (via an efficient use of
   `FOLD.filter.subdivideCrossingEdges_vertices`).
-* `FOLD.filter.addEdgeLike(fold, v1, v2, oldEdgeIndex)`:
+* `FOLD.filter.addVertexLike(fold, oldVertexIndex)`:
+  Given a FOLD object, adds a new vertex and copy all `vertex_...` attributes
+  to be like the existing vertex `oldVertexIndex`.
+  Returns the new vertex index.
+* `FOLD.filter.addEdgeLike(fold, oldEdgeIndex, [v1, v2])`:
   Given a FOLD object with `edges_vertices`, adds a new edge connecting
-  vertices v1 and v2, and copy all other `edges_...` attributes to be like
+  vertices `v1` and `v2`, and copy all other `edges_...` attributes to be like
   the existing edge `oldEdgeIndex`.  Returns the new edge index.
+  If `v1` and/or `v2` are unspecified, the new edge inherits the same vertex
+  connections as the old edge.
 * `FOLD.filter.addEdgeAndSubdivide(fold, v1, v2, epsilon)`:
   Given a FOLD object with 2D `vertices_coords` and `edges_vertices`,
   adds an edge between vertex indices or points `v1` and `v2`
@@ -55,6 +61,16 @@ for details.
   If the edge is a loop, the returned arrays are empty.
   If the edge is a duplicate, the first array has the old edge index and the
   second array is empty.
+* `FOLD.filter.cutEdges(fold, es)`:
+  Given a FOLD object with `edges_vertices`, `edges_assignment`, and
+  counterclockwise-sorted `vertices_edges`
+  (see `FOLD.convert.edges_vertices_to_vertices_edges_sorted`),
+  cuts apart ("unwelds") all edges in `es` into pairs of boundary edges.
+  When an endpoint of a cut edge ends up on **n** boundaries,
+  it splits into **n** vertices.
+  Preserves above-mentioned properties (so you can then compute faces via
+  `FOLD.convert.edges_vertices_to_faces_vertices_edges`),
+  but ignores face properties and discards `vertices_vertices` if present.
 
 ## FOLD.convert
 
@@ -70,6 +86,11 @@ for details.
   Given a FOLD object with 2D `vertices_coords` and `edges_vertices` property
   (defining edge endpoints), automatically computes the `vertices_vertices`
   property and sorts them counterclockwise by angle in the plane.
+* `FOLD.convert.edges_vertices_to_vertices_edges_sorted(fold)`:
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices` property
+  (defining edge endpoints), automatically computes the `vertices_edges`
+  and `vertices_vertices` property and sorts them counterclockwise by angle
+  in the plane.
 * `FOLD.convert.sort_vertices_vertices(fold)`:
   Given a FOLD object with 2D `vertices_coords` and `vertices_vertices`
   properties, sorts each `vertices_vertices` array in counterclockwise
@@ -78,19 +99,39 @@ for details.
   Given a FOLD object with counterclockwise-sorted `vertices_vertices`
   property, constructs the implicitly defined faces, setting `faces_vertices`
   property.
+* `FOLD.convert.vertices_edges_to_faces_vertices_edges(fold)`:
+  Given a FOLD object with counterclockwise-sorted `vertices_edges` property,
+  constructs the implicitly defined faces, setting both `faces_vertices`
+  and `faces_edges` properties.  Handles multiple edges to the same vertex
+  (unlike `FOLD.convert.vertices_vertices_to_faces_vertices`).
 * `FOLD.convert.edges_vertices_to_faces_vertices(fold)`:
   Given a FOLD object with 2D `vertices_coords` and `edges_vertices`,
   computes a counterclockwise-sorted `vertices_vertices` property and
   constructs the implicitly defined faces, setting `faces_vertices` property.
-* `FOLD.convert.verticesFaces_to_edges(fold)`:
-  Given a FOLD object with `faces_vertices` property, computes
-  `edges_vertices`, `edges_faces`, `faces_edges`, and `edges_assignment`
-  properties (where the assignment is "B" for boundary edges).
+* `FOLD.convert.edges_vertices_to_faces_vertices_edges(fold)`:
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices`,
+  computes counterclockwise-sorted `vertices_vertices` and `vertices_edges`
+  properties and constructs the implicitly defined faces, setting
+  both `faces_vertices` and `faces_edges` property.
+* `FOLD.convert.vertices_vertices_to_vertices_edges(fold)`:
+  Given a FOLD object with `vertices_vertices` and `edges_vertices`,
+  fills in the corresponding `vertices_edges` property (preserving order).
+* `FOLD.convert.faces_vertices_to_faces_edges(fold)`:
+  Given a FOLD object with `faces_vertices` and `edges_vertices`,
+  fills in the corresponding `faces_edges` property (preserving order).
+* `FOLD.convert.faces_vertices_to_edges(fold)`:
+  Given a FOLD object with just `faces_vertices`, automatically fills in
+  `edges_vertices`, `edges_faces`, `faces_edges`, and `edges_assignment`.
 
-File format conversion (supported formats are `"fold"` and `"opx"`):
+Basic fold/JSON conversion:
 
 * `FOLD.convert.toJSON(fold)`:
   Given a FOLD object, convert into a nicely formatted JSON string.
+* `FOLD.convert.deepCopy(fold)`:
+  Given a FOLD object, make a copy that shares no pointers with the original.
+
+File format conversion (supported formats are `"fold"` and `"opx"`):
+
 * `FOLD.convert.convertFromTo(data, fromFormat, toFormat)`: Convert the
   specified data from one format to another.
 * `FOLD.convert.convertFrom(data, fromFormat)`: Convert the specified data

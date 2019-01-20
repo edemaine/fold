@@ -4,7 +4,8 @@ require=(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c=
 
 /* FOLD FORMAT MANIPULATORS */
 var convert, filter, geom,
-  modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
+  modulo = function(a, b) { return (+a % (b = +b) + b) % b; },
+  hasProp = {}.hasOwnProperty;
 
 geom = require('./geom');
 
@@ -23,8 +24,26 @@ convert.edges_vertices_to_vertices_vertices_unsorted = function(fold) {
 };
 
 convert.edges_vertices_to_vertices_vertices_sorted = function(fold) {
+
+  /*
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices` property
+  (defining edge endpoints), automatically computes the `vertices_vertices`
+  property and sorts them counterclockwise by angle in the plane.
+   */
   convert.edges_vertices_to_vertices_vertices_unsorted(fold);
   return convert.sort_vertices_vertices(fold);
+};
+
+convert.edges_vertices_to_vertices_edges_sorted = function(fold) {
+
+  /*
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices` property
+  (defining edge endpoints), automatically computes the `vertices_edges`
+  and `vertices_vertices` property and sorts them counterclockwise by angle
+  in the plane.
+   */
+  convert.edges_vertices_to_vertices_vertices_sorted(fold);
+  return convert.vertices_vertices_to_vertices_edges(fold);
 };
 
 convert.sort_vertices_vertices = function(fold) {
@@ -35,7 +54,7 @@ convert.sort_vertices_vertices = function(fold) {
   Constructs `fold.vertices_neighbords` if absent, via
   `convert.edges_vertices_to_vertices_vertices`.
    */
-  var neighbors, ref, ref1, ref2, results, v;
+  var neighbors, ref, ref1, ref2, v;
   if (((ref = fold.vertices_coords) != null ? (ref1 = ref[0]) != null ? ref1.length : void 0 : void 0) !== 2) {
     throw new Error("sort_vertices_vertices: Vertex coordinates missing or not two dimensional");
   }
@@ -43,24 +62,28 @@ convert.sort_vertices_vertices = function(fold) {
     convert.edges_vertices_to_vertices_vertices(fold);
   }
   ref2 = fold.vertices_vertices;
-  results = [];
   for (v in ref2) {
     neighbors = ref2[v];
-    results.push(geom.sortByAngle(neighbors, v, function(x) {
+    geom.sortByAngle(neighbors, v, function(x) {
       return fold.vertices_coords[x];
-    }));
+    });
   }
-  return results;
+  return fold;
 };
 
 convert.vertices_vertices_to_faces_vertices = function(fold) {
-  var face, i, j, k, key, len, len1, neighbors, next, ref, ref1, ref2, ref3, u, uv, v, w, x;
+
+  /*
+  Given a FOLD object with counterclockwise-sorted `vertices_vertices`
+  property, constructs the implicitly defined faces, setting `faces_vertices`
+  property.
+   */
+  var face, i, j, k, key, l, len, len1, len2, neighbors, next, ref, ref1, ref2, ref3, u, uv, v, w, x;
   next = {};
   ref = fold.vertices_vertices;
-  for (v in ref) {
+  for (v = j = 0, len = ref.length; j < len; v = ++j) {
     neighbors = ref[v];
-    v = parseInt(v);
-    for (i = j = 0, len = neighbors.length; j < len; i = ++j) {
+    for (i = k = 0, len1 = neighbors.length; k < len1; i = ++k) {
       u = neighbors[i];
       next[u + "," + v] = neighbors[modulo(i - 1, neighbors.length)];
     }
@@ -74,8 +97,8 @@ convert.vertices_vertices_to_faces_vertices = function(fold) {
     }
     return results;
   })();
-  for (k = 0, len1 = ref1.length; k < len1; k++) {
-    uv = ref1[k];
+  for (l = 0, len2 = ref1.length; l < len2; l++) {
+    uv = ref1[l];
     w = next[uv];
     if (w == null) {
       continue;
@@ -87,7 +110,7 @@ convert.vertices_vertices_to_faces_vertices = function(fold) {
     face = [u, v];
     while (w !== face[0]) {
       if (w == null) {
-        console.warn('Confusion with face', face);
+        console.warn("Confusion with face " + face);
         break;
       }
       face.push(w);
@@ -97,10 +120,10 @@ convert.vertices_vertices_to_faces_vertices = function(fold) {
     }
     next[face[face.length - 1] + "," + face[0]] = null;
     if ((w != null) && geom.polygonOrientation((function() {
-      var l, len2, results;
+      var len3, m, results;
       results = [];
-      for (l = 0, len2 = face.length; l < len2; l++) {
-        x = face[l];
+      for (m = 0, len3 = face.length; m < len3; m++) {
+        x = face[m];
         results.push(fold.vertices_coords[x]);
       }
       return results;
@@ -111,12 +134,105 @@ convert.vertices_vertices_to_faces_vertices = function(fold) {
   return fold;
 };
 
+convert.vertices_edges_to_faces_vertices_edges = function(fold) {
+
+  /*
+  Given a FOLD object with counterclockwise-sorted `vertices_edges` property,
+  constructs the implicitly defined faces, setting both `faces_vertices`
+  and `faces_edges` properties.  Handles multiple edges to the same vertex
+  (unlike `FOLD.convert.vertices_vertices_to_faces_vertices`).
+   */
+  var e, e1, e2, edges, i, j, k, l, len, len1, len2, len3, m, neighbors, next, nexts, ref, ref1, v, vertex, vertices, x;
+  next = [];
+  ref = fold.vertices_edges;
+  for (v = j = 0, len = ref.length; j < len; v = ++j) {
+    neighbors = ref[v];
+    next[v] = {};
+    for (i = k = 0, len1 = neighbors.length; k < len1; i = ++k) {
+      e = neighbors[i];
+      next[v][e] = neighbors[modulo(i - 1, neighbors.length)];
+    }
+  }
+  fold.faces_vertices = [];
+  fold.faces_edges = [];
+  for (vertex = l = 0, len2 = next.length; l < len2; vertex = ++l) {
+    nexts = next[vertex];
+    for (e1 in nexts) {
+      e2 = nexts[e1];
+      if (e2 == null) {
+        continue;
+      }
+      e1 = parseInt(e1);
+      nexts[e1] = null;
+      edges = [e1];
+      vertices = [filter.edges_verticesIncident(fold.edges_vertices[e1], fold.edges_vertices[e2])];
+      if (vertices[0] == null) {
+        throw new Error("Confusion at edges " + e1 + " and " + e2);
+      }
+      while (e2 !== edges[0]) {
+        if (e2 == null) {
+          console.warn("Confusion with face containing edges " + edges);
+          break;
+        }
+        edges.push(e2);
+        ref1 = fold.edges_vertices[e2];
+        for (m = 0, len3 = ref1.length; m < len3; m++) {
+          v = ref1[m];
+          if (v !== vertices[vertices.length - 1]) {
+            vertices.push(v);
+            break;
+          }
+        }
+        e1 = e2;
+        e2 = next[v][e1];
+        next[v][e1] = null;
+      }
+      if ((e2 != null) && geom.polygonOrientation((function() {
+        var len4, n, results;
+        results = [];
+        for (n = 0, len4 = vertices.length; n < len4; n++) {
+          x = vertices[n];
+          results.push(fold.vertices_coords[x]);
+        }
+        return results;
+      })()) > 0) {
+        fold.faces_vertices.push(vertices);
+        fold.faces_edges.push(edges);
+      }
+    }
+  }
+  return fold;
+};
+
 convert.edges_vertices_to_faces_vertices = function(fold) {
+
+  /*
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices`,
+  computes a counterclockwise-sorted `vertices_vertices` property and
+  constructs the implicitly defined faces, setting `faces_vertices` property.
+   */
   convert.edges_vertices_to_vertices_vertices_sorted(fold);
   return convert.vertices_vertices_to_faces_vertices(fold);
 };
 
+convert.edges_vertices_to_faces_vertices_edges = function(fold) {
+
+  /*
+  Given a FOLD object with 2D `vertices_coords` and `edges_vertices`,
+  computes counterclockwise-sorted `vertices_vertices` and `vertices_edges`
+  properties and constructs the implicitly defined faces, setting
+  both `faces_vertices` and `faces_edges` property.
+   */
+  convert.edges_vertices_to_vertices_edges_sorted(fold);
+  return convert.vertices_edges_to_faces_vertices(fold);
+};
+
 convert.vertices_vertices_to_vertices_edges = function(fold) {
+
+  /*
+  Given a FOLD object with `vertices_vertices` and `edges_vertices`,
+  fills in the corresponding `vertices_edges` property (preserving order).
+   */
   var edge, edgeMap, i, j, len, ref, ref1, v1, v2, vertex, vertices;
   edgeMap = {};
   ref = fold.edges_vertices;
@@ -144,7 +260,12 @@ convert.vertices_vertices_to_vertices_edges = function(fold) {
   })();
 };
 
-convert.edges_vertices_faces_vertices_to_faces_edges = function(fold) {
+convert.faces_vertices_to_faces_edges = function(fold) {
+
+  /*
+  Given a FOLD object with `faces_vertices` and `edges_vertices`,
+  fills in the corresponding `faces_edges` property (preserving order).
+   */
   var edge, edgeMap, face, i, j, len, ref, ref1, v1, v2, vertices;
   edgeMap = {};
   ref = fold.edges_vertices;
@@ -173,6 +294,11 @@ convert.edges_vertices_faces_vertices_to_faces_edges = function(fold) {
 };
 
 convert.faces_vertices_to_edges = function(mesh) {
+
+  /*
+  Given a FOLD object with just `faces_vertices`, automatically fills in
+  `edges_vertices`, `edges_faces`, `faces_edges`, and `edges_assignment`.
+   */
   var edge, edgeMap, face, i, key, ref, v1, v2, vertices;
   mesh.edges_vertices = [];
   mesh.edges_faces = [];
@@ -218,6 +344,28 @@ convert.faces_vertices_to_edges = function(mesh) {
     })());
   }
   return mesh;
+};
+
+convert.deepCopy = function(fold) {
+  var copy, item, j, key, len, ref, results, value;
+  if ((ref = typeof fold) === 'number' || ref === 'string' || ref === 'boolean') {
+    return fold;
+  } else if (Array.isArray(fold)) {
+    results = [];
+    for (j = 0, len = fold.length; j < len; j++) {
+      item = fold[j];
+      results.push(convert.deepCopy(item));
+    }
+    return results;
+  } else {
+    copy = {};
+    for (key in fold) {
+      if (!hasProp.call(fold, key)) continue;
+      value = fold[key];
+      copy[key] = convert.deepCopy(value);
+    }
+    return copy;
+  }
 };
 
 convert.toJSON = function(fold) {
@@ -428,12 +576,13 @@ filter.numType = function(fold, type) {
 
   /*
   Count the maximum number of objects of a given type, by looking at all
-  fields with key of the form `type_...`.
+  fields with key of the form `type_...`, and if that fails, looking at all
+  fields with key of the form `..._type`.  Returns `0` if nothing found.
    */
   var counts, key, value;
   counts = (function() {
     var k, len, ref, results;
-    ref = filter.keysStartingWith(fold, type);
+    ref = filter.keysStartingWith(fold, type + "_");
     results = [];
     for (k = 0, len = ref.length; k < len; k++) {
       key = ref[k];
@@ -445,10 +594,22 @@ filter.numType = function(fold, type) {
     }
     return results;
   })();
-  if (counts.length === 0) {
-    return null;
-  } else {
+  if (!counts.length) {
+    counts = (function() {
+      var k, len, ref, results;
+      ref = filter.keysEndingWith(fold, "_" + type);
+      results = [];
+      for (k = 0, len = ref.length; k < len; k++) {
+        key = ref[k];
+        results.push(1 + Math.max.apply(Math, fold[key]));
+      }
+      return results;
+    })();
+  }
+  if (counts.length) {
     return Math.max.apply(Math, counts);
+  } else {
+    return 0;
   }
 };
 
@@ -497,10 +658,10 @@ filter.edges_verticesIncident = function(e1, e2) {
   for (k = 0, len = e1.length; k < len; k++) {
     v = e1[k];
     if (indexOf.call(e2, v) >= 0) {
-      return true;
+      return v;
     }
   }
-  return false;
+  return null;
 };
 
 RepeatedPointsDS = (function() {
@@ -605,7 +766,23 @@ filter.maybeAddVertex = function(fold, coords, epsilon) {
   }
 };
 
-filter.addEdgeLike = function(fold, v1, v2, oldEdgeIndex) {
+filter.addVertexLike = function(fold, oldVertexIndex) {
+  var k, key, len, ref, vNew;
+  vNew = filter.numVertices(fold);
+  ref = filter.keysStartingWith(fold, 'vertices_');
+  for (k = 0, len = ref.length; k < len; k++) {
+    key = ref[k];
+    switch (key.slice(6)) {
+      case 'vertices':
+        break;
+      default:
+        fold[key][vNew] = fold[key][oldVertexIndex];
+    }
+  }
+  return vNew;
+};
+
+filter.addEdgeLike = function(fold, oldEdgeIndex, v1, v2) {
   var eNew, k, key, len, ref;
   eNew = fold.edges_vertices.length;
   ref = filter.keysStartingWith(fold, 'edges_');
@@ -613,7 +790,7 @@ filter.addEdgeLike = function(fold, v1, v2, oldEdgeIndex) {
     key = ref[k];
     switch (key.slice(6)) {
       case 'vertices':
-        fold.edges_vertices.push([v1, v2]);
+        fold.edges_vertices.push([v1 != null ? v1 : fold.edges_vertices[oldEdgeIndex][0], v2 != null ? v2 : fold.edges_vertices[oldEdgeIndex][1]]);
         break;
       case 'edges':
         break;
@@ -645,7 +822,7 @@ filter.addVertexAndSubdivide = function(fold, coords, epsilon) {
         return results;
       })();
       if (geom.pointStrictlyInSegment(coords, s)) {
-        iNew = filter.addEdgeLike(fold, v, e[1], i);
+        iNew = filter.addEdgeLike(fold, i, v, e[1]);
         changedEdges.push(i, iNew);
         e[1] = v;
       }
@@ -697,7 +874,7 @@ filter.subdivideCrossingEdges_vertices = function(fold, epsilon, involvingEdgesF
   changedEdges = [[], []];
   addEdge = function(v1, v2, oldEdgeIndex, which) {
     var eNew;
-    eNew = filter.addEdgeLike(fold, v1, v2, oldEdgeIndex);
+    eNew = filter.addEdgeLike(fold, oldEdgeIndex, v1, v2);
     return changedEdges[which].push(oldEdgeIndex, eNew);
   };
   i = involvingEdgesFrom != null ? involvingEdgesFrom : 0;
@@ -851,34 +1028,118 @@ filter.addEdgeAndSubdivide = function(fold, v1, v2, epsilon) {
   return changedEdges;
 };
 
+filter.cutEdges = function(fold, es) {
+
+  /*
+  Given a FOLD object with `edges_vertices`, `edges_assignment`, and
+  counterclockwise-sorted `vertices_edges`
+  (see `FOLD.convert.edges_vertices_to_vertices_edges_sorted`),
+  cuts apart ("unwelds") all edges in `es` into pairs of boundary edges.
+  When an endpoint of a cut edge ends up on n boundaries,
+  it splits into n vertices.
+  Preserves above-mentioned properties (so you can then compute faces via
+  `FOLD.convert.edges_vertices_to_faces_vertices_edges`),
+  but ignores face properties and discards `vertices_vertices` if present.
+   */
+  var b1, b2, boundaries, e, e1, e2, ev, i, i1, i2, ie, ie1, ie2, k, l, len, len1, len2, len3, len4, len5, len6, len7, m, n, neighbor, neighbors, o, q, r, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, t, u1, u2, v, v1, v2, ve, vertices_boundaries;
+  vertices_boundaries = [];
+  ref = filter.boundaryEdges(fold);
+  for (k = 0, len = ref.length; k < len; k++) {
+    e = ref[k];
+    ref1 = fold.edges_vertices[e];
+    for (l = 0, len1 = ref1.length; l < len1; l++) {
+      v = ref1[l];
+      (vertices_boundaries[v] != null ? vertices_boundaries[v] : vertices_boundaries[v] = []).push(e);
+    }
+  }
+  for (m = 0, len2 = es.length; m < len2; m++) {
+    e1 = es[m];
+    e2 = filter.addEdgeLike(fold, e1);
+    ref2 = fold.edges_vertices[e1];
+    for (i = n = 0, len3 = ref2.length; n < len3; i = ++n) {
+      v = ref2[i];
+      ve = fold.vertices_edges[v];
+      ve.splice(ve.indexOf(e1) + i, 0, e2);
+    }
+    ref3 = fold.edges_vertices[e1];
+    for (i = o = 0, len4 = ref3.length; o < len4; i = ++o) {
+      v1 = ref3[i];
+      u1 = fold.edges_vertices[e1][1 - i];
+      u2 = fold.edges_vertices[e2][1 - i];
+      boundaries = (ref4 = vertices_boundaries[v1]) != null ? ref4.length : void 0;
+      if (boundaries >= 2) {
+        if (boundaries > 2) {
+          throw new Error(vertices_boundaries[v1].length + " boundary edges at vertex " + v1);
+        }
+        ref5 = vertices_boundaries[v1], b1 = ref5[0], b2 = ref5[1];
+        neighbors = fold.vertices_edges[v1];
+        i1 = neighbors.indexOf(b1);
+        i2 = neighbors.indexOf(b2);
+        if (i2 === (i1 + 1) % neighbors.length) {
+          if (i2 !== 0) {
+            neighbors = neighbors.slice(i2).concat(neighbors.slice(0, +i1 + 1 || 9e9));
+          }
+        } else if (i1 === (i2 + 1) % neighbors.length) {
+          if (i1 !== 0) {
+            neighbors = neighbors.slice(i1).concat(neighbors.slice(0, +i2 + 1 || 9e9));
+          }
+        } else {
+          throw new Error("Nonadjacent boundary edges at vertex " + v1);
+        }
+        ie1 = neighbors.indexOf(e1);
+        ie2 = neighbors.indexOf(e2);
+        ie = Math.min(ie1, ie2);
+        fold.vertices_edges[v1] = neighbors.slice(0, +ie + 1 || 9e9);
+        v2 = filter.addVertexLike(fold, v1);
+        fold.vertices_edges[v2] = neighbors.slice(1 + ie);
+        ref6 = fold.vertices_edges[v2];
+        for (q = 0, len5 = ref6.length; q < len5; q++) {
+          neighbor = ref6[q];
+          ev = fold.edges_vertices[neighbor];
+          ev[ev.indexOf(v1)] = v2;
+        }
+      }
+    }
+    if ((ref7 = fold.edges_assignment) != null) {
+      ref7[e1] = 'B';
+    }
+    if ((ref8 = fold.edges_assignment) != null) {
+      ref8[e2] = 'B';
+    }
+    ref9 = fold.edges_vertices[e1];
+    for (i = r = 0, len6 = ref9.length; r < len6; i = ++r) {
+      v = ref9[i];
+      (vertices_boundaries[v] != null ? vertices_boundaries[v] : vertices_boundaries[v] = []).push(e1);
+    }
+    ref10 = fold.edges_vertices[e2];
+    for (i = t = 0, len7 = ref10.length; t < len7; i = ++t) {
+      v = ref10[i];
+      (vertices_boundaries[v] != null ? vertices_boundaries[v] : vertices_boundaries[v] = []).push(e2);
+    }
+  }
+  delete fold.vertices_vertices;
+  return fold;
+};
+
 filter.edges_vertices_to_vertices_vertices = function(fold) {
 
   /*
   Works for abstract structures, so NOT SORTED.
   Use sort_vertices_vertices to sort in counterclockwise order.
    */
-  var edge, k, len, numVertices, ref, ref1, v, vertices_vertices, w;
-  numVertices = (ref = filter.numVertices(fold)) != null ? ref : Math.max.apply(Math, (function() {
-    var k, len, ref1, results;
-    ref1 = fold.edges_vertices;
-    results = [];
-    for (k = 0, len = ref1.length; k < len; k++) {
-      edge = ref1[k];
-      results.push(Math.max(edge[0], edge[1]));
-    }
-    return results;
-  })());
+  var edge, k, len, numVertices, ref, v, vertices_vertices, w;
+  numVertices = filter.numVertices(fold);
   vertices_vertices = (function() {
-    var k, ref1, results;
+    var k, ref, results;
     results = [];
-    for (v = k = 0, ref1 = numVertices; 0 <= ref1 ? k < ref1 : k > ref1; v = 0 <= ref1 ? ++k : --k) {
+    for (v = k = 0, ref = numVertices; 0 <= ref ? k < ref : k > ref; v = 0 <= ref ? ++k : --k) {
       results.push([]);
     }
     return results;
   })();
-  ref1 = fold.edges_vertices;
-  for (k = 0, len = ref1.length; k < len; k++) {
-    edge = ref1[k];
+  ref = fold.edges_vertices;
+  for (k = 0, len = ref.length; k < len; k++) {
+    edge = ref[k];
     v = edge[0], w = edge[1];
     while (v >= vertices_vertices.length) {
       vertices_vertices.push([]);

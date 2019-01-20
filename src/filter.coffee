@@ -47,17 +47,22 @@ filter.remapFieldSubset = (fold, field, keep) ->
 filter.numType = (fold, type) ->
   ###
   Count the maximum number of objects of a given type, by looking at all
-  fields with key of the form `type_...`.
+  fields with key of the form `type_...`, and if that fails, looking at all
+  fields with key of the form `..._type`.  Returns `0` if nothing found.
   ###
   counts =
-    for key in filter.keysStartingWith fold, type
+    for key in filter.keysStartingWith fold, "#{type}_"
       value = fold[key]
       continue unless value.length?
       value.length
-  if counts.length == 0
-    null  ## nothing of this type
-  else
+  unless counts.length
+    counts =
+      for key in filter.keysEndingWith fold, "_#{type}"
+        1 + Math.max fold[key]...
+  if counts.length
     Math.max counts...
+  else
+    0  ## nothing of this type
 
 filter.numVertices = (fold) -> filter.numType fold, 'vertices'
 filter.numEdges = (fold) -> filter.numType fold, 'edges'
@@ -83,8 +88,8 @@ filter.removeDuplicateEdges_vertices = (fold) ->
 filter.edges_verticesIncident = (e1, e2) ->
   for v in e1
     if v in e2
-      return true
-  false
+      return v
+  null
 
 ## Use hashing to find points within an epsilon > 0 distance from each other.
 ## Each integer cell will have O(1) distinct points before matching
@@ -145,14 +150,29 @@ filter.maybeAddVertex = (fold, coords, epsilon) ->
   else
     fold.vertices_coords.push(coords) - 1
 
-filter.addEdgeLike = (fold, v1, v2, oldEdgeIndex) ->
+filter.addVertexLike = (fold, oldVertexIndex) ->
+  ## Add a vertex and copy data from old vertex.
+  vNew = filter.numVertices fold
+  for key in filter.keysStartingWith fold, 'vertices_'
+    switch key[6..]
+      when 'vertices'
+        ## Leaving these broken
+      else
+        fold[key][vNew] = fold[key][oldVertexIndex]
+  vNew
+
+filter.addEdgeLike = (fold, oldEdgeIndex, v1, v2) ->
   ## Add an edge between v1 and v2, and copy data from old edge.
+  ## If v1 or v2 are unspecified, defaults to the vertices of the old edge.
   ## Must have `edges_vertices` property.
   eNew = fold.edges_vertices.length
   for key in filter.keysStartingWith fold, 'edges_'
     switch key[6..]
       when 'vertices'
-        fold.edges_vertices.push [v1, v2]
+        fold.edges_vertices.push [
+          v1 ? fold.edges_vertices[oldEdgeIndex][0]
+          v2 ? fold.edges_vertices[oldEdgeIndex][1]
+        ]
       when 'edges'
         ## Leaving these broken
       else
@@ -169,7 +189,7 @@ filter.addVertexAndSubdivide = (fold, coords, epsilon) ->
       s = (fold.vertices_coords[u] for u in e)
       if geom.pointStrictlyInSegment coords, s  ## implicit epsilon
         #console.log coords, 'in', s
-        iNew = filter.addEdgeLike fold, v, e[1], i
+        iNew = filter.addEdgeLike fold, i, v, e[1]
         changedEdges.push i, iNew
         e[1] = v
   [v, changedEdges]
@@ -206,7 +226,7 @@ filter.subdivideCrossingEdges_vertices = (fold, epsilon, involvingEdgesFrom) ->
   changedEdges = [[], []]
   addEdge = (v1, v2, oldEdgeIndex, which) ->
     #console.log 'adding', oldEdgeIndex, fold.edges_vertices.length, 'to', which
-    eNew = filter.addEdgeLike fold, v1, v2, oldEdgeIndex
+    eNew = filter.addEdgeLike fold, oldEdgeIndex, v1, v2
     changedEdges[which].push oldEdgeIndex, eNew
 
   ## Handle overlapping edges by subdividing edges at any vertices on them.
@@ -293,18 +313,72 @@ filter.addEdgeAndSubdivide = (fold, v1, v2, epsilon) ->
   changedEdges[1].push changedEdges2... if changedEdges2?
   changedEdges
 
+filter.cutEdges = (fold, es) ->
+  ###
+  Given a FOLD object with `edges_vertices`, `edges_assignment`, and
+  counterclockwise-sorted `vertices_edges`
+  (see `FOLD.convert.edges_vertices_to_vertices_edges_sorted`),
+  cuts apart ("unwelds") all edges in `es` into pairs of boundary edges.
+  When an endpoint of a cut edge ends up on n boundaries,
+  it splits into n vertices.
+  Preserves above-mentioned properties (so you can then compute faces via
+  `FOLD.convert.edges_vertices_to_faces_vertices_edges`),
+  but ignores face properties and discards `vertices_vertices` if present.
+  ###
+  vertices_boundaries = []
+  for e in filter.boundaryEdges fold
+    for v in fold.edges_vertices[e]
+      (vertices_boundaries[v] ?= []).push e
+  for e1 in es
+    ## Split e1 into two edges {e1, e2}
+    e2 = filter.addEdgeLike fold, e1
+    for v, i in fold.edges_vertices[e1]
+      ve = fold.vertices_edges[v]
+      ve.splice ve.indexOf(e1) + i, 0, e2
+    ## Check for endpoints of {e1, e2} to split, when they're on the boundary
+    for v1, i in fold.edges_vertices[e1]
+      u1 = fold.edges_vertices[e1][1-i]
+      u2 = fold.edges_vertices[e2][1-i]
+      boundaries = vertices_boundaries[v1]?.length
+      if boundaries >= 2  ## vertex already on boundary
+        if boundaries > 2
+          throw new Error "#{vertices_boundaries[v1].length} boundary edges at vertex #{v1}"
+        [b1, b2] = vertices_boundaries[v1]
+        neighbors = fold.vertices_edges[v1]
+        i1 = neighbors.indexOf b1
+        i2 = neighbors.indexOf b2
+        if i2 == (i1+1) % neighbors.length
+          neighbors = neighbors[i2..].concat neighbors[..i1] unless i2 == 0
+        else if i1 == (i2+1) % neighbors.length
+          neighbors = neighbors[i1..].concat neighbors[..i2] unless i1 == 0
+        else
+          throw new Error "Nonadjacent boundary edges at vertex #{v1}"
+        ## Find first vertex among e1, e2 among neighbors, so other is next
+        ie1 = neighbors.indexOf e1
+        ie2 = neighbors.indexOf e2
+        ie = Math.min ie1, ie2
+        fold.vertices_edges[v1] = neighbors[..ie]
+        v2 = filter.addVertexLike fold, v1
+        fold.vertices_edges[v2] = neighbors[1+ie..]
+        #console.log "Split #{neighbors} into #{fold.vertices_edges[v1]} for #{v1} and #{fold.vertices_edges[v2]} for #{v2}"
+        for neighbor in fold.vertices_edges[v2] # including e2
+          ev = fold.edges_vertices[neighbor]
+          ev[ev.indexOf v1] = v2
+    fold.edges_assignment?[e1] = 'B'
+    fold.edges_assignment?[e2] = 'B'
+    for v, i in fold.edges_vertices[e1]
+      (vertices_boundaries[v] ?= []).push e1
+    for v, i in fold.edges_vertices[e2]
+      (vertices_boundaries[v] ?= []).push e2
+  delete fold.vertices_vertices # would be out-of-date
+  fold
+
 filter.edges_vertices_to_vertices_vertices = (fold) ->
   ###
   Works for abstract structures, so NOT SORTED.
   Use sort_vertices_vertices to sort in counterclockwise order.
   ###
-  ## If there are no vertices_... fields, use largest vertex specified in
-  ## edges_vertices (which must exist in this function).
-  numVertices = filter.numVertices(fold) ?
-    Math.max (
-      for edge in fold.edges_vertices
-        Math.max edge[0], edge[1]
-    )...
+  numVertices = filter.numVertices fold
   vertices_vertices = ([] for v in [0...numVertices])
   for edge in fold.edges_vertices
     [v, w] = edge
