@@ -748,17 +748,8 @@ filter.maybeAddVertex = function(fold, coords, epsilon) {
   unless there is already such a vertex within distance `epsilon`,
   in which case return the closest such vertex's index.
    */
-  var i, vertex;
-  i = geom.closestIndex(coords, (function() {
-    var k, len, ref, results;
-    ref = fold.vertices_coords;
-    results = [];
-    for (k = 0, len = ref.length; k < len; k++) {
-      vertex = ref[k];
-      results.push(vertex);
-    }
-    return results;
-  })());
+  var i;
+  i = geom.closestIndex(coords, fold.vertices_coords);
   if ((i != null) && epsilon >= geom.dist(coords, fold.vertices_coords[i])) {
     return i;
   } else {

@@ -144,7 +144,7 @@ filter.maybeAddVertex = (fold, coords, epsilon) ->
   unless there is already such a vertex within distance `epsilon`,
   in which case return the closest such vertex's index.
   ###
-  i = geom.closestIndex coords, (vertex for vertex in fold.vertices_coords)
+  i = geom.closestIndex coords, fold.vertices_coords
   if i? and epsilon >= geom.dist coords, fold.vertices_coords[i]
     i  ## Closest point is close enough
   else
