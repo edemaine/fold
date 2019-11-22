@@ -4,7 +4,7 @@
   "description": "FOLD file format for origami models, crease patterns, etc.",
   "main": "lib/index.js",
   "bin": {
-    "fold-convert": "lib/file.js"
+    "fold-convert": "bin/fold-convert.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

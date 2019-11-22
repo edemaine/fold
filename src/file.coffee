@@ -1,7 +1,3 @@
-#!/usr/bin/coffee --bare
-`#!/usr/bin/env node
-`
-
 fs = require 'fs'
 path = require 'path'
 convert = require './convert'
