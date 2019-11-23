@@ -180,7 +180,8 @@ convert.faces_vertices_to_faces_edges = (fold) ->
 convert.faces_vertices_to_edges = (mesh) ->
   ###
   Given a FOLD object with just `faces_vertices`, automatically fills in
-  `edges_vertices`, `edges_faces`, `faces_edges`, and `edges_assignment`.
+  `edges_vertices`, `edges_faces`, `faces_edges`, and `edges_assignment`
+  (indicating which edges are boundary with 'B').
   ###
   mesh.edges_vertices = []
   mesh.edges_faces = []
@@ -199,6 +200,8 @@ convert.faces_vertices_to_edges = (mesh) ->
           key = "#{v2},#{v1}"
         if key of edgeMap
           edge = edgeMap[key]
+          # Second instance of edge means not on boundary
+          mesh.edges_assignment[edge] = null
         else
           edge = edgeMap[key] = mesh.edges_vertices.length
           if v1 <= v2
@@ -206,6 +209,7 @@ convert.faces_vertices_to_edges = (mesh) ->
           else
             mesh.edges_vertices.push [v2, v1]
           mesh.edges_faces.push [null, null]
+          # First instance of edge might be on boundary
           mesh.edges_assignment.push 'B'
         if v1 <= v2
           mesh.edges_faces[edge][0] = face
