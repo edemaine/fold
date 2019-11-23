@@ -62,7 +62,7 @@ geom.unit = (a, eps = geom.EPS) ->
 
 geom.ang2D = (a, eps = geom.EPS) ->
   ## Returns the angle of a 2D vector relative to the standard
-  #3 east-is-0-degrees rule.
+  ## east-is-0-degrees rule.
   return null if geom.magsq(a) < eps
   Math.atan2(a[1], a[0])
 
@@ -141,6 +141,81 @@ geom.rotate = (a, u, t) ->
   (for p in [[0,1,2],[1,2,0],[2,0,1]]
     (for q, i in [ct, -st * u[p[2]], st * u[p[1]]]
       a[p[i]] * (u[p[0]] * u[p[i]] * (1 - ct) + q)).reduce(geom.sum))
+
+geom.reflectPoint = (p, q) ->
+  ## Reflect point p through the point q into the "symmetric point"
+  geom.sub(geom.mul(q, 2), p)
+
+geom.reflectLine = (p, a, b) ->
+  ## Reflect point p through line through points a and b
+  # [based on https://math.stackexchange.com/a/11532]
+  # projection = a + (b - a) * [(b - a) dot (p - a)] / ||b - a||^2
+  vec = geom.sub(b, a)
+  lenSq = geom.magsq(vec)
+  dot = geom.dot(vec, geom.sub(p, a))
+  projection = geom.plus(a, geom.mul(vec, dot / lenSq))
+  # reflection = 2*projection - p (symmetric point of p opposite projection)
+  geom.sub(geom.mul(projection, 2), p)
+
+##
+## Matrix transformations
+##
+
+# 2D transformation matrices are of the form (where last column is optional):
+#   [[a, b, c],
+#    [d, e, f]]
+#
+# 3D transformation matrices are of the form (where last column is optional):
+#   [[a, b, c, d],
+#    [e, f, g, h],
+#    [i, j, k, l]]
+
+geom.matrixVector = (matrix, vector, implicitLast = 1) ->
+  ## Returns matrix-vector product, matrix * vector.
+  ## Requires the number of matrix columns to be <= vector length.
+  ## If the matrix has more columns than the vector length, then the vector
+  ## is assumed to be padded with zeros at the end, EXCEPT when the matrix
+  ## has more columns than rows (as in transformation matrices above),
+  ## in which case the final vector padding is implicitLast,
+  ## which defaults to 1 (point); set to 0 for treating like a vector.
+  for row in matrix
+    val = (row[j] * x for x, j in vector).reduce(geom.sum)
+    if row.length > vector.length and row.length > matrix.length
+      val += row[row.length-1] * implicitLast
+    val
+
+geom.matrixMatrix = (matrix1, matrix2) ->
+  ## Returns matrix-matrix product, matrix1 * matrix2.
+  ## Requires number of matrix1 columns equal to or 1 more than matrix2 rows.
+  ## In the latter case, treats matrix2 as having an extra row [0,0,...,0,0,1]
+  for row1 in matrix1
+    if matrix2.length != row1.length != matrix2.length + 1
+      throw new Error "Invalid matrix dimension #{row1.length} vs. matrix dimension #{matrix2.length}"
+    for j in [0...matrix2[0].length]
+      val = (row1[k] * row2[j] for row2, k in matrix2).reduce(geom.sum)
+      if j == row1.length - 1 == matrix2.length
+        val += row1[j]
+      val
+
+geom.matrixReflectLine = (a, b) ->
+  ## Matrix transformation implementing 2D geom.reflectLine(*, a, b)
+  vec = geom.sub(b, a)
+  lenSq = geom.magsq(vec)
+  # dot = vec dot (p - a) = vec dot p - vec dot a
+  dot2 = geom.dot(vec, a)
+  #proj = (a[i] + vec[i] * dot / lenSq for i in [0...2])
+  #[[vec[0] * vec[0] / lenSq,
+  #  vec[0] * vec[1] / lenSq,
+  #  a[0] - vec[0] * dot2 / lenSq]
+  # [vec[1] * vec[0] / lenSq,
+  #  vec[1] * vec[1] / lenSq,
+  #  a[1] - vec[1] * dot2 / lenSq]]
+  [[2*(vec[0] * vec[0] / lenSq) - 1,
+    2*(vec[0] * vec[1] / lenSq),
+    2*(a[0] - vec[0] * dot2 / lenSq)]
+   [2*(vec[1] * vec[0] / lenSq),
+    2*(vec[1] * vec[1] / lenSq) - 1,
+    2*(a[1] - vec[1] * dot2 / lenSq)]]
 
 ##
 ## Polygon Operations

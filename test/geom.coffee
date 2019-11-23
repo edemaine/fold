@@ -254,6 +254,74 @@ describe 'Vector Operations', ->
     expect geom.rotate(c,d,pi8)
     .toEqual null
 
+  test 'geom.reflectPoint', ->
+    expect geom.reflectPoint [0, 0], [1, 1]
+    .toEqual [2, 2]
+    expect geom.reflectPoint [-1, -2], [0, 0]
+    .toEqual [1, 2]
+
+  test 'geom.reflectLine', ->
+    expect geom.reflectLine [0, 0], [-1, 0], [1, 2]
+    .toEqual [-1, 1]
+    expect geom.reflectLine [1, 0], [-1, 0], [1, 2]
+    .toEqual [-1, 2]
+    expect geom.reflectLine [1, -1], [-1, 0], [1, 2]
+    .toEqual [-2, 2]
+    expect geom.reflectLine([1, 2], [7, 12], [-13, 4])
+    .toBeDeepCloseTo [-4.241379310344826, 15.103448275862071]
+    expect geom.reflectLine(geom.reflectLine([1, 2], [7, 12], [-13, 4]),
+                            [7, 12], [-13, 4])
+    .toBeDeepCloseTo [1, 2]
+
+  undefined
+
+describe 'Matrix Transformations', ->
+
+  test 'geom.matrixVector', ->
+    expect geom.matrixVector [[1, 2], [4, 5]], [6] # implicit 0
+    .toEqual [6, 24]
+    expect geom.matrixVector [[1, 2], [4, 5]], [6, 7]
+    .toEqual [20, 59]
+    expect geom.matrixVector [[1, 2, 3], [4, 5, 6]], [6, 7], 0 # implicit 0
+    .toEqual [20, 59]
+    expect geom.matrixVector [[1, 2, 3], [4, 5, 6]], [6, 7]    # implicit 1
+    .toEqual [23, 65]
+    expect geom.matrixVector [[1, 2, 3], [4, 5, 6]], [6, 7], 1 # implicit 1
+    .toEqual [23, 65]
+    expect geom.matrixVector [[1, 2, 3], [4, 5, 6]], [6]       # implicit 0,1
+    .toEqual [9, 30]
+
+  test 'geom.matrixMatrix', ->
+    expect geom.matrixMatrix [[2]], [[3]]
+    .toEqual [[6]]
+    expect geom.matrixMatrix [[1,0], [0,1]], [[1,0], [0,1]]
+    .toEqual [[1,0], [0,1]]
+    expect geom.matrixMatrix [[1,0], [0,1]], [[1,2], [3,4]]
+    .toEqual [[1,2], [3,4]]
+    expect geom.matrixMatrix [[1,2], [3,4]], [[1,2], [3,4]]
+    .toEqual [[7,10], [15,22]]
+    expect geom.matrixMatrix [[1,2,5], [3,4,6]], [[1,2], [3,4]] # implicit 0,0
+    .toEqual [[7,10], [15,22]]
+    expect geom.matrixMatrix [[1,2,5], [3,4,6]], [[1,2], [3,4], [1,1]]
+    .toEqual [[12,15], [21,28]]
+    expect geom.matrixMatrix [[1,2,5], [3,4,6]], [[1,2,5], [3,4,6]] # implicit 0,0,1
+    .toEqual [[7,10,22], [15,22,45]]
+
+  test 'geom.matrixReflectLine', ->
+    expect geom.matrixVector geom.matrixReflectLine([-1, 0], [1, 2]), [0, 0]
+    .toEqual [-1, 1]
+    expect geom.matrixVector geom.matrixReflectLine([-1, 0], [1, 2]), [1, 0]
+    .toEqual [-1, 2]
+    expect geom.matrixVector geom.matrixReflectLine([-1, 0], [1, 2]), [1, -1]
+    .toEqual [-2, 2]
+    expect geom.matrixVector geom.matrixReflectLine([7, 12], [-13, 4]), [1, 2]
+    .toBeDeepCloseTo [-4.241379310344826, 15.103448275862071]
+    matrix = geom.matrixReflectLine([7, 12], [-13, 4])
+    expect geom.matrixVector matrix, geom.matrixVector matrix, [1, 2]
+    .toBeDeepCloseTo [1, 2]
+    expect geom.matrixMatrix matrix, matrix
+    .toBeDeepCloseTo [[1, 0, 0], [0, 1, 0]]
+
   undefined
 
 describe 'Polygon Operations', ->
