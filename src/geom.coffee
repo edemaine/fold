@@ -197,6 +197,20 @@ geom.matrixMatrix = (matrix1, matrix2) ->
         val += row1[j]
       val
 
+geom.matrixInverseRT = (matrix) ->
+  ## Returns inverse of a matrix consisting of rotations and/or translations,
+  ## where the inverse can be found by a transpose and dot products
+  ## [http://www.graphics.stanford.edu/courses/cs248-98-fall/Final/q4.html].
+  if matrix[0].length == matrix.length+1
+    lastCol = (row[row.length-1] for row in matrix)
+  else if matrix[0].length != matrix.length
+    throw new Error "Invalid matrix dimensions #{matrix.length}x#{matrix[0].length}"
+  for row, i in matrix
+    invRow = (matrix[j][i] for j in [0...matrix.length]) # transpose
+    if lastCol?
+      invRow.push -geom.dot row[...matrix.length], lastCol
+    invRow
+
 geom.matrixReflectLine = (a, b) ->
   ## Matrix transformation implementing 2D geom.reflectLine(*, a, b)
   vec = geom.sub(b, a)

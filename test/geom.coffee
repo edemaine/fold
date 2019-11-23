@@ -307,6 +307,14 @@ describe 'Matrix Transformations', ->
     expect geom.matrixMatrix [[1,2,5], [3,4,6]], [[1,2,5], [3,4,6]] # implicit 0,0,1
     .toEqual [[7,10,22], [15,22,45]]
 
+  test 'geom.matrixInverseRT', ->
+    expect geom.matrixInverseRT [[1,0], [0,1]]
+    .toBeDeepCloseTo [[1,0], [0,1]]
+    expect geom.matrixInverseRT [[1,0,0], [0,1,0]]
+    .toBeDeepCloseTo [[1,0,0], [0,1,0]]
+    expect geom.matrixInverseRT [[1,0,2], [0,1,3]]
+    .toBeDeepCloseTo [[1,0,-2], [0,1,-3]]
+
   test 'geom.matrixReflectLine', ->
     expect geom.matrixVector geom.matrixReflectLine([-1, 0], [1, 2]), [0, 0]
     .toEqual [-1, 1]
@@ -321,6 +329,8 @@ describe 'Matrix Transformations', ->
     .toBeDeepCloseTo [1, 2]
     expect geom.matrixMatrix matrix, matrix
     .toBeDeepCloseTo [[1, 0, 0], [0, 1, 0]]
+    expect geom.matrixInverseRT matrix
+    .toBeDeepCloseTo matrix
 
   undefined
 
