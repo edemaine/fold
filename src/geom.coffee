@@ -211,6 +211,37 @@ geom.matrixInverseRT = (matrix) ->
       invRow.push -geom.dot row[...matrix.length], lastCol
     invRow
 
+geom.matrixInverse = (matrix) ->
+  ## Returns inverse of a matrix computed via Gauss-Jordan elimination method.
+  if matrix.length != matrix[0].length != matrix.length+1
+    throw new Error "Invalid matrix dimensions #{matrix.length}x#{matrix[0].length}"
+  matrix = (row[..] for row in matrix) # copy before elimination
+  inverse =
+    for row, i in matrix
+      for j in [0...row.length]
+        0 + (i == j)
+  for j in [0...matrix.length]
+    # Pivot to maximize absolute value in jth column
+    bestRow = j
+    for i in [j+1...matrix.length]
+      if Math.abs(matrix[i][j]) > Math.abs(matrix[bestRow][j])
+        bestRow = i
+    if bestRow != j
+      [matrix[bestRow], matrix[j]] = [matrix[j], matrix[bestRow]]
+      [inverse[bestRow], inverse[j]] = [inverse[j], inverse[bestRow]]
+    # Scale row to unity in jth column
+    inverse[j] = geom.mul inverse[j], 1/matrix[j][j]
+    matrix[j] = geom.mul matrix[j], 1/matrix[j][j]
+    # Eliminate other rows in jth column
+    for i in [0...matrix.length] when i != j
+      inverse[i] = geom.plus inverse[i], geom.mul inverse[j], -matrix[i][j]
+      matrix[i] = geom.plus matrix[i], geom.mul matrix[j], -matrix[i][j]
+  if matrix[0].length == matrix.length+1
+    for i in [0...matrix.length] when i != j
+      inverse[i][inverse[i].length-1] -= matrix[i][matrix[i].length-1]
+      matrix[i][matrix[i].length-1] -= matrix[i][matrix[i].length-1]
+  inverse
+
 geom.matrixReflectLine = (a, b) ->
   ## Matrix transformation implementing 2D geom.reflectLine(*, a, b)
   vec = geom.sub(b, a)
