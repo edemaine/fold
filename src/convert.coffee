@@ -219,6 +219,81 @@ convert.faces_vertices_to_edges = (mesh) ->
     )
   mesh
 
+convert.edges_vertices_to_edges_faces_edges = (fold) ->
+  ###
+  Given a `fold` object with `edges_vertices` and `faces_vertices`,
+  fills in `faces_edges` and `edges_vertices`.
+  ###
+  fold.edges_faces = ([null, null] for edge in [0...fold.edges_vertices.length])
+  edgeMap = {}
+  for edge, vertices of fold.edges_vertices when vertices?
+    edge = parseInt edge
+    edgeMap["#{vertices[0]},#{vertices[1]}"] = [edge, 0] # forward
+    edgeMap["#{vertices[1]},#{vertices[0]}"] = [edge, 1] # backward
+  for face, vertices of fold.faces_vertices
+    face = parseInt face
+    fold.faces_edges[face] =
+      for v1, i in vertices
+        v2 = vertices[(i+1) % vertices.length]
+        [edge, orient] = edgeMap["#{v1},#{v2}"]
+        fold.edges_faces[edge][orient] = face
+        edge
+  fold
+
+convert.flat_folded_geometry = (fold, rootFace = 0) ->
+  ###
+  Assuming `fold` is a locally flat foldable crease pattern in the xy plane,
+  sets `fold.vertices_flatFoldCoords` to give the flat-folded geometry
+  as determined by repeated reflection relative to `rootFace`, and sets
+  `fold.faces_flatFoldTransform` transformation matrix mapping each face's
+  unfolded --> folded geometry.
+  Requires `fold` to have `vertices_coords` and `edges_vertices`;
+  `edges_faces` and `faces_edges` will be created if they do not exist.
+  Returns the maximum displacement error from closure constraints (multiple
+  mappings of the same vertices, or multiple transformations of the same face).
+  ###
+  if fold.vertices_coords? and fold.edges_vertices? and not
+     (fold.edges_faces? and fold.faces_edges?)
+    convert.edges_vertices_to_edges_faces_edges fold
+  maxError = 0
+  level = [rootFace]
+  fold.faces_flatFoldTransform =
+    (null for face in [0...fold.faces_edges.length])
+  fold.faces_flatFoldTransform[rootFace] = [[1,0,0],[0,1,0]] # identity
+  fold.vertices_flatFoldCoords =
+    (null for vertex in [0...fold.vertices_coords.length])
+  # Use fold.faces_edges -> fold.edges_vertices, which are both needed below,
+  # in case fold.faces_vertices isn't defined.
+  for edge in fold.faces_edges[rootFace]
+    for vertex in fold.edges_vertices[edge]
+      fold.vertices_flatFoldCoords[vertex] ?= fold.vertices_coords[vertex][..]
+  while level.length
+    nextLevel = []
+    for face in level
+      for edge in fold.faces_edges[face]
+        for face2 in fold.edges_faces[edge] when face2? and face2 != face
+          transform = geom.matrixMatrix fold.faces_flatFoldTransform[face],
+            geom.matrixReflectLine ...(
+              for vertex in fold.edges_vertices[edge]
+                fold.vertices_coords[vertex]
+            )
+          if fold.faces_flatFoldTransform[face2]?
+            for row, i in fold.faces_flatFoldTransform[face2]
+              maxError = Math.max maxError, geom.dist row, transform[i]
+          else
+            fold.faces_flatFoldTransform[face2] = transform
+            for edge2 in fold.faces_edges[face2]
+              for vertex2 in fold.edges_vertices[edge2]
+                mapped = geom.matrixVector transform, fold.vertices_coords[vertex2]
+                if fold.vertices_flatFoldCoords[vertex2]?
+                  maxError = Math.max maxError,
+                    geom.dist fold.vertices_flatFoldCoords[vertex2], mapped
+                else
+                  fold.vertices_flatFoldCoords[vertex2] = mapped
+            nextLevel.push face2
+    level = nextLevel
+  maxError
+
 convert.deepCopy = (fold) ->
   ## Given a FOLD object, make a copy that shares no pointers with the original.
   if typeof fold in ['number', 'string', 'boolean']
