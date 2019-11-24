@@ -29,7 +29,7 @@ file.toFile = (fold, output, converter = null) ->
     result = convert.toJSON result
   fs.writeFileSync output, result, 'utf-8'
 
-file.fileToFile = (input, output, converter = null) ->
+file.fileToFile = (input, output, options) ->
   inFormat = file.extensionOf input
   outFormat = file.extensionOf output
   unless inFormat
@@ -38,6 +38,7 @@ file.fileToFile = (input, output, converter = null) ->
   unless outFormat
     console.warn "Could not detect extension of #{output}"
     return
+  converter = options.converter
   unless converter?
     converter = convert.getConverter inFormat, outFormat
     unless converter?
@@ -49,18 +50,36 @@ file.fileToFile = (input, output, converter = null) ->
     output.ext = outFormat
     output.base = output.name + output.ext
     output = path.format output
-  if inFormat == outFormat or input == output
-    console.warn "Attempt to convert #{input} to same extension"
+  if input == output
+    console.warn "Attempt to convert #{input} to same filename"
   else
     console.log input, '->', output
-    result = converter fs.readFileSync input, 'utf-8'
+    result = fs.readFileSync input, 'utf-8'
+    if inFormat == '.fold' != outFormat # avoid double mogrification
+      result = file.mogrify result, options
+    result = converter result
+    if outFormat == '.fold'
+      result = file.mogrify result, options
     if typeof result != 'string'
       result = convert.toJSON result
     fs.writeFileSync output, result, 'utf-8'
 
+file.mogrify = (data, options) ->
+  return unless options.flatFold # or any options set
+  fold = JSON.parse data
+  if options.flatFold
+    error = convert.flat_folded_geometry fold
+    console.log " -- Flat folding error: #{error}"
+    fold.vertices_flatUnfoldCoords = fold.vertices_coords
+    fold.vertices_coords = fold.vertices_flatFoldCoords
+    delete fold.vertices_flatFoldCoords
+  convert.toJSON fold
+
 file.main = (args = process.argv[2..]) ->
   filenames = []
   output = '.fold'  ## Default behavior: convert to .fold
+  options =
+    flatFold: false
   mode = null
   for arg in args
     switch mode
@@ -71,9 +90,11 @@ file.main = (args = process.argv[2..]) ->
         switch arg
           when '-o', '--output'
             mode = 'output'
+          when '--flat-fold'
+            options.flatFold = true
           else
             filenames.push arg
   for filename in filenames
-    file.fileToFile filename, output
+    file.fileToFile filename, output, options
 
 file.main() if require.main == module
