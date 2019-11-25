@@ -72,6 +72,8 @@ file.mogrify = (data, options) ->
     console.log " -- Flat folding error: #{error}"
     fold.vertices_flatUnfoldCoords = fold.vertices_coords
     fold.vertices_coords = fold.vertices_flatFoldCoords
+    fold.frame_classes = fold.frame_classes.filter (x) -> x != 'creasePattern'
+    .concat 'foldedForm'
     delete fold.vertices_flatFoldCoords
   convert.toJSON fold
 
