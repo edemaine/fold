@@ -44,6 +44,18 @@ filter.remapFieldSubset = (fold, field, keep) ->
   filter.remapField fold, field, old2new
   old2new
 
+filter.remove = (fold, field, index) ->
+  ###
+  Remove given index from given field ('vertices', 'edges', 'faces'), in place.
+  ###
+  filter.remapFieldSubset fold, field,
+    for i in [0...filter.numType fold, field]
+      i != index
+
+filter.removeVertex = (fold, index) -> filter.remove fold, 'vertices', index
+filter.removeEdge = (fold, index) -> filter.remove fold, 'edges', index
+filter.removeFace = (fold, index) -> filter.remove fold, 'faces', index
+
 filter.transform = (fold, matrix) ->
   ###
   Transforms all fields ending in _coords (in particular, vertices_coords)
