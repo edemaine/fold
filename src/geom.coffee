@@ -269,6 +269,26 @@ geom.matrixRotate2D = (t, center) ->
     [[ct, -st]
      [st,  ct]]
 
+geom.matrixReflectAxis = (a, d, center) ->
+  ## Matrix transformation negating dimension a out of d dimensions,
+  ## or if center is specified, reflecting around that value of dimension a.
+  for i in [0...d]
+    row =
+      for j in [0...d]
+        if i == j
+          if a == i
+            -1
+          else
+            1
+        else
+          0
+    if center?
+      if a == i
+        row.push 2*center
+      else
+        row.push 0
+    row
+
 geom.matrixReflectLine = (a, b) ->
   ## Matrix transformation implementing 2D geom.reflectLine(*, a, b)
   vec = geom.sub(b, a)
