@@ -330,6 +330,28 @@ describe 'Matrix Transformations', ->
     expect geom.matrixMatrix matrix, geom.matrixInverse matrix
     .toBeDeepCloseTo [[1,0,0], [0,1,0]]
 
+  test 'geom.matrixRotate2D', ->
+    expect geom.matrixRotate2D 2*Math.PI
+    .toBeDeepCloseTo [[1,0], [0,1]]
+    expect geom.matrixRotate2D 2*Math.PI, [1,2]
+    .toBeDeepCloseTo [[1,0,0], [0,1,0]]
+    expect geom.matrixRotate2D Math.PI
+    .toBeDeepCloseTo [[-1,0], [0,-1]]
+    expect geom.matrixRotate2D Math.PI, [1,2]
+    .toBeDeepCloseTo [[-1,0,2], [0,-1,4]]
+    rot180 = geom.matrixRotate2D Math.PI, [1,2]
+    expect geom.matrixMatrix rot180, rot180
+    .toBeDeepCloseTo [[1,0,0], [0,1,0]]
+    expect geom.matrixRotate2D Math.PI/2
+    .toBeDeepCloseTo [[0,-1], [1,0]]
+    expect geom.matrixRotate2D Math.PI/2, [1,2]
+    .toBeDeepCloseTo [[0,-1,3], [1,0,1]]
+    rot90 = geom.matrixRotate2D Math.PI/2, [1,2]
+    expect geom.matrixMatrix rot90, rot90
+    .toBeDeepCloseTo rot180
+    expect geom.matrixVector geom.matrixRotate2D(Math.PI/2), [1,0]
+    .toBeDeepCloseTo [0,1] # counterclockwise test
+
   test 'geom.matrixReflectLine', ->
     expect geom.matrixVector geom.matrixReflectLine([-1, 0], [1, 2]), [0, 0]
     .toEqual [-1, 1]

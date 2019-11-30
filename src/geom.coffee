@@ -242,6 +242,18 @@ geom.matrixInverse = (matrix) ->
       matrix[i][matrix[i].length-1] -= matrix[i][matrix[i].length-1]
   inverse
 
+geom.matrixRotate2D = (t, center) ->
+  ## 2D rotation matrix around center, which defaults to origin,
+  ## counterclockwise by t radians.
+  [ct, st] = [Math.cos(t), Math.sin(t)]
+  if center?
+    [x, y] = center
+    [[ct, -st, -x*ct + y*st + x]
+     [st,  ct, -x*st - y*ct + y]]
+  else
+    [[ct, -st]
+     [st,  ct]]
+
 geom.matrixReflectLine = (a, b) ->
   ## Matrix transformation implementing 2D geom.reflectLine(*, a, b)
   vec = geom.sub(b, a)
