@@ -157,18 +157,23 @@ geom.reflectLine = (p, a, b) ->
   # reflection = 2*projection - p (symmetric point of p opposite projection)
   geom.sub(geom.mul(projection, 2), p)
 
-##
-## Matrix transformations
-##
+###
+Matrix transformations
 
-# 2D transformation matrices are of the form (where last column is optional):
-#   [[a, b, c],
-#    [d, e, f]]
-#
-# 3D transformation matrices are of the form (where last column is optional):
-#   [[a, b, c, d],
-#    [e, f, g, h],
-#    [i, j, k, l]]
+2D transformation matrices are of the form (where last column is optional):
+  [[a, b, c],
+   [d, e, f]]
+
+3D transformation matrices are of the form (where last column is optional):
+  [[a, b, c, d],
+   [e, f, g, h],
+   [i, j, k, l]]
+
+Transformation matrices are designed to be multiplied on the left of points,
+i.e., T*x gives vector x transformed by matrix T, where x has an implicit 1
+at the end (homogeneous coordinates) when T has the optional last column.
+See `geom.matrixVector`.
+###
 
 geom.matrixVector = (matrix, vector, implicitLast = 1) ->
   ## Returns matrix-vector product, matrix * vector.
@@ -241,6 +246,16 @@ geom.matrixInverse = (matrix) ->
       inverse[i][inverse[i].length-1] -= matrix[i][matrix[i].length-1]
       matrix[i][matrix[i].length-1] -= matrix[i][matrix[i].length-1]
   inverse
+
+geom.matrixTranslate = (v) ->
+  ## Transformation matrix for translating by given vector v.
+  ## Works in any dimension, assuming v.length is that dimension.
+  for x, i in v
+    row =
+      for j in [0...v.length]
+        0 + (i == j)
+    row.push x
+    row
 
 geom.matrixRotate2D = (t, center) ->
   ## 2D rotation matrix around center, which defaults to origin,

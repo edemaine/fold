@@ -330,6 +330,14 @@ describe 'Matrix Transformations', ->
     expect geom.matrixMatrix matrix, geom.matrixInverse matrix
     .toBeDeepCloseTo [[1,0,0], [0,1,0]]
 
+  test 'geom.matrixTranslate', ->
+    expect geom.matrixTranslate [1,2]
+    .toBeDeepCloseTo [[1,0,1], [0,1,2]]
+    expect geom.matrixInverse geom.matrixTranslate [1,2]
+    .toBeDeepCloseTo [[1,0,-1], [0,1,-2]]
+    expect geom.matrixTranslate [1,2,3]
+    .toBeDeepCloseTo [[1,0,0,1], [0,1,0,2], [0,0,1,3]]
+
   test 'geom.matrixRotate2D', ->
     expect geom.matrixRotate2D 2*Math.PI
     .toBeDeepCloseTo [[1,0], [0,1]]
