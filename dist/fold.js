@@ -400,16 +400,20 @@ convert.edges_vertices_to_edges_faces_edges = function(fold) {
   return fold;
 };
 
-convert.flat_folded_geometry = function(fold, rootFace = 0) {
-  var base, edge, edge2, face, face2, i, j, k, l, len, len1, len2, len3, len4, len5, len6, len7, level, m, mapped, maxError, n, nextLevel, o, p, q, ref, ref1, ref2, ref3, ref4, ref5, ref6, row, transform, vertex, vertex2;
+convert.flatFoldedGeometry = function(fold, rootFace = 0) {
+  var base, edge, edge2, face, face2, i, j, k, l, len, len1, len2, len3, len4, len5, len6, len7, level, m, mapped, maxError, n, nextLevel, o, orientation, p, q, ref, ref1, ref2, ref3, ref4, ref5, ref6, row, transform, vertex, vertex2;
   /*
   Assuming `fold` is a locally flat foldable crease pattern in the xy plane,
   sets `fold.vertices_flatFoldCoords` to give the flat-folded geometry
-  as determined by repeated reflection relative to `rootFace`, and sets
+  as determined by repeated reflection relative to `rootFace`; sets
   `fold.faces_flatFoldTransform` transformation matrix mapping each face's
-  unfolded --> folded geometry.
+  unfolded --> folded geometry; and sets `fold.faces_flatFoldOrientation` to
+  +1 or -1 to indicate whether each folded face matches its original
+  orientation or is upside-down (so is oriented clockwise in 2D).
+
   Requires `fold` to have `vertices_coords` and `edges_vertices`;
   `edges_faces` and `faces_edges` will be created if they do not exist.
+
   Returns the maximum displacement error from closure constraints (multiple
   mappings of the same vertices, or multiple transformations of the same face).
   */
@@ -436,6 +440,15 @@ convert.flat_folded_geometry = function(fold, rootFace = 0) {
       0 // identity
     ]
   ];
+  fold.faces_flatFoldOrientation = (function() {
+    var j, ref, results;
+    results = [];
+    for (face = j = 0, ref = fold.faces_edges.length; (0 <= ref ? j < ref : j > ref); face = 0 <= ref ? ++j : --j) {
+      results.push(null);
+    }
+    return results;
+  })();
+  fold.faces_flatFoldOrientation[rootFace] = +1;
   fold.vertices_flatFoldCoords = (function() {
     var j, ref, results;
     results = [];
@@ -461,6 +474,7 @@ convert.flat_folded_geometry = function(fold, rootFace = 0) {
     nextLevel = [];
     for (l = 0, len2 = level.length; l < len2; l++) {
       face = level[l];
+      orientation = -fold.faces_flatFoldOrientation[face];
       ref2 = fold.faces_edges[face];
       for (m = 0, len3 = ref2.length; m < len3; m++) {
         edge = ref2[m];
@@ -486,8 +500,12 @@ convert.flat_folded_geometry = function(fold, rootFace = 0) {
               row = ref4[i];
               maxError = Math.max(maxError, geom.dist(row, transform[i]));
             }
+            if (orientation !== fold.faces_flatFoldOrientation[face2]) {
+              maxError = Math.max(1, maxError);
+            }
           } else {
             fold.faces_flatFoldTransform[face2] = transform;
+            fold.faces_flatFoldOrientation[face2] = orientation;
             ref5 = fold.faces_edges[face2];
             for (p = 0, len6 = ref5.length; p < len6; p++) {
               edge2 = ref5[p];
@@ -1755,17 +1773,18 @@ geom.matrixVector = function(matrix, vector, implicitLast = 1) {
 };
 
 geom.matrixMatrix = function(matrix1, matrix2) {
-  var j, k, l, len, ref, results, row1, row2, val;
+  var j, k, l, len, product, ref, ref1, results, row1, row2, val;
 //# Returns matrix-matrix product, matrix1 * matrix2.
 //# Requires number of matrix1 columns equal to or 1 more than matrix2 rows.
-//# In the latter case, treats matrix2 as having an extra row [0,0,...,0,0,1]
+//# In the latter case, treats matrix2 as having an extra row [0,0,...,0,0,1],
+//# which may involve adding an implicit column to matrix2 as well.
   results = [];
   for (l = 0, len = matrix1.length; l < len; l++) {
     row1 = matrix1[l];
     if ((matrix2.length !== (ref = row1.length) && ref !== matrix2.length + 1)) {
       throw new Error(`Invalid matrix dimension ${row1.length} vs. matrix dimension ${matrix2.length}`);
     }
-    results.push((function() {
+    product = (function() {
       var o, ref1, ref2, results1;
       results1 = [];
       for (j = o = 0, ref1 = matrix2[0].length; (0 <= ref1 ? o < ref1 : o > ref1); j = 0 <= ref1 ? ++o : --o) {
@@ -1784,7 +1803,11 @@ geom.matrixMatrix = function(matrix1, matrix2) {
         results1.push(val);
       }
       return results1;
-    })());
+    })();
+    if ((row1.length - 1 === (ref1 = matrix2.length) && ref1 === matrix2[0].length)) {
+      product.push(row1[row1.length - 1]);
+    }
+    results.push(product);
   }
   return results;
 };

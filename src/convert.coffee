@@ -244,11 +244,15 @@ convert.flatFoldedGeometry = (fold, rootFace = 0) ->
   ###
   Assuming `fold` is a locally flat foldable crease pattern in the xy plane,
   sets `fold.vertices_flatFoldCoords` to give the flat-folded geometry
-  as determined by repeated reflection relative to `rootFace`, and sets
+  as determined by repeated reflection relative to `rootFace`; sets
   `fold.faces_flatFoldTransform` transformation matrix mapping each face's
-  unfolded --> folded geometry.
+  unfolded --> folded geometry; and sets `fold.faces_flatFoldOrientation` to
+  +1 or -1 to indicate whether each folded face matches its original
+  orientation or is upside-down (so is oriented clockwise in 2D).
+
   Requires `fold` to have `vertices_coords` and `edges_vertices`;
   `edges_faces` and `faces_edges` will be created if they do not exist.
+
   Returns the maximum displacement error from closure constraints (multiple
   mappings of the same vertices, or multiple transformations of the same face).
   ###
@@ -260,6 +264,9 @@ convert.flatFoldedGeometry = (fold, rootFace = 0) ->
   fold.faces_flatFoldTransform =
     (null for face in [0...fold.faces_edges.length])
   fold.faces_flatFoldTransform[rootFace] = [[1,0,0],[0,1,0]] # identity
+  fold.faces_flatFoldOrientation =
+    (null for face in [0...fold.faces_edges.length])
+  fold.faces_flatFoldOrientation[rootFace] = +1
   fold.vertices_flatFoldCoords =
     (null for vertex in [0...fold.vertices_coords.length])
   # Use fold.faces_edges -> fold.edges_vertices, which are both needed below,
@@ -270,6 +277,7 @@ convert.flatFoldedGeometry = (fold, rootFace = 0) ->
   while level.length
     nextLevel = []
     for face in level
+      orientation = -fold.faces_flatFoldOrientation[face]
       for edge in fold.faces_edges[face]
         for face2 in fold.edges_faces[edge] when face2? and face2 != face
           transform = geom.matrixMatrix fold.faces_flatFoldTransform[face],
@@ -280,8 +288,11 @@ convert.flatFoldedGeometry = (fold, rootFace = 0) ->
           if fold.faces_flatFoldTransform[face2]?
             for row, i in fold.faces_flatFoldTransform[face2]
               maxError = Math.max maxError, geom.dist row, transform[i]
+            if orientation != fold.faces_flatFoldOrientation[face2]
+              maxError = Math.max 1, maxError
           else
             fold.faces_flatFoldTransform[face2] = transform
+            fold.faces_flatFoldOrientation[face2] = orientation
             for edge2 in fold.faces_edges[face2]
               for vertex2 in fold.edges_vertices[edge2]
                 mapped = geom.matrixVector transform, fold.vertices_coords[vertex2]
