@@ -192,15 +192,20 @@ geom.matrixVector = (matrix, vector, implicitLast = 1) ->
 geom.matrixMatrix = (matrix1, matrix2) ->
   ## Returns matrix-matrix product, matrix1 * matrix2.
   ## Requires number of matrix1 columns equal to or 1 more than matrix2 rows.
-  ## In the latter case, treats matrix2 as having an extra row [0,0,...,0,0,1]
+  ## In the latter case, treats matrix2 as having an extra row [0,0,...,0,0,1],
+  ## which may involve adding an implicit column to matrix2 as well.
   for row1 in matrix1
     if matrix2.length != row1.length != matrix2.length + 1
       throw new Error "Invalid matrix dimension #{row1.length} vs. matrix dimension #{matrix2.length}"
-    for j in [0...matrix2[0].length]
-      val = (row1[k] * row2[j] for row2, k in matrix2).reduce(geom.sum)
-      if j == row1.length - 1 == matrix2.length
-        val += row1[j]
-      val
+    product =
+      for j in [0...matrix2[0].length]
+        val = (row1[k] * row2[j] for row2, k in matrix2).reduce(geom.sum)
+        if j == row1.length - 1 == matrix2.length
+          val += row1[j]
+        val
+    if row1.length - 1 == matrix2.length == matrix2[0].length
+      product.push row1[row1.length - 1]
+    product
 
 geom.matrixInverseRT = (matrix) ->
   ## Returns inverse of a matrix consisting of rotations and/or translations,

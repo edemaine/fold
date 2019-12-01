@@ -300,12 +300,20 @@ describe 'Matrix Transformations', ->
     .toEqual [[1,2], [3,4]]
     expect geom.matrixMatrix [[1,2], [3,4]], [[1,2], [3,4]]
     .toEqual [[7,10], [15,22]]
-    expect geom.matrixMatrix [[1,2,5], [3,4,6]], [[1,2], [3,4]] # implicit 0,0
-    .toEqual [[7,10], [15,22]]
+    expect geom.matrixMatrix [[1,2,5], [3,4,6]], [[1,2], [3,4]]
+    .toEqual [[7,10,5], [15,22,6]]               # implicit row 0,0,1
     expect geom.matrixMatrix [[1,2,5], [3,4,6]], [[1,2], [3,4], [1,1]]
     .toEqual [[12,15], [21,28]]
-    expect geom.matrixMatrix [[1,2,5], [3,4,6]], [[1,2,5], [3,4,6]] # implicit 0,0,1
-    .toEqual [[7,10,22], [15,22,45]]
+    expect geom.matrixMatrix [[1,2,5], [3,4,6]], [[1,2,5], [3,4,6]]
+    .toEqual [[7,10,22], [15,22,45]]             # implicit row 0,0,1
+
+  test 'geom.matrixMatrix equivalence to geom.matrixVector', ->
+    m1 = geom.matrixRotate2D Math.PI/3  # 2x2
+    m2 = geom.matrixTranslate [1,2]     # 2x3
+    expect geom.matrixVector geom.matrixMatrix(m1, m2), [5,9]
+    .toBeDeepCloseTo geom.matrixVector m1, geom.matrixVector m2, [5,9]
+    expect geom.matrixVector geom.matrixMatrix(m2, m1), [5,9]
+    .toBeDeepCloseTo geom.matrixVector m2, geom.matrixVector m1, [5,9]
 
   test 'geom.matrixInverseRT', ->
     expect geom.matrixInverseRT [[1,0], [0,1]]
