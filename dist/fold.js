@@ -349,50 +349,102 @@ convert.faces_vertices_to_edges = function(mesh) {
   return mesh;
 };
 
+convert.edges_vertices_to_edges_faces_edges = function(fold) {
+  var edge, edgeMap, face, i, orient, ref, ref1, v1, v2, vertices;
+  /*
+  Given a `fold` object with `edges_vertices` and `faces_vertices`,
+  fills in `faces_edges` and `edges_vertices`.
+  */
+  fold.edges_faces = (function() {
+    var j, ref, results;
+    results = [];
+    for (edge = j = 0, ref = fold.edges_vertices.length; (0 <= ref ? j < ref : j > ref); edge = 0 <= ref ? ++j : --j) {
+      results.push([null, null]);
+    }
+    return results;
+  })();
+  edgeMap = {};
+  ref = fold.edges_vertices;
+  for (edge in ref) {
+    vertices = ref[edge];
+    if (!(vertices != null)) {
+      continue;
+    }
+    edge = parseInt(edge);
+    edgeMap[`${vertices[0]},${vertices[1]}`] = [
+      edge,
+      0 // forward
+    ];
+    edgeMap[`${vertices[1]},${vertices[0]}`] = [
+      edge,
+      1 // backward
+    ];
+  }
+  ref1 = fold.faces_vertices;
+  for (face in ref1) {
+    vertices = ref1[face];
+    face = parseInt(face);
+    fold.faces_edges[face] = (function() {
+      var j, len, results;
+      results = [];
+      for (i = j = 0, len = vertices.length; j < len; i = ++j) {
+        v1 = vertices[i];
+        v2 = vertices[(i + 1) % vertices.length];
+        [edge, orient] = edgeMap[`${v1},${v2}`];
+        fold.edges_faces[edge][orient] = face;
+        results.push(edge);
+      }
+      return results;
+    })();
+  }
+  return fold;
+};
+
 convert.flat_folded_geometry = function(fold, rootFace = 0) {
-  var base, edge, edge2, face, face2, j, k, l, len, len1, len2, len3, len4, len5, len6, len7, level, m, mapped, maxError, n, nextLevel, o, p, q, ref, ref1, ref2, ref3, ref4, ref5, row, shouldBeIdentity, transform, vertex, vertex2;
-  if (filter.numFaces() === 0) {
-    /*
-    Assuming `fold` is a locally flat foldable crease pattern in the xy plane,
-    sets `fold.vertices_flatFoldCoords` to give the flat-folded geometry
-    as determined by repeated reflection relative to `rootFace`, and sets
-    `fold.faces_flatFoldTransform` and `fold.faces_flatUnfoldTransform` to the
-    transformation matrices mapping unfolded <-> folded geometries.
-    Requires `fold` to have `vertices_coords`, `edges_vertices`, `edges_faces`,
-    and `faces_edges`.
-    Returns the maximum displacement error from closure constraints (multiple
-    mappings of the same vertices, or multiple transformations of the same face).
-    */
-    return 0;
+  var base, edge, edge2, face, face2, i, j, k, l, len, len1, len2, len3, len4, len5, len6, len7, level, m, mapped, maxError, n, nextLevel, o, p, q, ref, ref1, ref2, ref3, ref4, ref5, ref6, row, transform, vertex, vertex2;
+  /*
+  Assuming `fold` is a locally flat foldable crease pattern in the xy plane,
+  sets `fold.vertices_flatFoldCoords` to give the flat-folded geometry
+  as determined by repeated reflection relative to `rootFace`, and sets
+  `fold.faces_flatFoldTransform` transformation matrix mapping each face's
+  unfolded --> folded geometry.
+  Requires `fold` to have `vertices_coords` and `edges_vertices`;
+  `edges_faces` and `faces_edges` will be created if they do not exist.
+  Returns the maximum displacement error from closure constraints (multiple
+  mappings of the same vertices, or multiple transformations of the same face).
+  */
+  if ((fold.vertices_coords != null) && (fold.edges_vertices != null) && !((fold.edges_faces != null) && (fold.faces_edges != null))) {
+    convert.edges_vertices_to_edges_faces_edges(fold);
   }
   maxError = 0;
   level = [rootFace];
-  fold.faces_flatFoldTransform = {
-    rootFace: [
-      [1,
+  fold.faces_flatFoldTransform = (function() {
+    var j, ref, results;
+    results = [];
+    for (face = j = 0, ref = fold.faces_edges.length; (0 <= ref ? j < ref : j > ref); face = 0 <= ref ? ++j : --j) {
+      results.push(null);
+    }
+    return results;
+  })();
+  fold.faces_flatFoldTransform[rootFace] = [
+    [1,
+    0,
+    0],
+    [
       0,
-      0],
-      [
-        0,
-        1,
-        0 // identity
-      ]
+      1,
+      0 // identity
     ]
-  };
-  fold.faces_flatUnfoldTransform = {
-    rootFace: [
-      [1,
-      0,
-      0],
-      [
-        0,
-        1,
-        0 // identity
-      ]
-    ]
-  };
-  fold.vertices_flatFoldCoords = {};
-  ref = fold.faces_edges[face];
+  ];
+  fold.vertices_flatFoldCoords = (function() {
+    var j, ref, results;
+    results = [];
+    for (vertex = j = 0, ref = fold.vertices_coords.length; (0 <= ref ? j < ref : j > ref); vertex = 0 <= ref ? ++j : --j) {
+      results.push(null);
+    }
+    return results;
+  })();
+  ref = fold.faces_edges[rootFace];
   // Use fold.faces_edges -> fold.edges_vertices, which are both needed below,
   // in case fold.faces_vertices isn't defined.
   for (j = 0, len = ref.length; j < len; j++) {
@@ -418,33 +470,32 @@ convert.flat_folded_geometry = function(fold, rootFace = 0) {
           if (!((face2 != null) && face2 !== face)) {
             continue;
           }
-          transform = geom.matrixMatrix(geom.matrixReflectLine(...((function() {
+          transform = geom.matrixMatrix(fold.faces_flatFoldTransform[face], geom.matrixReflectLine(...((function() {
             var len5, o, ref4, results;
             ref4 = fold.edges_vertices[edge];
             results = [];
             for (o = 0, len5 = ref4.length; o < len5; o++) {
               vertex = ref4[o];
-              results.push(fold.vertices_coords);
+              results.push(fold.vertices_coords[vertex]);
             }
             return results;
-          })()), fold.faces_flatFoldTransform[face]));
-          if (face2 in fold.faces_flatFoldTransform) {
-            shouldBeIdentity = geom.matrixMatrix(fold.faces_flatUnfoldTransform[face2], transform);
-            for (o = 0, len5 = shouldBeIdentity.length; o < len5; o++) {
-              row = shouldBeIdentity[o];
-              maxError = Math.max(maxError, Math.abs(1 - geom.mag(row)));
+          })())));
+          if (fold.faces_flatFoldTransform[face2] != null) {
+            ref4 = fold.faces_flatFoldTransform[face2];
+            for (i = o = 0, len5 = ref4.length; o < len5; i = ++o) {
+              row = ref4[i];
+              maxError = Math.max(maxError, geom.dist(row, transform[i]));
             }
           } else {
             fold.faces_flatFoldTransform[face2] = transform;
-            fold.faces_flatUnfoldTransform[face2] = geom.matrixInverseRT(transform);
-            ref4 = fold.faces_edges[face2];
-            for (p = 0, len6 = ref4.length; p < len6; p++) {
-              edge2 = ref4[p];
-              ref5 = fold.edges_vertices[edge2];
-              for (q = 0, len7 = ref5.length; q < len7; q++) {
-                vertex2 = ref5[q];
+            ref5 = fold.faces_edges[face2];
+            for (p = 0, len6 = ref5.length; p < len6; p++) {
+              edge2 = ref5[p];
+              ref6 = fold.edges_vertices[edge2];
+              for (q = 0, len7 = ref6.length; q < len7; q++) {
+                vertex2 = ref6[q];
                 mapped = geom.matrixVector(transform, fold.vertices_coords[vertex2]);
-                if (vertex2 in fold.vertices_flatFoldCoords) {
+                if (fold.vertices_flatFoldCoords[vertex2] != null) {
                   maxError = Math.max(maxError, geom.dist(fold.vertices_flatFoldCoords[vertex2], mapped));
                 } else {
                   fold.vertices_flatFoldCoords[vertex2] = mapped;
@@ -687,6 +738,74 @@ filter.remapFieldSubset = function(fold, field, keep) {
   })();
   filter.remapField(fold, field, old2new);
   return old2new;
+};
+
+filter.remove = function(fold, field, index) {
+  var i;
+  /*
+  Remove given index from given field ('vertices', 'edges', 'faces'), in place.
+  */
+  return filter.remapFieldSubset(fold, field, (function() {
+    var k, ref, results;
+    results = [];
+    for (i = k = 0, ref = filter.numType(fold, field); (0 <= ref ? k < ref : k > ref); i = 0 <= ref ? ++k : --k) {
+      results.push(i !== index);
+    }
+    return results;
+  })());
+};
+
+filter.removeVertex = function(fold, index) {
+  return filter.remove(fold, 'vertices', index);
+};
+
+filter.removeEdge = function(fold, index) {
+  return filter.remove(fold, 'edges', index);
+};
+
+filter.removeFace = function(fold, index) {
+  return filter.remove(fold, 'faces', index);
+};
+
+filter.transform = function(fold, matrix) {
+  var coords, k, key, l, len, len1, ref, ref1, transform;
+  ref = filter.keysEndingWith(fold, "_coords");
+  /*
+  Transforms all fields ending in _coords (in particular, vertices_coords)
+  and all fields ending in FoldTransform (in particular,
+  faces_flatFoldTransform generated by convert.flat_folded_geometry)
+  according to the given transformation matrix.
+  */
+  for (k = 0, len = ref.length; k < len; k++) {
+    key = ref[k];
+    fold[key] = (function() {
+      var l, len1, ref1, results;
+      ref1 = fold[key];
+      results = [];
+      for (l = 0, len1 = ref1.length; l < len1; l++) {
+        coords = ref1[l];
+        results.push(geom.matrixVector(matrix, coords));
+      }
+      return results;
+    })();
+  }
+  ref1 = filter.keysEndingWith(fold, "FoldTransform");
+  for (l = 0, len1 = ref1.length; l < len1; l++) {
+    key = ref1[l];
+    if (indexOf.call(key, '_') >= 0) {
+      fold[key] = (function() {
+        var len2, m, ref2, results;
+        ref2 = fold[key];
+        results = [];
+        for (m = 0, len2 = ref2.length; m < len2; m++) {
+          transform = ref2[m];
+          results.push(geom.matrixMatrix(matrix, transform));
+        }
+        return results;
+      })();
+    }
+  }
+  return fold;
 };
 
 filter.numType = function(fold, type) {
@@ -1589,18 +1708,23 @@ geom.reflectLine = function(p, a, b) {
   return geom.sub(geom.mul(projection, 2), p);
 };
 
-//#
-//# Matrix transformations
-//#
+/*
+Matrix transformations
 
-// 2D transformation matrices are of the form (where last column is optional):
-//   [[a, b, c],
-//    [d, e, f]]
+2D transformation matrices are of the form (where last column is optional):
+[[a, b, c],
+ [d, e, f]]
 
-// 3D transformation matrices are of the form (where last column is optional):
-//   [[a, b, c, d],
-//    [e, f, g, h],
-//    [i, j, k, l]]
+3D transformation matrices are of the form (where last column is optional):
+[[a, b, c, d],
+ [e, f, g, h],
+ [i, j, k, l]]
+
+Transformation matrices are designed to be multiplied on the left of points,
+i.e., T*x gives vector x transformed by matrix T, where x has an implicit 1
+at the end (homogeneous coordinates) when T has the optional last column.
+See `geom.matrixVector`.
+*/
 geom.matrixVector = function(matrix, vector, implicitLast = 1) {
   var j, l, len, results, row, val, x;
 //# Returns matrix-vector product, matrix * vector.
@@ -1699,6 +1823,142 @@ geom.matrixInverseRT = function(matrix) {
       invRow.push(-geom.dot(row.slice(0, matrix.length), lastCol));
     }
     results.push(invRow);
+  }
+  return results;
+};
+
+geom.matrixInverse = function(matrix) {
+  var bestRow, i, inverse, j, l, o, r, ref, ref1, ref2, ref3, ref4, ref5, row, w;
+  //# Returns inverse of a matrix computed via Gauss-Jordan elimination method.
+  if ((matrix.length !== (ref = matrix[0].length) && ref !== matrix.length + 1)) {
+    throw new Error(`Invalid matrix dimensions ${matrix.length}x${matrix[0].length}`);
+  }
+  matrix = (function() {
+    var l, len, results;
+// copy before elimination
+    results = [];
+    for (l = 0, len = matrix.length; l < len; l++) {
+      row = matrix[l];
+      results.push(row.slice(0));
+    }
+    return results;
+  })();
+  inverse = (function() {
+    var l, len, results;
+    results = [];
+    for (i = l = 0, len = matrix.length; l < len; i = ++l) {
+      row = matrix[i];
+      results.push((function() {
+        var o, ref1, results1;
+        results1 = [];
+        for (j = o = 0, ref1 = row.length; (0 <= ref1 ? o < ref1 : o > ref1); j = 0 <= ref1 ? ++o : --o) {
+          results1.push(0 + (i === j));
+        }
+        return results1;
+      })());
+    }
+    return results;
+  })();
+  for (j = l = 0, ref1 = matrix.length; (0 <= ref1 ? l < ref1 : l > ref1); j = 0 <= ref1 ? ++l : --l) {
+    // Pivot to maximize absolute value in jth column
+    bestRow = j;
+    for (i = o = ref2 = j + 1, ref3 = matrix.length; (ref2 <= ref3 ? o < ref3 : o > ref3); i = ref2 <= ref3 ? ++o : --o) {
+      if (Math.abs(matrix[i][j]) > Math.abs(matrix[bestRow][j])) {
+        bestRow = i;
+      }
+    }
+    if (bestRow !== j) {
+      [matrix[bestRow], matrix[j]] = [matrix[j], matrix[bestRow]];
+      [inverse[bestRow], inverse[j]] = [inverse[j], inverse[bestRow]];
+    }
+    // Scale row to unity in jth column
+    inverse[j] = geom.mul(inverse[j], 1 / matrix[j][j]);
+    matrix[j] = geom.mul(matrix[j], 1 / matrix[j][j]);
+// Eliminate other rows in jth column
+    for (i = r = 0, ref4 = matrix.length; (0 <= ref4 ? r < ref4 : r > ref4); i = 0 <= ref4 ? ++r : --r) {
+      if (!(i !== j)) {
+        continue;
+      }
+      inverse[i] = geom.plus(inverse[i], geom.mul(inverse[j], -matrix[i][j]));
+      matrix[i] = geom.plus(matrix[i], geom.mul(matrix[j], -matrix[i][j]));
+    }
+  }
+  if (matrix[0].length === matrix.length + 1) {
+    for (i = w = 0, ref5 = matrix.length; (0 <= ref5 ? w < ref5 : w > ref5); i = 0 <= ref5 ? ++w : --w) {
+      if (!(i !== j)) {
+        continue;
+      }
+      inverse[i][inverse[i].length - 1] -= matrix[i][matrix[i].length - 1];
+      matrix[i][matrix[i].length - 1] -= matrix[i][matrix[i].length - 1];
+    }
+  }
+  return inverse;
+};
+
+geom.matrixTranslate = function(v) {
+  var i, j, l, len, results, row, x;
+//# Transformation matrix for translating by given vector v.
+//# Works in any dimension, assuming v.length is that dimension.
+  results = [];
+  for (i = l = 0, len = v.length; l < len; i = ++l) {
+    x = v[i];
+    row = (function() {
+      var o, ref, results1;
+      results1 = [];
+      for (j = o = 0, ref = v.length; (0 <= ref ? o < ref : o > ref); j = 0 <= ref ? ++o : --o) {
+        results1.push(0 + (i === j));
+      }
+      return results1;
+    })();
+    row.push(x);
+    results.push(row);
+  }
+  return results;
+};
+
+geom.matrixRotate2D = function(t, center) {
+  var ct, st, x, y;
+  //# 2D rotation matrix around center, which defaults to origin,
+  //# counterclockwise by t radians.
+  [ct, st] = [Math.cos(t), Math.sin(t)];
+  if (center != null) {
+    [x, y] = center;
+    return [[ct, -st, -x * ct + y * st + x], [st, ct, -x * st - y * ct + y]];
+  } else {
+    return [[ct, -st], [st, ct]];
+  }
+};
+
+geom.matrixReflectAxis = function(a, d, center) {
+  var i, j, l, ref, results, row;
+//# Matrix transformation negating dimension a out of d dimensions,
+//# or if center is specified, reflecting around that value of dimension a.
+  results = [];
+  for (i = l = 0, ref = d; (0 <= ref ? l < ref : l > ref); i = 0 <= ref ? ++l : --l) {
+    row = (function() {
+      var o, ref1, results1;
+      results1 = [];
+      for (j = o = 0, ref1 = d; (0 <= ref1 ? o < ref1 : o > ref1); j = 0 <= ref1 ? ++o : --o) {
+        if (i === j) {
+          if (a === i) {
+            results1.push(-1);
+          } else {
+            results1.push(1);
+          }
+        } else {
+          results1.push(0);
+        }
+      }
+      return results1;
+    })();
+    if (center != null) {
+      if (a === i) {
+        row.push(2 * center);
+      } else {
+        row.push(0);
+      }
+    }
+    results.push(row);
   }
   return results;
 };

@@ -1,1 +1,16 @@
-src
+# Compiled .js
+lib
+
+# Logs
+*.log
+npm-debug.log*
+
+# Dependencies
+node_modules
+package-lock.json
+
+# Mac
+.DS_Store
+
+# Extra examples
+examples/oripa-sample
