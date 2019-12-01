@@ -68,7 +68,7 @@ file.mogrify = (data, options) ->
   return unless options.flatFold # or any options set
   fold = JSON.parse data
   if options.flatFold
-    error = convert.flat_folded_geometry fold
+    error = convert.flatFoldedGeometry fold
     console.log " -- Flat folding error: #{error}"
     fold.vertices_flatUnfoldCoords = fold.vertices_coords
     fold.vertices_coords = fold.vertices_flatFoldCoords

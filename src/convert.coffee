@@ -240,7 +240,7 @@ convert.edges_vertices_to_edges_faces_edges = (fold) ->
         edge
   fold
 
-convert.flat_folded_geometry = (fold, rootFace = 0) ->
+convert.flatFoldedGeometry = (fold, rootFace = 0) ->
   ###
   Assuming `fold` is a locally flat foldable crease pattern in the xy plane,
   sets `fold.vertices_flatFoldCoords` to give the flat-folded geometry
