@@ -77,6 +77,14 @@ documents the available modules and functions for manipulating FOLD objects.
 If you have a `.fold` file, first parse it with `JSON.parse(fileContents)`
 to get a FOLD object.
 
+The JavaScript library also provides a command-line interface called
+`fold-convert`.  You can install it on a machine with
+[Node.js](https://nodejs.org/en/) via `npm install -g fold`.
+Then you can use the following features:
+* `fold-convert -o .fold *.opx`: Convert ORIPA `.opx` files to `.fold`.
+* `fold-convert --flat-fold -o B.fold A.fold`:
+  flat fold crease pattern `A` into folded geometry `B`
+
 ## Authors
 
 The FOLD format was invented by three people:
