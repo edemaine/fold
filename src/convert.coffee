@@ -182,6 +182,8 @@ convert.faces_vertices_to_edges = (mesh) ->
   Given a FOLD object with just `faces_vertices`, automatically fills in
   `edges_vertices`, `edges_faces`, `faces_edges`, and `edges_assignment`
   (indicating which edges are boundary with 'B').
+  This code currently assumes an orientable manifold, and uses nulls to
+  represent missing neighbor faces in `edges_faces` (for boundary edges).
   ###
   mesh.edges_vertices = []
   mesh.edges_faces = []

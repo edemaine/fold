@@ -86,7 +86,8 @@ metadata properties can be included *only* in the top-level JSON dictionary.
 They include:
 
 * `file_spec`: The version of the FOLD spec that the file assumes
-  (a number).  See the top of this spec for the current value.
+  (a number).  See the top of this spec for the current value,
+  and [history](history.md) for differences between versions.
   **Strongly recommended**, in case we ever have to make
   backward-incompatible changes.
 * `file_creator`: The software that created the file (a string).
@@ -174,30 +175,39 @@ The values of the following properties are zero-indexed arrays by vertex ID.
 
 * `vertices_coords`: For each vertex, an array of coordinates,
   such as `[x, y, z]` or `[x, y]` (where `z` is implicitly zero).
-  In higher dimensions, all unspecified coordinates are implicitly zero.
+  In higher dimensions, all trailing unspecified coordinates are implicitly zero.
   **Recommended** except for frames with attribute `"abstract"`.
   <!--**Required** for frames with attribute `"concrete"`.-->
 * `vertices_vertices`: For each vertex, an array of vertices (vertex IDs)
   that are adjacent along edges.  If the frame represents an orientable
   manifold or planar linkage, this list should be ordered counterclockwise
   around the vertex (possibly repeating a vertex more than once).
-  If the frame is a nonorientable manifold, this list should be cyclicly
+  If the frame is a nonorientable manifold, this list should be cyclically
   ordered around the vertex (possibly repeating a vertex).
   Otherwise, the order is arbitrary.
   **Recommended** in any frame lacking `edges_vertices` property
   (otherwise `vertices_vertices` can easily be computed from
   `edges_vertices` as needed).
+* `vertices_edges`: For each vertex, an array of edge IDs for the edges
+  incident to the vertex.  If the frame represents an orientable manifold,
+  this list should be ordered counterclockwise around the vertex.
+  If the frame is a nonorientable manifold, this list should be cyclically
+  ordered around the vertex.
+  In all cases, the linear order should match `vertices_vertices` if both
+  are specified: `vertices_edges[v][i]` should be an edge connecting vertices
+  `v` and `vertices_vertices[v][i]`.
 * `vertices_faces`: For each vertex, an array of face IDs for the faces
   incident to the vertex.  If the frame represents an orientable manifold,
   this list should be ordered counterclockwise around the vertex
   (possibly repeating a face more than once).  If the frame is a nonorientable
-  manifold, this list shoudl be cyclicly ordered around the vertex
+  manifold, this list should be cyclically ordered around the vertex
   (possibly repeating a vertex), and matching the cyclic order of
-  `vertices_vertices` (if both are specified).
-  In addition to the matching cyclic order, `vertices_vertices` and
-  `vertices_faces` should align in start so that
-  `vertices_faces[v][i]` contains vertices `vertices_vertices[v][i]` and
-  `vertices_vertices[v][(i+1)%d]` where `d` is the degree of vertex `v`.
+  `vertices_vertices` and/or `vertices_edges` (if either is specified).
+  In either manifold case, `vertices_faces` should align in start with
+  `vertices_vertices` and/or `vertices_edges`:
+  `vertices_faces[v][i]` should contain vertices `vertices_vertices[v][i]` and
+  `vertices_vertices[v][(i+1)%d]` and contain edges `vertices_edges[v][i]` and
+  `vertices_edges[v][(i+1)%d]`, where `d` is the degree of vertex `v`.
 
 ## Edge information: `edges_...`
 
@@ -209,12 +219,26 @@ The values of the following properties are zero-indexed arrays by edge ID.
   but is used to define the ordering of `edges_faces`.)
   **Recommended** in frames having any `edges_...` property
   (e.g., to represent mountain-valley assignment).
+<!--
+* `edges_edges`: For each edge, an array of edge IDs for the edges incident
+  to (either endpoint of) the edge.  If the frame is a manifold,
+  the edges should be listed in cyclic order around the edge (concatenating
+  some cyclic shift of `vertices_edges` for the two endpoints); and if the
+  frame is an oriented manifold, the order should be counterclockwise.
+  (This property is defined for completeness, but may not be particularly useful.)
+-->
 * `edges_faces`: For each edge, an array of face IDs for the faces incident
-  to the edge.  The faces should be listed in counterclockwise order around
-  the edge.  For manifolds, this array has length 1 (for boundary edges)
-  or 2 (for nonboundary edges).  When the array has length 2, the canonical
-  ordering is to start with the face locally to the left of the edge
-  (as defined by its orientation in `edges_vertices`).
+  to the edge, possibly including `null`s.
+  For nonmanifolds in particular, the (nonnull) faces should be listed in
+  counterclockwise order around the edge,
+  relative to the orientation of the edge.
+  For manifolds, the array for each edge has length at most 2.
+  For orientable manifolds, the array for each edge is recommended to be an
+  array of length 2, where the first entry is the face locally to the left of
+  the edge (or `null` if there is no such face) and the second entry is the
+  face locally to the right of the edge  (or `null` if there is no such face).
+  However, a boundary edge can also be represented by a length-1 array, with
+  the `null` omitted, to be consistent with the nonmanifold representation.
 * `edges_assignment`: For each edge, a string representing its fold
   direction assignment:
   * `"B"`: border/boundary edge (only one incident face)
@@ -239,10 +263,12 @@ The values of the following properties are zero-indexed arrays by edge ID.
   valley folds, negative for mountain folds, and zero for flat, unassigned,
   and border folds.  Accordingly, the sign of `edge_foldAngle` should match
   `edges_assignment` if both are specified.
+  *Renamed from `edges_foldAngles` in version 1.1.*
 * `edges_length`: For each edge, the length of the edge (a number).
   This is mainly useful for defining the intrinsic geometry of
   abstract complexes where `vertices_coords` are unspecified;
   otherwise, `edges_length` can be computed from `vertices_coords`.
+  *Renamed from `edges_lengths` in version 1.1.*
 
 ## Face information: `faces_...`
 
@@ -257,6 +283,13 @@ The values of the following properties are zero-indexed arrays by face ID.
   order, `faces_vertices` and `faces_edges` should align in start so that
   `faces_edges[f][i]` is the edge connecting `faces_vertices[f][i]` and
   `faces_vertices[f][(i+1)%d]` where `d` is the degree of face `f`.
+* `faces_faces`: For each face, an array of face IDs for the faces *sharing
+  edges* around the face, possibly including `null`s.
+  If the frame is a manifold, the faces should be listed in counterclockwise
+  order and in the same linear order as `faces_edges` (if it is specified):
+  `f` and `faces_faces[f][i]` should be the faces incident to the edge
+  `faces_edges[f][i]`, unless that edge has no face on the other side,
+  in which case `faces_faces[f][i]` should be `null`.
 
 The counterclockwise ordering of each face defines the side/sign of its
 **normal vector**.
@@ -301,13 +334,13 @@ The counterclockwise ordering of each face defines the side/sign of its
 
 Most properties described above (all but the `file_...` properties
 which are about the entire file) can appear in the top-level dictionary
-*or* within an individiaul frame.  Properties in the top-level dictionary
+*or* within an individual frame.  Properties in the top-level dictionary
 describes the **key frame** (frame 0).
 If your file consists of just one frame, that's all you need to know.
 
 If you want to store multiple frames in one file, use `file_frames`
 to store all frames beyond the key frame.  The value of the
-`file_frames` property is an array of dictonaries, where
+`file_frames` property is an array of dictionaries, where
 `file_frames[i]` represents frame `i+1` (because frame 0 is the key frame).
 Each frame dictionary can have any of the properties described above
 (again, except for `file_...` properties).
