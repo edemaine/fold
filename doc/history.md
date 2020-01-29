@@ -12,3 +12,4 @@
 * Define `vertices_edges` and `faces_faces`.
 * Extend definition of `edges_faces` to allow `null` values,
   allowing for consistent left/right specification.
+* Add join edge (`"J"`) option to `edges_assignment`.

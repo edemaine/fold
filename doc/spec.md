@@ -242,9 +242,10 @@ The values of the following properties are zero-indexed arrays by edge ID.
 * `edges_assignment`: For each edge, a string representing its fold
   direction assignment:
   * `"B"`: border/boundary edge (only one incident face)
-  * `"M"`: mountain fold
-  * `"V"`: valley fold
-  * `"F"`: flat (unfolded) fold
+  * `"M"`: mountain crease
+  * `"V"`: valley crease
+  * `"F"`: flat (unfolded) crease
+  * `"J"`: join edge &mdash; incident faces should be treated as a single face
   * `"U"`: unassigned/unknown
 
   For example, this property can be used to specify a full mountain-valley
@@ -257,6 +258,18 @@ The values of the following properties are zero-indexed arrays by edge ID.
   of the face to the left of the edge (listed first in `edges_faces`) to point
   into the adjacent face (when fully folded), while a mountain fold has the
   same normal point away from the adjacent face.
+
+  Flat creases (`"F"`) represent creases that are present but not folded
+  (not mountain or valley).
+  Join edges (`"J"`) represent edges that are present only for modeling
+  purposes, and are insignificant from an origami perspective:
+  the incident faces should in fact be treated as a single effective face.
+  Join edges enable the modeling of one effective face that is both above and
+  below another effective face, and effective faces with holes.
+  Join edges are also appropriate for triangulation edges used in simulation
+  but which are not meaningful otherwise.
+  Unassigned/unknown (`"U"`) is a default when none of the above options
+  (are known to) apply.
 * `edges_foldAngle`: For each edge, the fold angle (deviation from flatness)
   along each edge of the pattern.  The fold angle is a number in degrees
   lying in the range [&minus;180, 180].  The fold angle is positive for
