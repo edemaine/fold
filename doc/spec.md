@@ -245,6 +245,7 @@ The values of the following properties are zero-indexed arrays by edge ID.
   * `"M"`: mountain crease
   * `"V"`: valley crease
   * `"F"`: flat (unfolded) crease
+  * `"C"`: cut/slit edge (should be treated as multiple `"B"` edges)
   * `"J"`: join edge &mdash; incident faces should be treated as a single face
   * `"U"`: unassigned/unknown
 
@@ -270,6 +271,12 @@ The values of the following properties are zero-indexed arrays by edge ID.
   but which are not meaningful otherwise.
   Unassigned/unknown (`"U"`) is a default when none of the above options
   (are known to) apply.
+
+  Cut/slit edges (`"C"`) are useful for e.g. drawing programs that want
+  to enable simple addition and removal of slits in a crease pattern.
+  Mechanical modeling should treat such edges as separate boundary (`"B"`)
+  edges, one per face, with incident `"C"` edges connecting together into
+  larger slits/holes.
 * `edges_foldAngle`: For each edge, the fold angle (deviation from flatness)
   along each edge of the pattern.  The fold angle is a number in degrees
   lying in the range [&minus;180, 180].  The fold angle is positive for

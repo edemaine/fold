@@ -13,3 +13,4 @@
 * Extend definition of `edges_faces` to allow `null` values,
   allowing for consistent left/right specification.
 * Add join edge (`"J"`) option to `edges_assignment`.
+* Add cut/slit edge (`"C"`) option to `edges_assignment`.
