@@ -164,7 +164,7 @@ metadata properties in the FOLD format include
   * `"pt"`: desktop publishing/PostScript [points](https://en.wikipedia.org/wiki/Point_(typography)) (1/72 in)
   * `"m"`: meters (1/299,792,458 light seconds)
   * `"cm"`: centimeters (1/100 meters)
-  * `"mm"`: microns (1/1000 meters)
+  * `"mm"`: millimeters (1/1000 meters)
   * `"um"`: microns (1/1,000,000 meters)
   * `"nm"`: nanometers (1/1,000,000,000 meters)
 
