@@ -197,17 +197,23 @@ The values of the following properties are zero-indexed arrays by vertex ID.
   are specified: `vertices_edges[v][i]` should be an edge connecting vertices
   `v` and `vertices_vertices[v][i]`.
 * `vertices_faces`: For each vertex, an array of face IDs for the faces
-  incident to the vertex.  If the frame represents an orientable manifold,
+  incident to the vertex, possibly including `null`s.
+  If the frame represents a manifold, `vertices_faces` should align with
+  `vertices_vertices` and/or `vertices_edges`:
+  `vertices_faces[v][i]` should be either
+
+  * the face containing vertices
+    `vertices_vertices[v][i]` and `vertices_vertices[v][(i+1)%d]` and
+    containing edges `vertices_edges[v][i]` and `vertices_edges[v][(i+1)%d]`,
+    where `d` is the degree of vertex `v`; or
+  * `null` if such a face doesn't exist.
+
+  If the frame represents an orientable manifold,
   this list should be ordered counterclockwise around the vertex
   (possibly repeating a face more than once).  If the frame is a nonorientable
   manifold, this list should be cyclically ordered around the vertex
   (possibly repeating a vertex), and matching the cyclic order of
   `vertices_vertices` and/or `vertices_edges` (if either is specified).
-  In either manifold case, `vertices_faces` should align in start with
-  `vertices_vertices` and/or `vertices_edges`:
-  `vertices_faces[v][i]` should contain vertices `vertices_vertices[v][i]` and
-  `vertices_vertices[v][(i+1)%d]` and contain edges `vertices_edges[v][i]` and
-  `vertices_edges[v][(i+1)%d]`, where `d` is the degree of vertex `v`.
 
 ## Edge information: `edges_...`
 
@@ -233,11 +239,11 @@ The values of the following properties are zero-indexed arrays by edge ID.
   counterclockwise order around the edge,
   relative to the orientation of the edge.
   For manifolds, the array for each edge has length at most 2.
-  For orientable manifolds, the array for each edge is recommended to be an
+  For orientable manifolds, the array for each edge should be an
   array of length 2, where the first entry is the face locally to the left of
   the edge (or `null` if there is no such face) and the second entry is the
-  face locally to the right of the edge  (or `null` if there is no such face).
-  However, a boundary edge can also be represented by a length-1 array, with
+  face locally to the right of the edge (or `null` if there is no such face).
+  However, a boundary edge may also be represented by a length-1 array, with
   the `null` omitted, to be consistent with the nonmanifold representation.
 * `edges_assignment`: For each edge, a string representing its fold
   direction assignment:
@@ -246,6 +252,7 @@ The values of the following properties are zero-indexed arrays by edge ID.
   * `"V"`: valley crease
   * `"F"`: flat (unfolded) crease
   * `"C"`: cut/slit edge (should be treated as multiple `"B"` edges)
+    **[optional]**
   * `"J"`: join edge &mdash; incident faces should be treated as a single face
   * `"U"`: unassigned/unknown
 
@@ -253,13 +260,16 @@ The values of the following properties are zero-indexed arrays by edge ID.
   assignment (consisting of `"M"`, `"V"`, and `"B"`), or just to label
   which edges are boundary edges (consisting of `"U"` or `"B"`).
 
-  For orientable manifolds, a valley fold points the two face normals into
-  each other, while a mountain fold makes them point away from each other.
+  * **Folded edges.**
+  For orientable manifolds, a valley fold (`"V"`) points the two face normals
+  into each other,
+  while a mountain fold (`"M"`) makes them point away from each other.
   For nonorientable manifolds, a valley fold is defined as bringing the normal
   of the face to the left of the edge (listed first in `edges_faces`) to point
   into the adjacent face (when fully folded), while a mountain fold has the
   same normal point away from the adjacent face.
 
+  * **Unfolded edges.**
   Flat creases (`"F"`) represent creases that are present but not folded
   (not mountain or valley).
   Join edges (`"J"`) represent edges that are present only for modeling
@@ -269,14 +279,24 @@ The values of the following properties are zero-indexed arrays by edge ID.
   below another effective face, and effective faces with holes.
   Join edges are also appropriate for triangulation edges used in simulation
   but which are not meaningful otherwise.
-  Unassigned/unknown (`"U"`) is a default when none of the above options
-  (are known to) apply.
+  *Added in version 1.2.*
 
-  Cut/slit edges (`"C"`) are useful for e.g. drawing programs that want
-  to enable simple addition and removal of slits in a crease pattern.
+  * **Boundary edges.**
+  A boundary edge (`"B"`) has only one incident face.
+  Cut/slit edges (`"C"`) are useful for e.g. drawing programs to enable
+  simple modification of slits in a crease pattern without having to
+  convert back and forth into a `"B"` representation.
   Mechanical modeling should treat such edges as separate boundary (`"B"`)
   edges, one per face, with incident `"C"` edges connecting together into
   larger slits/holes.
+  Support for `"C"` edges is **optional**, so is not expected to be
+  implemented by all software supporting the FOLD format.
+  Implement only for applications where it is useful,
+  limited to locally nonoverlapping locally manifold surfaces.
+  *Added in version 1.2.*
+
+  * Unassigned/unknown (`"U"`) is a default when none of the above options
+  (are known to) apply.
 * `edges_foldAngle`: For each edge, the fold angle (deviation from flatness)
   along each edge of the pattern.  The fold angle is a number in degrees
   lying in the range [&minus;180, 180].  The fold angle is positive for
@@ -291,6 +311,10 @@ The values of the following properties are zero-indexed arrays by edge ID.
   *Renamed from `edges_lengths` in version 1.1.*
 
 ## Face information: `faces_...`
+
+Faces in a FOLD file should correspond to the "material" being folded.
+In particular, they do not typically include the exterior (unbounded) face
+of a planar graph such as a crease pattern.
 
 The values of the following properties are zero-indexed arrays by face ID.
 
@@ -376,6 +400,11 @@ can have the following properties:
   this frame are automatically inherited, allowing you to avoid duplicated
   data in many cases.  For example, the frame can change the vertex coordinates
   (`vertices_coords`) while inheriting the structure of the parent's mesh.
+
+Support for multiple frames is **optional**, so is not expected to be
+implemented by all software supporting the FOLD format.
+Software not implementing support for multiple frames should ignore all
+`frames` properties and use only the key frame.
 
 ## Custom Properties
 
