@@ -1,6 +1,6 @@
 {
   "name": "fold",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "description": "FOLD file format for origami models, crease patterns, etc.",
   "main": "lib/index.js",
   "bin": {
@@ -46,9 +46,6 @@
     "jest-matcher-deep-close-to": "^2.0.1",
     "jest-preset-coffeescript": "1.1.1"
   },
-  "dependencies": {
-    "xmldom": "^0.5.0"
-  },
   "browser": {
     "xmldom": false,
     "./src/file.coffee": false
@@ -58,5 +55,8 @@
     "testPathIgnorePatterns": [
       "/node_modules/"
     ]
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.7.2"
   }
 }

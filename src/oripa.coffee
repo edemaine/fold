@@ -1,9 +1,9 @@
 ##TODO: match spec (no frame_designer, no frame_reference, fix cw -> ccw)
 ##TODO: oripa folded state format
 
-DOMParser = require('xmldom').DOMParser unless DOMParser?
-#XMLSerializer = require('xmldom').XMLSerializer unless XMLSerializer?
-#DOMImplementation = require('xmldom').DOMImplementation unless DOMImplementation?
+DOMParser = require('@xmldom/xmldom').DOMParser unless DOMParser?
+#XMLSerializer = require('@xmldom/xmldom').XMLSerializer unless XMLSerializer?
+#DOMImplementation = require('@xmldom/xmldom').DOMImplementation unless DOMImplementation?
 convert = require './convert'
 filter = require './filter'
 oripa = exports

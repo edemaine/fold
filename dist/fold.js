@@ -3049,7 +3049,7 @@ viewer.makeModel = function(fold) {
           if (m.fs[f1].ord[`f${f2}`] != null) {
             console.log(`Warning: duplicate ordering input information for faces ${f1} and ${f2}. Using first found in the faceOrder list.`);
             if (m.fs[f1].ord[`f${f2}`] !== o) {
-              console.log(`Error: duplicat ordering [${f1},${f2},${o}] is inconsistant with a previous entry.`);
+              console.log(`Error: duplicate ordering [${f1},${f2},${o}] is inconsistent with a previous entry.`);
             }
           } else {
             m.fs[f1].ord[`f${f2}`] = o;
