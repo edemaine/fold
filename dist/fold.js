@@ -2350,11 +2350,11 @@ geom.quadSplit = function(u, p, d, t) {
 var DOMParser, convert, filter, oripa, ref, x, y;
 
 if (typeof DOMParser === "undefined" || DOMParser === null) {
-  DOMParser = require('xmldom').DOMParser;
+  DOMParser = require('@xmldom/xmldom').DOMParser;
 }
 
-//XMLSerializer = require('xmldom').XMLSerializer unless XMLSerializer?
-//DOMImplementation = require('xmldom').DOMImplementation unless DOMImplementation?
+//XMLSerializer = require('@xmldom/xmldom').XMLSerializer unless XMLSerializer?
+//DOMImplementation = require('@xmldom/xmldom').DOMImplementation unless DOMImplementation?
 convert = require('./convert');
 
 filter = require('./filter');
@@ -2597,7 +2597,7 @@ convert.setConverter('.fold', '.opx', oripa.fromFold);
 convert.setConverter('.opx', '.fold', oripa.toFold);
 
 
-},{"./convert":2,"./filter":3,"xmldom":1}],6:[function(require,module,exports){
+},{"./convert":2,"./filter":3,"@xmldom/xmldom":1}],6:[function(require,module,exports){
 var DEFAULTS, STYLES, SVGNS, geom, viewer;
 
 geom = require('./geom');
