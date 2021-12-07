@@ -32,11 +32,11 @@ and thus edge properties (such as mountain-valley assignments) and
 consecutive vertices from faces sharing an edge.)
 In addition, FOLD can support **linkages** (with 1D edges but no 2D faces).
 
-## [FOLD Format Documentation](https://github.com/edemaine/fold/tree/master/doc/spec.md)
+## [FOLD Format Documentation](https://github.com/edemaine/fold/tree/main/doc/spec.md)
 
-* [FOLD specification](https://github.com/edemaine/fold/tree/master/doc/spec.md)
+* [FOLD specification](https://github.com/edemaine/fold/tree/main/doc/spec.md)
 * [2-page paper describing FOLD](http://erikdemaine.org/papers/FOLD_CGW2016/)
-* [Examples of .fold files](https://github.com/edemaine/fold/tree/master/examples/)
+* [Examples of .fold files](https://github.com/edemaine/fold/tree/main/examples/)
 
 ## FOLD Software Tools
 
@@ -61,12 +61,12 @@ and by other people:
 * [Crease Pattern Editor](https://github.com/edemaine/cp-editor/)
   supports FOLD export
 
-## [FOLD JavaScript Library](https://github.com/edemaine/fold/tree/master/doc/api.md)
+## [FOLD JavaScript Library](https://github.com/edemaine/fold/tree/main/doc/api.md)
 
 For simple web apps, add this tag to your HTML:
 `<script src="https://edemaine.github.io/fold/dist/fold.js"></script>`
 (or save a local copy of
-[`dist/fold.js`](https://github.com/edemaine/fold/blob/master/dist/fold.js)
+[`dist/fold.js`](https://github.com/edemaine/fold/blob/main/dist/fold.js)
 and use that).
 Then, if you add `FOLD = require('fold')` to your JavaScript/CoffeeScript code,
 you can access the library via `FOLD.moduleName.functionName`, e.g.,
@@ -77,7 +77,7 @@ then add `FOLD = require('fold')` to your JavaScript/CoffeeScript code;
 then access the library via `FOLD.moduleName.functionName`, e.g.,
 `FOLD.filter.collapseNearbyVertices`.
 
-The [FOLD library API](https://github.com/edemaine/fold/tree/master/doc/api.md)
+The [FOLD library API](https://github.com/edemaine/fold/tree/main/doc/api.md)
 documents the available modules and functions for manipulating FOLD objects.
 If you have a `.fold` file, first parse it with `JSON.parse(fileContents)`
 to get a FOLD object.
