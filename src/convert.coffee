@@ -121,6 +121,8 @@ convert.vertices_edges_to_faces_vertices_edges = (fold) ->
         e1 = e2
         e2 = next[v][e1]
         next[v][e1] = null
+      # move e1 to the end so that edges[0] connects vertices[0] to vertices[1]
+      edges.push(edges.shift())
       ## Outside face is clockwise; exclude it.
       if e2? and geom.polygonOrientation(fold.vertices_coords[x] for x in vertices) > 0
         #console.log vertices, edges
