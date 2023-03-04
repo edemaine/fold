@@ -1,6 +1,6 @@
 {
   "file_spec": 1.1,
-  "file_creator": "Crease Pattern Editor",
+  "file_creator": "fold-convert --flat-fold",
   "file_classes": [
     "singleModel"
   ],
@@ -26,6 +26,13 @@
     "B",
     "B",
     "V"
+  ],
+  "edges_foldAngle": [
+    0,
+    0,
+    0,
+    0,
+    180
   ],
   "cpedit:page": {"xMin":0,"yMin":0,"xMax":1,"yMax":1},
   "file_title": "diagonal",
@@ -53,6 +60,10 @@
   "faces_flatFoldTransform": [
     [[1,0,0],[0,1,0]],
     [[0,-1,1],[-1,0,1]]
+  ],
+  "faces_flatFoldOrientation": [
+    1,
+    -1
   ],
   "vertices_flatUnfoldCoords": [
     [0,0],

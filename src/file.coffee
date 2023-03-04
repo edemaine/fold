@@ -67,7 +67,9 @@ file.fileToFile = (input, output, options) ->
 file.mogrify = (data, options) ->
   return unless options.flatFold # or any options set
   fold = JSON.parse data
+  fold.file_creator = "fold-convert"
   if options.flatFold
+    fold.file_creator += " --flat-fold"
     error = convert.flatFoldedGeometry fold
     console.log " -- Flat folding error: #{error}"
     fold.vertices_flatUnfoldCoords = fold.vertices_coords
