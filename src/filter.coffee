@@ -405,8 +405,7 @@ filter.edges_vertices_to_vertices_vertices = (fold) ->
   ###
   numVertices = filter.numVertices fold
   vertices_vertices = ([] for v in [0...numVertices])
-  for edge in fold.edges_vertices
-    [v, w] = edge
+  for [v, w] in fold.edges_vertices
     while v >= vertices_vertices.length
       vertices_vertices.push []
     while w >= vertices_vertices.length
@@ -414,3 +413,15 @@ filter.edges_vertices_to_vertices_vertices = (fold) ->
     vertices_vertices[v].push w
     vertices_vertices[w].push v
   vertices_vertices
+
+filter.edges_vertices_to_vertices_edges = (fold) ->
+  ###
+  Invert edges_vertices into vertices_edges.
+  Works for abstract structures, so NOT SORTED in any sense.
+  ###
+  numVertices = filter.numVertices fold
+  vertices_edges = ([] for v in [0...numVertices])
+  for vertices, edge in fold.edges_vertices
+    for vertex in vertices
+      vertices_edges[vertex].push edge
+  vertices_edges

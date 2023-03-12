@@ -12,6 +12,14 @@ convert.edges_vertices_to_vertices_vertices_unsorted = (fold) ->
   fold.vertices_vertices = filter.edges_vertices_to_vertices_vertices fold
   fold
 
+convert.edges_vertices_to_vertices_edges_unsorted = (fold) ->
+  ###
+  Invert edges_vertices into vertices_edges.
+  Works for abstract structures, so NOT SORTED.
+  ###
+  fold.vertices_edges = filter.edges_vertices_to_vertices_edges fold
+  fold
+
 convert.edges_vertices_to_vertices_vertices_sorted = (fold) ->
   ###
   Given a FOLD object with 2D `vertices_coords` and `edges_vertices` property

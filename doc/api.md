@@ -87,6 +87,11 @@ for details.
   endpoints), automatically computes the `vertices_vertices` property.
   However, note that the `vertices_vertices` arrays will *not* be sorted
   in counterclockwise order.
+* `FOLD.convert.edges_vertices_to_vertices_edges_unsorted(fold)`:
+  Given a FOLD object with `edges_vertices` property (defining edge
+  endpoints), automatically computes the inverse `vertices_edges` property.
+  However, note that the `vertices_edges` arrays will *not* be sorted
+  in counterclockwise order.
 * `FOLD.convert.edges_vertices_to_vertices_vertices_sorted(fold)`:
   Given a FOLD object with 2D `vertices_coords` and `edges_vertices` property
   (defining edge endpoints), automatically computes the `vertices_vertices`

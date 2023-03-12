@@ -21,6 +21,15 @@ convert.edges_vertices_to_vertices_vertices_unsorted = function(fold) {
   return fold;
 };
 
+convert.edges_vertices_to_vertices_edges_unsorted = function(fold) {
+  /*
+  Invert edges_vertices into vertices_edges.
+  Works for abstract structures, so NOT SORTED.
+  */
+  fold.vertices_edges = filter.edges_vertices_to_vertices_edges(fold);
+  return fold;
+};
+
 convert.edges_vertices_to_vertices_vertices_sorted = function(fold) {
   /*
   Given a FOLD object with 2D `vertices_coords` and `edges_vertices` property
@@ -1398,7 +1407,7 @@ filter.edges_vertices_to_vertices_vertices = function(fold) {
   Works for abstract structures, so NOT SORTED.
   Use sort_vertices_vertices to sort in counterclockwise order.
   */
-  var edge, k, len, numVertices, ref, v, vertices_vertices, w;
+  var k, len, numVertices, ref, v, vertices_vertices, w;
   numVertices = filter.numVertices(fold);
   vertices_vertices = (function() {
     var k, ref, results;
@@ -1410,8 +1419,7 @@ filter.edges_vertices_to_vertices_vertices = function(fold) {
   })();
   ref = fold.edges_vertices;
   for (k = 0, len = ref.length; k < len; k++) {
-    edge = ref[k];
-    [v, w] = edge;
+    [v, w] = ref[k];
     while (v >= vertices_vertices.length) {
       vertices_vertices.push([]);
     }
@@ -1422,6 +1430,32 @@ filter.edges_vertices_to_vertices_vertices = function(fold) {
     vertices_vertices[w].push(v);
   }
   return vertices_vertices;
+};
+
+filter.edges_vertices_to_vertices_edges = function(fold) {
+  /*
+  Invert edges_vertices into vertices_edges.
+  Works for abstract structures, so NOT SORTED in any sense.
+  */
+  var edge, k, l, len, len1, numVertices, ref, v, vertex, vertices, vertices_edges;
+  numVertices = filter.numVertices(fold);
+  vertices_edges = (function() {
+    var k, ref, results;
+    results = [];
+    for (v = k = 0, ref = numVertices; (0 <= ref ? k < ref : k > ref); v = 0 <= ref ? ++k : --k) {
+      results.push([]);
+    }
+    return results;
+  })();
+  ref = fold.edges_vertices;
+  for (edge = k = 0, len = ref.length; k < len; edge = ++k) {
+    vertices = ref[edge];
+    for (l = 0, len1 = vertices.length; l < len1; l++) {
+      vertex = vertices[l];
+      vertices_edges[vertex].push(edge);
+    }
+  }
+  return vertices_edges;
 };
 
 
