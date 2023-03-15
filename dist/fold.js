@@ -1307,18 +1307,23 @@ filter.addEdgeAndSubdivide = function(fold, v1, v2, epsilon) {
 };
 
 filter.cutEdges = function(fold, es) {
-  /*
-  Given a FOLD object with `edges_vertices`, `edges_assignment`, and
-  counterclockwise-sorted `vertices_edges`
-  (see `FOLD.convert.edges_vertices_to_vertices_edges_sorted`),
-  cuts apart ("unwelds") all edges in `es` into pairs of boundary edges.
-  When an endpoint of a cut edge ends up on n boundaries,
-  it splits into n vertices.
-  Preserves above-mentioned properties (so you can then compute faces via
-  `FOLD.convert.edges_vertices_to_faces_vertices_edges`),
-  but ignores face properties and discards `vertices_vertices` if present.
-  */
-  var b1, b2, boundaries, e, e1, e2, ev, i, i1, i2, ie, ie1, ie2, k, l, len, len1, len2, len3, len4, len5, len6, len7, m, n, neighbor, neighbors, o, q, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, t, u1, u2, v, v1, v2, ve, vertices_boundaries;
+  var b, b1, b2, boundaries, e, e1, e2, ev, i, i1, i2, ie, ie1, ie2, k, l, len, len1, len2, len3, len4, len5, len6, len7, len8, m, n, neighbor, neighbors, o, q, r, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, t, u1, u2, v, v1, v2, ve, vertices_boundaries, z;
+  if (!es.length) {
+    /*
+    Given a FOLD object with `edges_vertices`, `edges_assignment`, and
+    counterclockwise-sorted `vertices_edges`
+    (see `FOLD.convert.edges_vertices_to_vertices_edges_sorted`),
+    cuts apart ("unwelds") all edges in `es` into pairs of boundary edges.
+    When an endpoint of a cut edge ends up on n boundaries,
+    it splits into n vertices.
+    Preserves above-mentioned properties (so you can then compute faces via
+    `FOLD.convert.edges_vertices_to_faces_vertices_edges`),
+    and recomputes `vertices_vertices` if present,
+    but ignores face properties.
+    */
+    return fold;
+  }
+  //# Maintain map from every vertex to array of incident boundary edges
   vertices_boundaries = [];
   ref = filter.boundaryEdges(fold);
   for (k = 0, len = ref.length; k < len; k++) {
@@ -1337,6 +1342,8 @@ filter.cutEdges = function(fold, es) {
     for (i = n = 0, len3 = ref2.length; n < len3; i = ++n) {
       v = ref2[i];
       ve = fold.vertices_edges[v];
+      //# Insert e2 before e1 in first vertex and after e1 in second vertex
+      //# to represent valid counterclockwise ordering
       ve.splice(ve.indexOf(e1) + i, 0, e2);
     }
     ref3 = fold.edges_vertices[e1];
@@ -1374,31 +1381,47 @@ filter.cutEdges = function(fold, es) {
         fold.vertices_edges[v2] = neighbors.slice(1 + ie);
         ref5 = fold.vertices_edges[v2];
         //console.log "Split #{neighbors} into #{fold.vertices_edges[v1]} for #{v1} and #{fold.vertices_edges[v2]} for #{v2}"
+        //# Update relevant incident edges to use v2 instead of v1
         for (q = 0, len5 = ref5.length; q < len5; q++) {
           neighbor = ref5[q];
           ev = fold.edges_vertices[neighbor];
           ev[ev.indexOf(v1)] = v2;
         }
+        //# Partition boundary edges incident to v1
+        vertices_boundaries[v1] = [];
+        vertices_boundaries[v2] = [];
+        ref6 = [b1, b2];
+        for (r = 0, len6 = ref6.length; r < len6; r++) {
+          b = ref6[r];
+          if (indexOf.call(fold.vertices_edges[v1], b) >= 0) {
+            vertices_boundaries[v1].push(b); //if b in fold.vertices_edges[v2]
+          } else {
+            vertices_boundaries[v2].push(b);
+          }
+        }
       }
     }
-    if ((ref6 = fold.edges_assignment) != null) {
-      ref6[e1] = 'B';
-    }
+    //# e1 and e2 are new boundary edges
     if ((ref7 = fold.edges_assignment) != null) {
-      ref7[e2] = 'B';
+      ref7[e1] = 'B';
     }
-    ref8 = fold.edges_vertices[e1];
-    for (i = r = 0, len6 = ref8.length; r < len6; i = ++r) {
-      v = ref8[i];
-      (vertices_boundaries[v] != null ? vertices_boundaries[v] : vertices_boundaries[v] = []).push(e1);
+    if ((ref8 = fold.edges_assignment) != null) {
+      ref8[e2] = 'B';
     }
-    ref9 = fold.edges_vertices[e2];
+    ref9 = fold.edges_vertices[e1];
     for (i = t = 0, len7 = ref9.length; t < len7; i = ++t) {
       v = ref9[i];
+      (vertices_boundaries[v] != null ? vertices_boundaries[v] : vertices_boundaries[v] = []).push(e1);
+    }
+    ref10 = fold.edges_vertices[e2];
+    for (i = z = 0, len8 = ref10.length; z < len8; i = ++z) {
+      v = ref10[i];
       (vertices_boundaries[v] != null ? vertices_boundaries[v] : vertices_boundaries[v] = []).push(e2);
     }
   }
-  delete fold.vertices_vertices; // would be out-of-date
+  if (fold.vertices_vertices != null) {
+    fold.vertices_vertices = filter.edges_vertices_to_vertices_vertices(fold); // would be out-of-date
+  }
   return fold;
 };
 

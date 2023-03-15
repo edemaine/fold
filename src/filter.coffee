@@ -348,8 +348,11 @@ filter.cutEdges = (fold, es) ->
   it splits into n vertices.
   Preserves above-mentioned properties (so you can then compute faces via
   `FOLD.convert.edges_vertices_to_faces_vertices_edges`),
-  but ignores face properties and discards `vertices_vertices` if present.
+  and recomputes `vertices_vertices` if present,
+  but ignores face properties.
   ###
+  return fold unless es.length
+  ## Maintain map from every vertex to array of incident boundary edges
   vertices_boundaries = []
   for e in filter.boundaryEdges fold
     for v in fold.edges_vertices[e]
@@ -359,6 +362,8 @@ filter.cutEdges = (fold, es) ->
     e2 = filter.addEdgeLike fold, e1
     for v, i in fold.edges_vertices[e1]
       ve = fold.vertices_edges[v]
+      ## Insert e2 before e1 in first vertex and after e1 in second vertex
+      ## to represent valid counterclockwise ordering
       ve.splice ve.indexOf(e1) + i, 0, e2
     ## Check for endpoints of {e1, e2} to split, when they're on the boundary
     for v1, i in fold.edges_vertices[e1]
@@ -386,16 +391,27 @@ filter.cutEdges = (fold, es) ->
         v2 = filter.addVertexLike fold, v1
         fold.vertices_edges[v2] = neighbors[1+ie..]
         #console.log "Split #{neighbors} into #{fold.vertices_edges[v1]} for #{v1} and #{fold.vertices_edges[v2]} for #{v2}"
+        ## Update relevant incident edges to use v2 instead of v1
         for neighbor in fold.vertices_edges[v2] # including e2
           ev = fold.edges_vertices[neighbor]
           ev[ev.indexOf v1] = v2
+        ## Partition boundary edges incident to v1
+        vertices_boundaries[v1] = []
+        vertices_boundaries[v2] = []
+        for b in [b1, b2]
+          if b in fold.vertices_edges[v1]
+            vertices_boundaries[v1].push b
+          else #if b in fold.vertices_edges[v2]
+            vertices_boundaries[v2].push b
+    ## e1 and e2 are new boundary edges
     fold.edges_assignment?[e1] = 'B'
     fold.edges_assignment?[e2] = 'B'
     for v, i in fold.edges_vertices[e1]
       (vertices_boundaries[v] ?= []).push e1
     for v, i in fold.edges_vertices[e2]
       (vertices_boundaries[v] ?= []).push e2
-  delete fold.vertices_vertices # would be out-of-date
+  if fold.vertices_vertices?  # would be out-of-date
+    fold.vertices_vertices = filter.edges_vertices_to_vertices_vertices fold
   fold
 
 filter.edges_vertices_to_vertices_vertices = (fold) ->
