@@ -1,4 +1,4 @@
-# [FOLD](https://github.com/edemaine/fold/) Specification (version 1.1)
+# [FOLD](https://github.com/edemaine/fold/) Specification (version 1.2)
 
 This specification is still considered a rough draft, with everything subject
 to change.  But we will increment version numbers when breaking changes or
@@ -86,7 +86,8 @@ metadata properties can be included *only* in the top-level JSON dictionary.
 They include:
 
 * `file_spec`: The version of the FOLD spec that the file assumes
-  (a number).  See the top of this spec for the current value.
+  (a number).  See the top of this spec for the current value,
+  and [history](history.md) for differences between versions.
   **Strongly recommended**, in case we ever have to make
   backward-incompatible changes.
 * `file_creator`: The software that created the file (a string).
@@ -138,21 +139,24 @@ metadata properties in the FOLD format include
   * `"concrete"`: the polyhedral complex is embedded in Euclidean space,
     so there should be vertex coordinates
   -->
-  * `"manifold"`: the polyhedral complex is a manifold
+  * `"manifold"` / `"nonManifold"`:
+    whether the polyhedral complex is a manifold
     (has at most two faces incident to each edge)
-  * `"nonManifold"`: the polyhedral complex is *not* a manifold
-    (has more than two faces incident to an edge)
-  * `"orientable"`: the polyhedral complex is orientable, meaning it can be
+  * `"orientable"` / `"nonOrientable"`:
+    whether the polyhedral complex is orientable, meaning it can be
     assigned a consistent normal direction (and hence it is also manifold)
-  * `"nonOrientable"`: the polyhedral complex is not orientable, meaning it
-    cannot be assigned a consistent normal direction
-  * `"selfTouching"`: the polyhedral complex has faces that touch in their
-    relative interiors, so you probably want a face ordering
-  * `"nonSelfTouching"`: the polyhedral complex has no touching faces,
-    so face ordering isn't needed
-  * `"selfIntersecting"`: the polyhedral complex has properly intersecting faces
-  * `"nonSelfIntersecting"`: the polyhedral complex has no properly
-    intersecting faces
+  * `"selfTouching"` / `"nonSelfTouching"`:
+    whether the polyhedral complex has faces that touch in their
+    relative interiors, in which case you probably want a face ordering
+  * `"selfIntersecting"` / `"nonSelfIntersecting"`:
+    whether the polyhedral complex has properly intersecting faces
+  * `"cuts"` / `"noCuts"`:
+    whether any edges have an assignment of `"C"`
+    (cut/slit representing multiple `"B"` edges)
+  * `"joins"` / `"noJoins"`:
+    whether any edges have an assignment of `"J"` (join)
+  * `"convexFaces"` / `"nonConvexFaces"`:
+    whether all faces are convex polygons, or some are nonconvex
   * Custom attributes should have a colon in them;
     see [Custom Properties](#custom-properties) below.
 * `frame_unit`: Physical or logical unit that all coordinates are
@@ -174,30 +178,45 @@ The values of the following properties are zero-indexed arrays by vertex ID.
 
 * `vertices_coords`: For each vertex, an array of coordinates,
   such as `[x, y, z]` or `[x, y]` (where `z` is implicitly zero).
-  In higher dimensions, all unspecified coordinates are implicitly zero.
+  In higher dimensions, all trailing unspecified coordinates are implicitly zero.
   **Recommended** except for frames with attribute `"abstract"`.
   <!--**Required** for frames with attribute `"concrete"`.-->
 * `vertices_vertices`: For each vertex, an array of vertices (vertex IDs)
   that are adjacent along edges.  If the frame represents an orientable
   manifold or planar linkage, this list should be ordered counterclockwise
   around the vertex (possibly repeating a vertex more than once).
-  If the frame is a nonorientable manifold, this list should be cyclicly
+  If the frame is a nonorientable manifold, this list should be cyclically
   ordered around the vertex (possibly repeating a vertex).
   Otherwise, the order is arbitrary.
   **Recommended** in any frame lacking `edges_vertices` property
   (otherwise `vertices_vertices` can easily be computed from
   `edges_vertices` as needed).
-* `vertices_faces`: For each vertex, an array of face IDs for the faces
+* `vertices_edges`: For each vertex, an array of edge IDs for the edges
   incident to the vertex.  If the frame represents an orientable manifold,
+  this list should be ordered counterclockwise around the vertex.
+  If the frame is a nonorientable manifold, this list should be cyclically
+  ordered around the vertex.
+  In all cases, the linear order should match `vertices_vertices` if both
+  are specified: `vertices_edges[v][i]` should be an edge connecting vertices
+  `v` and `vertices_vertices[v][i]`.
+* `vertices_faces`: For each vertex, an array of face IDs for the faces
+  incident to the vertex, possibly including `null`s.
+  If the frame represents a manifold, `vertices_faces` should align with
+  `vertices_vertices` and/or `vertices_edges`:
+  `vertices_faces[v][i]` should be either
+
+  * the face containing vertices
+    `vertices_vertices[v][i]` and `vertices_vertices[v][(i+1)%d]` and
+    containing edges `vertices_edges[v][i]` and `vertices_edges[v][(i+1)%d]`,
+    where `d` is the degree of vertex `v`; or
+  * `null` if such a face doesn't exist.
+
+  If the frame represents an orientable manifold,
   this list should be ordered counterclockwise around the vertex
   (possibly repeating a face more than once).  If the frame is a nonorientable
-  manifold, this list shoudl be cyclicly ordered around the vertex
+  manifold, this list should be cyclically ordered around the vertex
   (possibly repeating a vertex), and matching the cyclic order of
-  `vertices_vertices` (if both are specified).
-  In addition to the matching cyclic order, `vertices_vertices` and
-  `vertices_faces` should align in start so that
-  `vertices_faces[v][i]` contains vertices `vertices_vertices[v][i]` and
-  `vertices_vertices[v][(i+1)%d]` where `d` is the degree of vertex `v`.
+  `vertices_vertices` and/or `vertices_edges` (if either is specified).
 
 ## Edge information: `edges_...`
 
@@ -209,42 +228,101 @@ The values of the following properties are zero-indexed arrays by edge ID.
   but is used to define the ordering of `edges_faces`.)
   **Recommended** in frames having any `edges_...` property
   (e.g., to represent mountain-valley assignment).
+<!--
+* `edges_edges`: For each edge, an array of edge IDs for the edges incident
+  to (either endpoint of) the edge.  If the frame is a manifold,
+  the edges should be listed in cyclic order around the edge (concatenating
+  some cyclic shift of `vertices_edges` for the two endpoints); and if the
+  frame is an oriented manifold, the order should be counterclockwise.
+  (This property is defined for completeness, but may not be particularly useful.)
+-->
 * `edges_faces`: For each edge, an array of face IDs for the faces incident
-  to the edge.  The faces should be listed in counterclockwise order around
-  the edge.  For manifolds, this array has length 1 (for boundary edges)
-  or 2 (for nonboundary edges).  When the array has length 2, the canonical
-  ordering is to start with the face locally to the left of the edge
-  (as defined by its orientation in `edges_vertices`).
+  to the edge, possibly including `null`s.
+  For nonmanifolds in particular, the (nonnull) faces should be listed in
+  counterclockwise order around the edge,
+  relative to the orientation of the edge.
+  For manifolds, the array for each edge should be an array of length 2,
+  where the first entry is the face locally to the "left" of
+  the edge (or `null` if there is no such face) and the second entry is the
+  face locally to the "right" of the edge (or `null` if there is no such face);
+  for orientable manifolds, "left" and "right" must be consistent with the
+  manifold orientation given by the counterclockwise orientation of faces.
+  However, a boundary edge may also be represented by a length-1 array, with
+  the `null` omitted, to be consistent with the nonmanifold representation.
 * `edges_assignment`: For each edge, a string representing its fold
   direction assignment:
   * `"B"`: border/boundary edge (only one incident face)
-  * `"M"`: mountain fold
-  * `"V"`: valley fold
-  * `"F"`: flat (unfolded) fold
-  * `"U"`: unassigned/unknown
+  * `"M"`: mountain crease
+  * `"V"`: valley crease
+  * `"F"`: flat (unfolded) crease
+  * `"U"`: unassigned/unknown crease
+  * `"C"`: cut/slit edge (should be treated as multiple `"B"` edges)
+  * `"J"`: join edge (incident faces should be treated as a single face)
 
   For example, this property can be used to specify a full mountain-valley
   assignment (consisting of `"M"`, `"V"`, and `"B"`), or just to label
   which edges are boundary edges (consisting of `"U"` or `"B"`).
 
-  For orientable manifolds, a valley fold points the two face normals into
-  each other, while a mountain fold makes them point away from each other.
-  For nonorientable manifolds, a valley fold is defined as bringing the normal
-  of the face to the left of the edge (listed first in `edges_faces`) to point
-  into the adjacent face (when fully folded), while a mountain fold has the
-  same normal point away from the adjacent face.
+  * **Folded edges**
+    * For orientable manifolds, a valley crease (`"V"`) points the two
+      face normals into each other,
+      while a mountain crease (`"M"`) makes them point away from each other.
+      For nonorientable manifolds, a valley fold is defined as bringing the
+      normal of the face to the left of the edge
+      (listed first in `edges_faces`)
+      to point into the adjacent face (when fully folded),
+      while a mountain fold has the
+      same normal point away from the adjacent face.
+    * An unassigned/unknown crease (`"U"`) is a crease that could be mountain
+      or valley or (in some cases) flat, but it is unknown which.
+  * **Unfolded edges**
+    * Flat creases (`"F"`) represent creases that are present but not folded
+      (not mountain or valley).
+    * Join edges (`"J"`) represent edges that are present only for modeling
+      purposes, and are insignificant from an origami perspective:
+      the incident faces should in fact be treated as a single effective face.
+      Join edges enable the modeling of one effective face that is both above
+      and below another effective face, and effective faces with holes.
+      Join edges are also appropriate for triangulation edges used in
+      simulation but which are not meaningful otherwise.
+      If you use join edges, we recommend including
+      `"joins"` in [`frame_attributes`](#frame-metadata-frame_).
+      *Added in version 1.2.*
+  * **Boundary edges**
+    * A boundary edge (`"B"`) has only one incident face.
+    * A cut/slit edge (`"C"`) is shorthand for two (or more for nonmanifold)
+      boundary edges at the same location.
+      This is useful for e.g. drawing programs to enable
+      simple toggling of slits in a crease pattern without having to
+      convert back and forth from a multiple-`"B"`-edge representation.
+      Mechanical modeling should treat such edges as separate boundary (`"B"`)
+      edges, one per face, with incident `"C"` edges connecting together into
+      larger slits/holes.
+      Support for `"C"` edges is **optional**, so is not expected to be
+      implemented by all software supporting the FOLD format.
+      Implement only for applications where it is useful,
+      limited to locally nonoverlapping, locally manifold surfaces.
+      If you use cut edges, we recommend including
+      `"cuts"` in [`frame_attributes`](#frame-metadata-frame_).
+      *Added in version 1.2.*
 * `edges_foldAngle`: For each edge, the fold angle (deviation from flatness)
   along each edge of the pattern.  The fold angle is a number in degrees
   lying in the range [&minus;180, 180].  The fold angle is positive for
   valley folds, negative for mountain folds, and zero for flat, unassigned,
   and border folds.  Accordingly, the sign of `edge_foldAngle` should match
   `edges_assignment` if both are specified.
+  *Renamed from `edges_foldAngles` in version 1.1.*
 * `edges_length`: For each edge, the length of the edge (a number).
   This is mainly useful for defining the intrinsic geometry of
   abstract complexes where `vertices_coords` are unspecified;
   otherwise, `edges_length` can be computed from `vertices_coords`.
+  *Renamed from `edges_lengths` in version 1.1.*
 
 ## Face information: `faces_...`
+
+Faces in a FOLD file should correspond to the "material" being folded.
+In particular, they do not typically include the exterior (unbounded) face
+of a planar graph such as a crease pattern.
 
 The values of the following properties are zero-indexed arrays by face ID.
 
@@ -257,11 +335,29 @@ The values of the following properties are zero-indexed arrays by face ID.
   order, `faces_vertices` and `faces_edges` should align in start so that
   `faces_edges[f][i]` is the edge connecting `faces_vertices[f][i]` and
   `faces_vertices[f][(i+1)%d]` where `d` is the degree of face `f`.
+* `faces_faces`: For each face, an array of face IDs for the faces *sharing
+  edges* around the face, possibly including `null`s.
+  If the frame is a manifold, the faces should be listed in counterclockwise
+  order and in the same linear order as `faces_edges` (if it is specified):
+  `f` and `faces_faces[f][i]` should be the faces incident to the edge
+  `faces_edges[f][i]`, unless that edge has no face on the other side,
+  in which case `faces_faces[f][i]` should be `null`.
 
 The counterclockwise ordering of each face defines the side/sign of its
 **normal vector**.
 
 ## Layer information: `faceOrders` and `edgeOrders`
+
+The layer ordering of a folded state is normally defined pointwise
+(&lambda;(*p*, *q*) for two noncrease points *p* and *q* of paper
+that fold to the same point).  FOLD does not directly represent such points,
+and instead works with entire faces (or edges for the case of linkages).
+Two faces have a consistent "above" or "below" relationship only if
+they overlap in a single connected region.  For example, this property
+is guaranteed by convex faces.  If your faces overlap in multiple regions,
+you should subdivide them (via `"J"` join edges) so that they do not.
+We recommend specifying either `"convexFaces"` or `"nonConvexFaces"`
+in [`frame_attributes`](#frame-metadata-frame_).
 
 * `faceOrders`: An array of triples `[f, g, s]` where `f` and `g` are face IDs
   and `s` is an integer between &minus;1 and 1:
@@ -283,6 +379,11 @@ The counterclockwise ordering of each face defines the side/sign of its
   `[f, g, s]` and `[g, h, t]` suffice; the ordering between `f` and `h`
   can be derived, or explicitly specified.
 
+  Note that the specified ordering on faces may have cycles (e.g.,
+  in a square twist).  For visualization purposes, you may want to
+  subdivide faces (e.g., at overlapping face boundaries)
+  so that the face ordering is a partial order.
+
   **Recommended** for frames with interior-overlapping faces.
 
 * `edgeOrders`: An array of triples `[e, f, s]` where `e` and `f` are edge IDs
@@ -301,13 +402,13 @@ The counterclockwise ordering of each face defines the side/sign of its
 
 Most properties described above (all but the `file_...` properties
 which are about the entire file) can appear in the top-level dictionary
-*or* within an individiaul frame.  Properties in the top-level dictionary
+*or* within an individual frame.  Properties in the top-level dictionary
 describes the **key frame** (frame 0).
 If your file consists of just one frame, that's all you need to know.
 
 If you want to store multiple frames in one file, use `file_frames`
 to store all frames beyond the key frame.  The value of the
-`file_frames` property is an array of dictonaries, where
+`file_frames` property is an array of dictionaries, where
 `file_frames[i]` represents frame `i+1` (because frame 0 is the key frame).
 Each frame dictionary can have any of the properties described above
 (again, except for `file_...` properties).
@@ -323,6 +424,11 @@ can have the following properties:
   this frame are automatically inherited, allowing you to avoid duplicated
   data in many cases.  For example, the frame can change the vertex coordinates
   (`vertices_coords`) while inheriting the structure of the parent's mesh.
+
+Support for multiple frames is **optional**, so is not expected to be
+implemented by all software supporting the FOLD format.
+Software not implementing support for multiple frames should ignore all
+`frames` properties and use only the key frame.
 
 ## Custom Properties
 
