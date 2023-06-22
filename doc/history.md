@@ -11,6 +11,8 @@
 ## Version 1.2
 * Add join edge (`"J"`) option to `edges_assignment`.
 * Add cut/slit edge (`"C"`) option to `edges_assignment` (optional).
+* Add `joins`/`noJoins` and `cuts`/`noCuts` to `frame_attributes`.
+* Add `convexFaces`/`nonconvexFaces` to `frame_attributes`.
 * Define `vertices_edges` and `faces_faces`.
 * Extend definition of `vertices_faces`, `edges_faces`, and `faces_faces`
   to allow `null` values, allowing for consistent ordering of all arrays and

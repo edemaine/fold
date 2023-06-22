@@ -150,6 +150,13 @@ metadata properties in the FOLD format include
     relative interiors, in which case you probably want a face ordering
   * `"selfIntersecting"` / `"nonSelfIntersecting"`:
     whether the polyhedral complex has properly intersecting faces
+  * `"cuts"` / `"noCuts"`:
+    whether any edges have an assignment of `"C"`
+    (cut/slit representing multiple `"B"` edges)
+  * `"joins"` / `"noJoins"`:
+    whether any edges have an assignment of `"J"` (join)
+  * `"convexFaces"` / `"nonConvexFaces"`:
+    whether all faces are convex polygons, or some are nonconvex
   * Custom attributes should have a colon in them;
     see [Custom Properties](#custom-properties) below.
 * `frame_unit`: Physical or logical unit that all coordinates are
@@ -256,44 +263,48 @@ The values of the following properties are zero-indexed arrays by edge ID.
   assignment (consisting of `"M"`, `"V"`, and `"B"`), or just to label
   which edges are boundary edges (consisting of `"U"` or `"B"`).
 
-  * **Folded edges.**
-  For orientable manifolds, a valley crease (`"V"`) points the two face normals
-  into each other,
-  while a mountain crease (`"M"`) makes them point away from each other.
-  For nonorientable manifolds, a valley fold is defined as bringing the normal
-  of the face to the left of the edge (listed first in `edges_faces`) to point
-  into the adjacent face (when fully folded), while a mountain fold has the
-  same normal point away from the adjacent face.
-  An unassigned/unknown crease (`"U"`) is a crease that could be mountain or
-  valley or (in some cases) flat, but it is unknown which.
-
-  * **Unfolded edges.**
-  Flat creases (`"F"`) represent creases that are present but not folded
-  (not mountain or valley).
-  Join edges (`"J"`) represent edges that are present only for modeling
-  purposes, and are insignificant from an origami perspective:
-  the incident faces should in fact be treated as a single effective face.
-  Join edges enable the modeling of one effective face that is both above and
-  below another effective face, and effective faces with holes.
-  Join edges are also appropriate for triangulation edges used in simulation
-  but which are not meaningful otherwise.
-  *Added in version 1.2.*
-
-  * **Boundary edges.**
-  A boundary edge (`"B"`) has only one incident face.
-  A cut/slit edge (`"C"`) is shorthand for two (or more for nonmanifold)
-  boundary edges at the same location.
-  This is useful for e.g. drawing programs to enable
-  simple toggling of slits in a crease pattern without having to
-  convert back and forth from a multiple-`"B"`-edge representation.
-  Mechanical modeling should treat such edges as separate boundary (`"B"`)
-  edges, one per face, with incident `"C"` edges connecting together into
-  larger slits/holes.
-  Support for `"C"` edges is **optional**, so is not expected to be
-  implemented by all software supporting the FOLD format.
-  Implement only for applications where it is useful,
-  limited to locally nonoverlapping, locally manifold surfaces.
-  *Added in version 1.2.*
+  * **Folded edges**
+    * For orientable manifolds, a valley crease (`"V"`) points the two
+      face normals into each other,
+      while a mountain crease (`"M"`) makes them point away from each other.
+      For nonorientable manifolds, a valley fold is defined as bringing the
+      normal of the face to the left of the edge
+      (listed first in `edges_faces`)
+      to point into the adjacent face (when fully folded),
+      while a mountain fold has the
+      same normal point away from the adjacent face.
+    * An unassigned/unknown crease (`"U"`) is a crease that could be mountain
+      or valley or (in some cases) flat, but it is unknown which.
+  * **Unfolded edges**
+    * Flat creases (`"F"`) represent creases that are present but not folded
+      (not mountain or valley).
+    * Join edges (`"J"`) represent edges that are present only for modeling
+      purposes, and are insignificant from an origami perspective:
+      the incident faces should in fact be treated as a single effective face.
+      Join edges enable the modeling of one effective face that is both above
+      and below another effective face, and effective faces with holes.
+      Join edges are also appropriate for triangulation edges used in
+      simulation but which are not meaningful otherwise.
+      If you use join edges, we recommend including
+      `"joins"` in [`frame_attributes`](#frame-metadata-frame_).
+      *Added in version 1.2.*
+  * **Boundary edges**
+    * A boundary edge (`"B"`) has only one incident face.
+    * A cut/slit edge (`"C"`) is shorthand for two (or more for nonmanifold)
+      boundary edges at the same location.
+      This is useful for e.g. drawing programs to enable
+      simple toggling of slits in a crease pattern without having to
+      convert back and forth from a multiple-`"B"`-edge representation.
+      Mechanical modeling should treat such edges as separate boundary (`"B"`)
+      edges, one per face, with incident `"C"` edges connecting together into
+      larger slits/holes.
+      Support for `"C"` edges is **optional**, so is not expected to be
+      implemented by all software supporting the FOLD format.
+      Implement only for applications where it is useful,
+      limited to locally nonoverlapping, locally manifold surfaces.
+      If you use cut edges, we recommend including
+      `"cuts"` in [`frame_attributes`](#frame-metadata-frame_).
+      *Added in version 1.2.*
 * `edges_foldAngle`: For each edge, the fold angle (deviation from flatness)
   along each edge of the pattern.  The fold angle is a number in degrees
   lying in the range [&minus;180, 180].  The fold angle is positive for
@@ -337,6 +348,17 @@ The counterclockwise ordering of each face defines the side/sign of its
 
 ## Layer information: `faceOrders` and `edgeOrders`
 
+The layer ordering of a folded state is normally defined pointwise
+(&lambda;(*p*, *q*) for two noncrease points *p* and *q* of paper
+that fold to the same point).  FOLD does not directly represent such points,
+and instead works with entire faces (or edges for the case of linkages).
+Two faces have a consistent "above" or "below" relationship only if
+they overlap in a single connected region.  For example, this property
+is guaranteed by convex faces.  If your faces overlap in multiple regions,
+you should subdivide them (via `"J"` join edges) so that they do not.
+We recommend specifying either `"convexFaces"` or `"nonConvexFaces"`
+in [`frame_attributes`](#frame-metadata-frame_).
+
 * `faceOrders`: An array of triples `[f, g, s]` where `f` and `g` are face IDs
   and `s` is an integer between &minus;1 and 1:
   * +1 indicates that face `f` lies *above* face `g`,
@@ -356,6 +378,11 @@ The counterclockwise ordering of each face defines the side/sign of its
   If faces `f`, `g`, and `h` all share a common point, then triples
   `[f, g, s]` and `[g, h, t]` suffice; the ordering between `f` and `h`
   can be derived, or explicitly specified.
+
+  Note that the specified ordering on faces may have cycles (e.g.,
+  in a square twist).  For visualization purposes, you may want to
+  subdivide faces (e.g., at overlapping face boundaries)
+  so that the face ordering is a partial order.
 
   **Recommended** for frames with interior-overlapping faces.
 
