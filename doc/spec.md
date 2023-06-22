@@ -238,11 +238,12 @@ The values of the following properties are zero-indexed arrays by edge ID.
   For nonmanifolds in particular, the (nonnull) faces should be listed in
   counterclockwise order around the edge,
   relative to the orientation of the edge.
-  For manifolds, the array for each edge has length at most 2.
-  For orientable manifolds, the array for each edge should be an
-  array of length 2, where the first entry is the face locally to the left of
+  For manifolds, the array for each edge should be an array of length 2,
+  where the first entry is the face locally to the "left" of
   the edge (or `null` if there is no such face) and the second entry is the
-  face locally to the right of the edge (or `null` if there is no such face).
+  face locally to the "right" of the edge (or `null` if there is no such face);
+  for orientable manifolds, "left" and "right" must be consistent with the
+  manifold orientation given by the counterclockwise orientation of faces.
   However, a boundary edge may also be represented by a length-1 array, with
   the `null` omitted, to be consistent with the nonmanifold representation.
 * `edges_assignment`: For each edge, a string representing its fold
@@ -251,23 +252,24 @@ The values of the following properties are zero-indexed arrays by edge ID.
   * `"M"`: mountain crease
   * `"V"`: valley crease
   * `"F"`: flat (unfolded) crease
+  * `"U"`: unassigned/unknown crease
   * `"C"`: cut/slit edge (should be treated as multiple `"B"` edges)
-    **[optional]**
-  * `"J"`: join edge &mdash; incident faces should be treated as a single face
-  * `"U"`: unassigned/unknown
+  * `"J"`: join edge (incident faces should be treated as a single face)
 
   For example, this property can be used to specify a full mountain-valley
   assignment (consisting of `"M"`, `"V"`, and `"B"`), or just to label
   which edges are boundary edges (consisting of `"U"` or `"B"`).
 
   * **Folded edges.**
-  For orientable manifolds, a valley fold (`"V"`) points the two face normals
+  For orientable manifolds, a valley crease (`"V"`) points the two face normals
   into each other,
-  while a mountain fold (`"M"`) makes them point away from each other.
+  while a mountain crease (`"M"`) makes them point away from each other.
   For nonorientable manifolds, a valley fold is defined as bringing the normal
   of the face to the left of the edge (listed first in `edges_faces`) to point
   into the adjacent face (when fully folded), while a mountain fold has the
   same normal point away from the adjacent face.
+  An unassigned/unknown crease (`"U"`) is a crease that could be mountain or
+  valley or (in some cases) flat, but it is unknown which.
 
   * **Unfolded edges.**
   Flat creases (`"F"`) represent creases that are present but not folded
@@ -283,20 +285,19 @@ The values of the following properties are zero-indexed arrays by edge ID.
 
   * **Boundary edges.**
   A boundary edge (`"B"`) has only one incident face.
-  Cut/slit edges (`"C"`) are useful for e.g. drawing programs to enable
-  simple modification of slits in a crease pattern without having to
-  convert back and forth into a `"B"` representation.
+  A cut/slit edge (`"C"`) is shorthand for two (or more for nonmanifold)
+  boundary edges at the same location.
+  This is useful for e.g. drawing programs to enable
+  simple toggling of slits in a crease pattern without having to
+  convert back and forth from a multiple-`"B"`-edge representation.
   Mechanical modeling should treat such edges as separate boundary (`"B"`)
   edges, one per face, with incident `"C"` edges connecting together into
   larger slits/holes.
   Support for `"C"` edges is **optional**, so is not expected to be
   implemented by all software supporting the FOLD format.
   Implement only for applications where it is useful,
-  limited to locally nonoverlapping locally manifold surfaces.
+  limited to locally nonoverlapping, locally manifold surfaces.
   *Added in version 1.2.*
-
-  * Unassigned/unknown (`"U"`) is a default when none of the above options
-  (are known to) apply.
 * `edges_foldAngle`: For each edge, the fold angle (deviation from flatness)
   along each edge of the pattern.  The fold angle is a number in degrees
   lying in the range [&minus;180, 180].  The fold angle is positive for
