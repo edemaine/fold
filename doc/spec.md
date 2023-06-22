@@ -139,21 +139,17 @@ metadata properties in the FOLD format include
   * `"concrete"`: the polyhedral complex is embedded in Euclidean space,
     so there should be vertex coordinates
   -->
-  * `"manifold"`: the polyhedral complex is a manifold
+  * `"manifold"` / `"nonManifold"`:
+    whether the polyhedral complex is a manifold
     (has at most two faces incident to each edge)
-  * `"nonManifold"`: the polyhedral complex is *not* a manifold
-    (has more than two faces incident to an edge)
-  * `"orientable"`: the polyhedral complex is orientable, meaning it can be
+  * `"orientable"` / `"nonOrientable"`:
+    whether the polyhedral complex is orientable, meaning it can be
     assigned a consistent normal direction (and hence it is also manifold)
-  * `"nonOrientable"`: the polyhedral complex is not orientable, meaning it
-    cannot be assigned a consistent normal direction
-  * `"selfTouching"`: the polyhedral complex has faces that touch in their
-    relative interiors, so you probably want a face ordering
-  * `"nonSelfTouching"`: the polyhedral complex has no touching faces,
-    so face ordering isn't needed
-  * `"selfIntersecting"`: the polyhedral complex has properly intersecting faces
-  * `"nonSelfIntersecting"`: the polyhedral complex has no properly
-    intersecting faces
+  * `"selfTouching"` / `"nonSelfTouching"`:
+    whether the polyhedral complex has faces that touch in their
+    relative interiors, in which case you probably want a face ordering
+  * `"selfIntersecting"` / `"nonSelfIntersecting"`:
+    whether the polyhedral complex has properly intersecting faces
   * Custom attributes should have a colon in them;
     see [Custom Properties](#custom-properties) below.
 * `frame_unit`: Physical or logical unit that all coordinates are
