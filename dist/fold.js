@@ -310,6 +310,8 @@ convert.faces_vertices_to_edges = function(mesh) {
   Given a FOLD object with just `faces_vertices`, automatically fills in
   `edges_vertices`, `edges_faces`, `faces_edges`, and `edges_assignment`
   (indicating which edges are boundary with 'B').
+  This code currently assumes an orientable manifold, and uses nulls to
+  represent missing neighbor faces in `edges_faces` (for boundary edges).
   */
   mesh.edges_vertices = [];
   mesh.edges_faces = [];
@@ -674,6 +676,14 @@ filter.boundaryEdges = function(fold) {
 
 filter.unassignedEdges = function(fold) {
   return filter.edgesAssigned(fold, 'U');
+};
+
+filter.cutEdges = function(fold) {
+  return filter.edgesAssigned(fold, 'C');
+};
+
+filter.joinEdges = function(fold) {
+  return filter.edgesAssigned(fold, 'J');
 };
 
 filter.keysStartingWith = function(fold, prefix) {
@@ -1306,7 +1316,7 @@ filter.addEdgeAndSubdivide = function(fold, v1, v2, epsilon) {
   return changedEdges;
 };
 
-filter.cutEdges = function(fold, es) {
+filter.splitCuts = function(fold, es = filter.cutEdges(fold)) {
   var b, b1, b2, boundaries, e, e1, e2, ev, i, i1, i2, ie, ie1, ie2, k, l, len, len1, len2, len3, len4, len5, len6, len7, len8, m, n, neighbor, neighbors, o, q, r, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, t, u1, u2, v, v1, v2, ve, vertices_boundaries, z;
   if (!es.length) {
     /*
@@ -1320,6 +1330,9 @@ filter.cutEdges = function(fold, es) {
     `FOLD.convert.edges_vertices_to_faces_vertices_edges`),
     and recomputes `vertices_vertices` if present,
     but ignores face properties.
+    `es` is unspecified, cuts all edges with an assignment of `"C"`,
+    effectively switching from FOLD 1.2's `"C"` assignments to
+    FOLD 1.1's `"B"` assignments.
     */
     return fold;
   }

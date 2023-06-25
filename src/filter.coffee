@@ -13,6 +13,10 @@ filter.boundaryEdges = (fold) ->
   filter.edgesAssigned fold, 'B'
 filter.unassignedEdges = (fold) ->
   filter.edgesAssigned fold, 'U'
+filter.cutEdges = (fold) ->
+  filter.edgesAssigned fold, 'C'
+filter.joinEdges = (fold) ->
+  filter.edgesAssigned fold, 'J'
 
 filter.keysStartingWith = (fold, prefix) ->
   key for key of fold when key[...prefix.length] == prefix
@@ -338,7 +342,7 @@ filter.addEdgeAndSubdivide = (fold, v1, v2, epsilon) ->
   changedEdges[1].push changedEdges2... if changedEdges2?
   changedEdges
 
-filter.cutEdges = (fold, es) ->
+filter.splitCuts = (fold, es = filter.cutEdges(fold)) ->
   ###
   Given a FOLD object with `edges_vertices`, `edges_assignment`, and
   counterclockwise-sorted `vertices_edges`
@@ -350,6 +354,9 @@ filter.cutEdges = (fold, es) ->
   `FOLD.convert.edges_vertices_to_faces_vertices_edges`),
   and recomputes `vertices_vertices` if present,
   but ignores face properties.
+  `es` is unspecified, cuts all edges with an assignment of `"C"`,
+  effectively switching from FOLD 1.2's `"C"` assignments to
+  FOLD 1.1's `"B"` assignments.
   ###
   return fold unless es.length
   ## Maintain map from every vertex to array of incident boundary edges
