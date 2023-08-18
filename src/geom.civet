@@ -104,7 +104,7 @@ export function closestIndex(a: Coords, bs: Coords[])
   // Finds the closest point to `a` among points in `bs`, and returns the
   // index of that point in `bs`.  Returns `undefined` if `bs` is empty.
   minDist .= Infinity
-  minI: number | undefined .= undefined
+  let minI: number
   for each b, i of bs
     d := dist(a, b)
     if minDist > d
@@ -220,7 +220,7 @@ export function matrixInverseRT(matrix: Coords[])
   // Returns inverse of a matrix consisting of rotations and/or translations,
   // where the inverse can be found by a transpose and dot products
   // [http://www.graphics.stanford.edu/courses/cs248-98-fall/Final/q4.html].
-  lastCol: Coords | null .= null
+  let lastCol: Coords
   if matrix[0].length == matrix.length+1
     lastCol = (row[row.length-1] for row of matrix)
   else if matrix[0].length != matrix.length

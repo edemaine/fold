@@ -1,0 +1,228 @@
+{ DOMParser } from "@xmldom/xmldom"
+* as convert from "./convert.civet"
+* as filter from "./filter.civet"
+type { Fold } from "./types.civet"
+
+export type2fold :=
+  0: 'F'     // TYPE_NONE = flat
+  1: 'B'     // TYPE_CUT = boundary
+  2: 'M'     // TYPE_RIDGE = mountain
+  3: 'V'     // TYPE_VALLEY = valley
+
+export fold2type: Record<string, string> := {}
+
+for x, y in type2fold
+  fold2type[y] = x
+
+export fold2type_default := 0
+
+export prop_xml2fold :=
+  editorName: 'frame_author'
+  originalAuthorName: 'frame_designer'
+  reference: 'frame_reference'
+  title: 'frame_title'
+  memo: 'frame_description'
+  paperSize: null
+  mainVersion: null
+  subVersion: null
+
+export POINT_EPS := 1.0
+
+export function toFold(oripaStr: string)
+  fold :=
+    vertices_coords: []
+    edges_vertices: []
+    edges_assignment: []
+    file_creator: 'oripa2fold'
+
+  vertex := (x: string, y: string) =>
+    v := fold.vertices_coords.length
+    fold.vertices_coords.push [
+      parseFloat x
+      parseFloat y
+    ]
+    v
+
+  nodeSpec := (node: Element, type: string, key?: string, value?: any) =>
+    if type? and node.tagName != type
+      console.warn `ORIPA file has ${node.tagName} where ${type} was expected`
+      null
+    else if key? and (not node.hasAttribute(key) or (value? and node.getAttribute(key) != value))
+      console.warn `ORIPA file has ${node.tagName} with ${key} = ${node.getAttribute key} where ${value} was expected`
+      null
+    else
+      node
+
+  children := (node: Element): Element[] =>
+    if node
+      (for each child of node.childNodes
+        continue unless child.nodeType == 1
+        child
+      )
+    else
+      []
+
+  oneChildSpec := (node: Element, type: string, key?: string, value?: any) =>
+    sub := children node
+    if sub.length != 1
+      console.warn `ORIPA file has ${node.tagName} with ${node.childNodes.length} children, not 1`
+      null
+    else
+      nodeSpec sub[0], type, key, value
+
+  oneChildText := (node: Element): string | undefined =>
+    if node.childNodes.length > 1
+      console.warn `ORIPA file has ${node.tagName} with ${node.childNodes.length} children, not 0 or 1`
+      null
+    else if node.childNodes.length == 0
+      ''
+    else
+      child := node.childNodes[0]
+      if child.nodeType != 3
+        console.warn `ORIPA file has nodeType ${child.nodeType} where 3 (text) was expected`
+        undefined
+      else
+        (child as any).data
+
+  xml := new DOMParser().parseFromString oripaStr, 'text/xml'
+  for top of children xml.documentElement
+    if nodeSpec top, 'object', 'class', 'oripa.DataSet'
+      for property of children top
+        if property.getAttribute('property') == 'lines'
+          lines := oneChildSpec property, 'array', 'class', 'oripa.OriLineProxy'
+          for line of children lines
+            if nodeSpec line, 'void', 'index'
+              for object of children line
+                if nodeSpec object, 'object', 'class', 'oripa.OriLineProxy'
+                  // Java doesn't encode the default value, 0
+                  [x0, x1, y0, y1, type]: (string | undefined)[] .= []
+                  x0 = x1 = y0 = y1 = type = '0'
+
+                  for subproperty of children object
+                    if nodeSpec subproperty, 'void', 'property'
+                      switch subproperty.getAttribute 'property'
+                        when 'x0'
+                          x0 = oneChildText(oneChildSpec(subproperty, 'double'))
+                        when 'x1'
+                          x1 = oneChildText(oneChildSpec(subproperty, 'double'))
+                        when 'y0'
+                          y0 = oneChildText(oneChildSpec(subproperty, 'double'))
+                        when 'y1'
+                          y1 = oneChildText(oneChildSpec(subproperty, 'double'))
+                        when 'type'
+                          type = oneChildText(oneChildSpec(subproperty, 'int'))
+                  if x0? and x1? and y0? and y1?
+                    fold.edges_vertices.push [
+                      vertex x0, y0
+                      vertex x1, y1
+                    ]
+
+                    if type?
+                      type_int := parseInt type
+                      fold.edges_assignment.push type2fold[type_int]
+                  else
+                    console.warn `ORIPA line has missing data: ${x0} ${x1} ${y0} ${y1} ${type}`
+        else if property.getAttribute('property') in prop_xml2fold
+          prop := prop_xml2fold[property.getAttribute 'property']
+          if prop?
+            fold[prop] = oneChildText oneChildSpec(property, 'string')
+        else
+          console.warn "Ignoring #{property.tagName} #{top.getAttribute 'property'} in ORIPA file"
+
+  // src/oripa/Doc.java uses absolute distance POINT_EPS = 1.0 to detect
+  // points being the same.
+  filter.collapseNearbyVertices(fold as Fold, POINT_EPS)
+  filter.subdivideCrossingEdges_vertices(fold as Fold, POINT_EPS)
+  // In particular, convert.removeLoopEdges fold
+  convert.edges_vertices_to_faces_vertices fold as Fold
+
+  fold
+
+export function fromFold(fold: Fold)
+  if typeof fold == 'string'
+    fold = JSON.parse fold
+
+  s .= """
+<?xml version="1.0" encoding="UTF-8"?>
+<java version="1.5.0_05" class="java.beans.XMLDecoder">
+ <object class="oripa.DataSet">
+  <void property="mainVersion">
+   <int>1</int>
+  </void>
+  <void property="subVersion">
+   <int>1</int>
+  </void>
+  <void property="paperSize">
+   <double>400.0</double>
+  </void>
+
+"""
+
+  for xp, fp in prop_xml2fold
+    s += `
+.
+  <void property="${xp}">
+   <string>${fold[fp] or ''}</string>
+  </void>
+
+`[2..]
+
+  z .= 0
+  lines :=
+    for edge, ei of fold.edges_vertices
+      vs := for vertex of edge
+        for coord of fold.vertices_coords[vertex][2..]
+          if coord != 0
+            z += 1
+        fold.vertices_coords[vertex]
+      x0: vs[0][0]
+      y0: vs[0][1]
+      x1: vs[1][0]
+      y1: vs[1][1]
+      type: fold2type[fold.edges_assignment[ei]] or fold2type_default
+
+  s += `
+.
+  <void property="lines">
+   <array class="oripa.OriLineProxy" length="${lines.length}">
+
+`[2..]
+
+  for line, i of lines
+    s += `
+.
+    <void index="${i}">
+     <object class="oripa.OriLineProxy">
+      <void property="type">
+       <int>${line.type}</int>
+      </void>
+      <void property="x0">
+       <double>${line.x0}</double>
+      </void>
+      <void property="x1">
+       <double>${line.x1}</double>
+      </void>
+      <void property="y0">
+       <double>${line.y0}</double>
+      </void>
+      <void property="y1">
+       <double>${line.y1}</double>
+      </void>
+     </object>
+    </void>
+
+`[2..]
+
+  s += """
+.
+   </array>
+  </void>
+ </object>
+</java>
+
+"""[2..]
+
+  s
+
+convert.setConverter '.fold', '.opx', fromFold
+convert.setConverter '.opx', '.fold', toFold

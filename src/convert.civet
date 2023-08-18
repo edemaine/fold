@@ -354,15 +354,15 @@ export function toJSON(fold: Fold)
   "\n}\n"
 
 export extensions: Record<string, boolean> := {}
-export converters: Record<string, <T>(x: T) => T> := {}
+export converters: Record<string, (x: any) => any> := {}
 
 export function getConverter(fromExt: string, toExt: string)
   if fromExt == toExt
-    <T>(x: T) -> x
+    (x: any) -> x
   else
     converters["#{fromExt}#{toExt}"]
 
-export function setConverter(fromExt: string, toExt: string, converter: <T>(x: T) => T)
+export function setConverter(fromExt: string, toExt: string, converter: (x: any) => any)
   extensions[fromExt] = true
   extensions[toExt] = true
   converters["#{fromExt}#{toExt}"] = converter

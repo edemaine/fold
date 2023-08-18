@@ -17,3 +17,4 @@ export interface Fold
   faces_flatFoldTransform: (number[][] | null)[]
   faces_flatFoldOrientation: (number | null)[]
   vertices_flatFoldCoords: (number[] | null)[]
+  file_creator?: string;
