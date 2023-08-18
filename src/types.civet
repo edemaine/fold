@@ -1,0 +1,19 @@
+export type Coords = number[]
+
+export interface Fold
+  edges: Array<[number, number]>
+  edges_assignment: Array<string>
+  faces: Array<Array<number>>
+  faces_vertices: Array<Array<number>>
+  faces_edges: Array<Array<number>>
+  faces_faces: Array<Array<number>>
+  vertices_edges: Array<Array<number>>
+  vertices_faces: Array<Array<number>>
+  vertices_coords: Coords[]
+  vertices_vertices: Array<Array<number>>
+  edges_vertices: Coords[]
+  edges_faces: Array<Array<number>>
+  edges_length: Array<number>
+  faces_flatFoldTransform: (number[][] | null)[]
+  faces_flatFoldOrientation: (number | null)[]
+  vertices_flatFoldCoords: (number[] | null)[]
