@@ -1,0 +1,114 @@
+fs from fs
+path from path
+* as convert from "./convert.civet"
+type { Fold, Converter } from "./types.civet"
+
+interface Options
+  flatFold?: boolean
+  converter?: Converter
+
+export function extensionOf(filename: string)
+  parsed := path.parse filename
+  if parsed.ext
+    parsed.ext
+  else if parsed.base[0] == '.'
+    parsed.base
+  else if `.${filename}` in convert.extensions
+    `.${filename}`
+  else
+    null
+
+export function toFile(fold: Fold, output: string, converter: Converter = null)
+  outFormat := extensionOf output
+
+  unless outFormat
+    console.warn `Could not detect extension of ${output}`
+    return
+  unless converter?
+    converter = convert.getConverter '.fold', outFormat
+    unless converter?
+      console.warn `No converter from .fold to ${outFormat}`
+      return
+
+  result .= converter fold
+  if typeof result != 'string'
+    result = convert.toJSON result
+
+  fs.writeFileSync output, result, 'utf-8'
+
+export function fileToFile(input: string, output: string, options: Options)
+  inFormat := extensionOf input
+  outFormat := extensionOf output
+  unless inFormat
+    console.warn `Could not detect extension of ${input}`
+    return
+  unless outFormat
+    console.warn `Could not detect extension of ${output}`
+    return
+  converter .= options.converter
+  unless converter?
+    converter = convert.getConverter inFormat, outFormat
+    unless converter?
+      console.warn `No converter from ${inFormat} to ${outFormat}`
+      return
+  if outFormat == output or outFormat == `.${output}`
+    // just extension => concatenate
+    parsed_output := path.parse input
+    parsed_output.ext = outFormat
+    parsed_output.base = parsed_output.name + parsed_output.ext
+    output = path.format parsed_output
+  if input == output
+    console.warn `Attempt to convert ${input} to same filename`
+  else
+    console.log input, '->', output
+    result .= fs.readFileSync input, 'utf-8'
+    if inFormat == '.fold' != outFormat // avoid double mogrification
+      result = mogrify result, options
+    result = converter result
+    if outFormat == '.fold'
+      result = mogrify result, options
+    if typeof result != 'string'
+      result = convert.toJSON result
+    fs.writeFileSync output, result, 'utf-8'
+
+export function mogrify(data: string, options: Options)
+  return unless options.flatFold // or any options set
+  fold: Fold := JSON.parse data
+  fold.file_creator = "fold-convert"
+  if options.flatFold
+    fold.file_creator += " --flat-fold"
+    error := convert.flatFoldedGeometry fold
+    console.log ` -- Flat folding error: ${error}`
+    fold.vertices_flatUnfoldCoords = fold.vertices_coords
+    fold.vertices_coords = fold.vertices_flatFoldCoords
+    fold.frame_classes = fold.frame_classes.filter (x) -> x != 'creasePattern'
+    .concat 'foldedForm'
+
+    delete fold.vertices_flatFoldCoords
+  convert.toJSON fold
+
+export function main(args = process.argv[2..]): void
+  filenames := []
+  output .= '.fold'  // Default behavior: convert to .fold
+  options: Options :=
+    flatFold: false
+  mode .= null
+
+  for arg of args
+    switch mode
+      when 'output'
+        output = arg
+        mode = null
+      else
+        switch arg
+          when '-o', '--output'
+            mode = 'output'
+          when '--flat-fold'
+            options.flatFold = true
+          else
+            filenames.push arg
+
+  for filename of filenames
+    fileToFile filename, output, options
+
+main() if require.main == module

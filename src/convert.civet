@@ -1,6 +1,6 @@
 * as geom from "./geom.civet"
 * as filter from "./filter.civet"
-type { Coords, Fold } from "./types.civet"
+type { Coords, Fold, Converter } from "./types.civet"
 
 export function edges_vertices_to_vertices_vertices_unsorted(fold: Fold)
   ###
@@ -354,7 +354,7 @@ export function toJSON(fold: Fold)
   "\n}\n"
 
 export extensions: Record<string, boolean> := {}
-export converters: Record<string, (x: any) => any> := {}
+export converters: Record<string, Converter> := {}
 
 export function getConverter(fromExt: string, toExt: string)
   if fromExt == toExt
@@ -362,7 +362,7 @@ export function getConverter(fromExt: string, toExt: string)
   else
     converters["#{fromExt}#{toExt}"]
 
-export function setConverter(fromExt: string, toExt: string, converter: (x: any) => any)
+export function setConverter(fromExt: string, toExt: string, converter: Converter)
   extensions[fromExt] = true
   extensions[toExt] = true
   converters["#{fromExt}#{toExt}"] = converter
@@ -385,4 +385,4 @@ export function convertFrom<T>(data: T, fromExt: string)
 export function convertTo<T>(data: T, toExt: string)
   convertFromTo data, '.fold', toExt
 
-// export * as oripa from './oripa.civet'
+export * as oripa from './oripa.civet'

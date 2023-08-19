@@ -1,4 +1,5 @@
 export type Coords = number[]
+export type Converter = (x: any) => any;
 
 export interface Fold
   edges: Array<[number, number]>
@@ -17,4 +18,7 @@ export interface Fold
   faces_flatFoldTransform: (number[][] | null)[]
   faces_flatFoldOrientation: (number | null)[]
   vertices_flatFoldCoords: (number[] | null)[]
-  file_creator?: string;
+  vertices_flatUnfoldCoords: Coords[]
+  file_creator?: string
+  frame_classes: any
+  faceOrders: any
