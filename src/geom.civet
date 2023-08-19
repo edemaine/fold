@@ -27,8 +27,8 @@ export function rangesDisjoint([a1, a2]: [number, number], [b1, b2]: [number, nu
   (b1 < Math.min(a1, a2) > b2) or (b1 > Math.max(a1, a2) < b2)
 
 interface Tree
-  visited: boolean
-  parent: Tree | null
+  visited?: boolean
+  parent?: Tree | null
   children: Array<Tree>
 
 export function topologicalSort(vs: Tree[])

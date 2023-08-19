@@ -1,6 +1,53 @@
 * as geom from "./geom.civet"
 type { Fold, Coords } from "./types.civet"
 
+interface Model
+  vs: Array<{ cs: Coords; i: number; ps: any }>
+  fs: Array<{
+    vs?: Array<{ cs: Coords; i: number; ps: any }>
+    i?: number
+    n?: any
+    c?: any
+    ord?: any
+    es?: any
+    g?: any
+    c2?: any
+    children: any
+    path?: any
+    text?: any
+    eg?: any
+    vg?: any
+  }>
+  es: any
+
+interface ViewOptions
+  viewButtons: boolean
+  axisButtons: boolean
+  attrViewer: boolean
+  examples: any
+  import: boolean
+  export: boolean
+  properties: boolean
+
+interface Camera
+  x: Coords
+  y: Coords
+  z:  Coords
+  c: Coords
+  r: number
+  last: Coords | null
+  show: Record<string, boolean>
+  axis?: any
+
+interface View
+  fold?: Fold
+  model: Model
+  properties?: HTMLSelectElement
+  data?: Element
+  svg: SVGElement
+  cam: Camera
+  opts: ViewOptions
+
 STYLES := {
   vert: "fill: white; r: 0.03; stroke: black; stroke-width: 0.005;"
   face: "stroke: none; fill-opacity: 0.8;"
@@ -33,30 +80,6 @@ export function makePath(coords: Coords[])
   ).reduce geom.sum
 
 ### INTERFACE ###
-
-interface Model
-  vs: any
-  fs: any
-  es: any
-
-interface Camera
-  x: Coords
-  y: Coords
-  z:  Coords
-  c: Coords
-  r: number
-  last: Coords | null
-  show: any
-  axis?: any
-
-interface View
-  fold?: Fold
-  model: Model
-  properties?: HTMLSelectElement
-  data?: any
-  svg: SVGElement
-  cam: Camera
-  opts: any
 
 export function processInput(input: string | Fold, view: View)
   if typeof input == 'string'
@@ -92,7 +115,7 @@ export function importFile(file: Blob, view: View)
   file_reader.onload = (e) => processInput(e.target.result as string, view)
   file_reader.readAsText(file)
 
-DEFAULTS :=
+DEFAULTS: ViewOptions :=
   viewButtons: true
   axisButtons: true
   attrViewer: true
@@ -233,7 +256,7 @@ export function makeModel(fold: Fold)
   for f, i of m.fs
     m.fs[i].n = geom.polygonNormal((v.cs for v of f.vs))
     m.fs[i].c = geom.centroid((v.cs for v of f.vs))
-    m.fs[i].es = {}
+    // m.fs[i].es = {}
     m.fs[i].es = (for v, j of f.vs
       w := f.vs[geom.next(j, f.vs.length)]
       [a,b] := if v.i > w.i then [w,v] else [v,w]
