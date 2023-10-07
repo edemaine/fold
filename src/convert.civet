@@ -274,14 +274,11 @@ export function flatFoldedGeometry(fold: Fold, rootFace = 0)
 
   maxError .= 0
   level .= [rootFace]
-  fold.faces_flatFoldTransform =
-    (null for face of [0...fold.faces_edges.length])
+  fold.faces_flatFoldTransform = Array(fold.faces_edges.length).fill(null)
   fold.faces_flatFoldTransform[rootFace] = [[1,0,0],[0,1,0]] // identity
-  fold.faces_flatFoldOrientation =
-    (null for face of [0...fold.faces_edges.length])
+  fold.faces_flatFoldOrientation = Array(fold.faces_edges.length).fill(null)
   fold.faces_flatFoldOrientation[rootFace] = +1
-  fold.vertices_flatFoldCoords =
-    (null for vertex of [0...fold.vertices_coords.length])
+  fold.vertices_flatFoldCoords = Array(fold.vertices_coords.length).fill(null)
 
   // Use fold.faces_edges -> fold.edges_vertices, which are both needed below,
   // in case fold.faces_vertices isn't defined.
