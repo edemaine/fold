@@ -283,17 +283,10 @@ export function foldedGeometry(fold: Fold, rootFace = 0)
             fold.vertices_coords[vertex]
           ) as [Coords, Coords]
 
-          // Store `faces_foldTransform` as an object with (face,face2) pair as key.
-          // Storing just by face2 similar to what flatFoldedGeometry does is not
-          // enough because each face can have multiple neighbors and we need to
-          // store the transform for each neighbor. If we store with just face2,
-          // then the transform get's overwritten by the other neighbour
-          transformRotate := geom.matrixRotate3D(...crease_coords, geom.toRadian(fold.edges_foldAngle[edge]))
-
-          transform := geom.matrixMatrix (fold.faces_foldTransform[face] ?? [[1,0,0],[0,1,0],[0,0,1]]), geom.matrixMatrix(
+          transform := geom.matrixMatrix fold.faces_foldTransform[face], geom.matrixMatrix(
             geom.matrixMatrix(
               geom.matrixTranslate(crease_coords[1])
-              transformRotate
+              geom.matrixRotate3D(...crease_coords, geom.toRadian(fold.edges_foldAngle[edge]))
             ),
             geom.matrixTranslate(geom.mul crease_coords[1], -1)
           )

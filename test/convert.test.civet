@@ -99,4 +99,4 @@ fold := {
 
 foldedGeometry(fold as any)
 
-console.dir(fold.vertices_foldCoords, {depth: Infinity})
+console.dir(fold, {depth: Infinity})
