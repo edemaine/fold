@@ -12,13 +12,22 @@ export interface Fold
   vertices_faces: Array<Array<number>>
   vertices_coords: Coords[]
   vertices_vertices: Array<Array<number>>
-  edges_vertices: Coords[]
+  edges_vertices: [u: number, v: number][]
   edges_faces: Array<Array<number>>
+  edges_foldAngle: Array<number>
   edges_length: Array<number>
   faces_flatFoldTransform: (number[][] | null)[]
+  faces_foldTransform: Record<string, number[][]>
   faces_flatFoldOrientation: (number | null)[]
   vertices_flatFoldCoords: (number[] | null)[]
+  vertices_foldCoords: (number[] | null)[]
   vertices_flatUnfoldCoords: Coords[]
+  vertices_curvedUnfoldCoords: Coords[]
   file_creator?: string
+  file_spec?: number
+  file_author?: string
+  file_classes?: string[]
+  frame_attributes?: string[]
+  frame_title?: string
   frame_classes: any
   faceOrders: any

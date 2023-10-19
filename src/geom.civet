@@ -137,6 +137,18 @@ export function parallel(a: Coords, b: Coords, eps = EPS)
   return null unless ua? and ub?
   1 - Math.abs(dot ua, ub) < eps
 
+export function matrixRotate3D(a: Coords, b: Coords, t: number)
+  u := sub b, a
+  [ct, st] := [Math.cos(t), Math.sin(t)]
+  [ux, uy, uz = 0] := u
+  omct := 1 - ct
+
+  [
+    [ux*ux*omct+ct, uy*ux*omct+st*uz, uz*ux*omct-st*uy]
+    [ux*uy*omct-st*uz, uy*uy*omct+ct, uz*uy*omct+st*ux]
+    [ux*uz*omct+st*uy, uy*uz*omct-st*ux, uz*uz*omct+ct]
+  ]
+
 export function rotate(a: Coords, u: Coords, t: number)
   // Returns the rotation of 3D vector a about 3D unit vector u by angle t.
   u = unit(u)!
@@ -512,4 +524,7 @@ export function quadSplit(u: Coords, p: Coords, d: number, t: number)
   if magsq(p) > d * d
     throw new Error "STOP! Trying to split expansive quad."
   return mul(u, (d*d - magsq(p))/2/(d*Math.cos(t) - dot(u, p)))
+
+export function toRadian(ang: number)
+  ang * Math.PI/180
 

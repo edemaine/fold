@@ -1,0 +1,73 @@
+{ foldedGeometry, flatFoldedGeometry } from '../src/convert.civet';
+
+fold := {
+  file_spec: 1.2,
+  file_creator: "A text editor",
+  file_author: "Mokshit Jain",
+  file_classes: ["singleModel"],
+  frame_classes: ["creasePattern"],
+  frame_attributes: ["3D"],
+  vertices_coords: [
+    [0,0,0],
+    [1,0,0],
+    [2,0,0],
+    [2,1,0],
+    [1,1,0],
+    [0,1,0],
+    [2,2,0],
+    [1,2,0],
+    [0,2,0],
+  ],
+  faces_vertices: [
+    [0,1,4,5],
+    [1,2,3,4],
+    [4,3,6,7],
+    [5,4,7,8]
+  ],
+  edges_vertices: [
+    [0,1],
+    [1,2],
+    [2,3],
+    [3,4],
+    [4,5],
+    [5,0],
+    [4,1],
+    [3,6],
+    [6,7],
+    [7,4],
+    [7,8],
+    [8,5]
+  ],
+  edges_assignment: [
+    "B",
+    "B",
+    "B",
+    "B",
+    "B",
+    "B",
+    "V",
+    "B",
+    "B",
+    "V",
+    "B",
+    "B"
+  ],
+  edges_foldAngle: [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    90,
+    0,
+    0,
+    90,
+    0,
+    0
+  ]
+}
+
+foldedGeometry(fold as any)
+
+console.dir(fold, {depth: Infinity})

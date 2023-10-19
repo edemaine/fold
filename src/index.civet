@@ -3,3 +3,4 @@ export * as viewer from "./viewer.civet"
 export * as filter from "./filter.civet"
 export * as convert from "./convert.civet"
 export * as file from "./file.civet"
+export * as oripa from './oripa.civet'

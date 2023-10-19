@@ -243,8 +243,8 @@ export function edges_vertices_to_edges_faces_edges(fold: Fold)
     edgeMap[`${vertices[0]},${vertices[1]}`] = [edge, 0] // forward
     edgeMap[`${vertices[1]},${vertices[0]}`] = [edge, 1] // backward
 
-  for face_key, vertices in fold.faces_vertices
-    face := parseInt face_key
+  fold.faces_edges ?= []
+  for each vertices, face of fold.faces_vertices
     fold.faces_edges[face] =
       for v1, i of vertices
         v2 := vertices[(i+1) % vertices.length]
@@ -252,6 +252,67 @@ export function edges_vertices_to_edges_faces_edges(fold: Fold)
         fold.edges_faces[edge][orient] = face
         edge
   fold
+
+export function foldedGeometry(fold: Fold, rootFace = 0)
+  if fold.vertices_coords? and fold.edges_vertices? and not (fold.edges_faces? and fold.faces_edges?)
+    edges_vertices_to_edges_faces_edges fold
+
+  maxError .= 0
+  level .= [rootFace]
+  fold.faces_foldTransform = {}
+  fold.vertices_foldCoords = Array(fold.vertices_coords.length).fill(null)
+
+  // Use fold.faces_edges -> fold.edges_vertices, which are both needed below,
+  // in case fold.faces_vertices isn't defined.
+  for edge of fold.faces_edges[rootFace]
+    for vertex of fold.edges_vertices[edge]
+      fold.vertices_foldCoords[vertex] ?= fold.vertices_coords[vertex][..]
+
+  while level.length
+    nextLevel := []
+
+    for face of level
+      for edge of fold.faces_edges[face]
+        for face2 of fold.edges_faces[edge]
+          continue unless face2? and face2 != face
+
+          crease_edges_vertices := fold.edges_vertices[edge]
+          crease_coords := (for vertex of crease_edges_vertices
+            fold.vertices_coords[vertex]
+          ) as [Coords, Coords]
+
+          // Store `faces_foldTransform` as an object with (face,face2) pair as key.
+          // Storing just by face2 similar to what flatFoldedGeometry does is not
+          // enough because each face can have multiple neighbors and we need to
+          // store the transform for each neighbor. If we store with just face2,
+          // then the transform get's overwritten by the other neighbour
+          l .= `${face},${face2}`
+          existingTransform := fold.faces_foldTransform[l = `${face},${face2}`] ??
+            fold.faces_foldTransform[l = `${face2},${face}`]
+          transformRotate := geom.matrixRotate3D(...crease_coords, geom.toRadian(fold.edges_foldAngle[edge]))
+
+          transform := geom.matrixMatrix (existingTransform ?? [[1,0,0],[0,1,0],[0,0,1]]), geom.matrixMatrix(
+            geom.matrixMatrix(
+              geom.matrixTranslate(crease_coords[1])
+              transformRotate
+            ),
+            geom.matrixTranslate(geom.mul crease_coords[1], -1)
+          )
+
+          if existingTransform?
+            for row, i of existingTransform
+              maxError = Math.max maxError, geom.dist row, transform[i]
+          else
+            fold.faces_foldTransform[l] = transform
+
+            for edge2 of fold.faces_edges[face2]
+              for vertex2 of fold.edges_vertices[edge2]
+                mapped := geom.matrixVector transform, fold.vertices_coords[vertex2]
+
+                fold.vertices_foldCoords[vertex2] = mapped
+            nextLevel.push face2
+    level = nextLevel
+  maxError
 
 export function flatFoldedGeometry(fold: Fold, rootFace = 0)
   ###
@@ -382,4 +443,4 @@ export function convertFrom<T>(data: T, fromExt: string)
 export function convertTo<T>(data: T, toExt: string)
   convertFromTo data, '.fold', toExt
 
-export * as oripa from './oripa.civet'
+// export * as oripa from './oripa.civet'

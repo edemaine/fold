@@ -39,26 +39,23 @@
   },
   "homepage": "https://github.com/edemaine/fold#readme",
   "devDependencies": {
-    "@danielx/civet": "^0.6.22",
-    "@types/node": "^20.4.9",
+    "@danielx/civet": "^0.6.42",
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.8.2",
     "browserify": "^16.5.0",
     "coffeeify": "^3.0.1",
     "coffeescript": "^2.4.1",
     "jest": "^26.6.3",
     "jest-matcher-deep-close-to": "^2.0.1",
     "jest-preset-coffeescript": "1.1.1",
+    "tsup": "^7.2.0",
     "typescript": "^5.1.6"
   },
   "browser": {
     "@xmldom/xmldom": false,
     "./src/file.coffee": false
   },
-  "jest": {
-    "preset": "jest-preset-coffeescript",
-    "testPathIgnorePatterns": [
-      "/node_modules/"
-    ]
-  },
+  "jest": {},
   "dependencies": {
     "@xmldom/xmldom": "^0.7.2"
   }
