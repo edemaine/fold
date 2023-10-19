@@ -259,7 +259,9 @@ export function foldedGeometry(fold: Fold, rootFace = 0)
 
   maxError .= 0
   level .= [rootFace]
-  fold.faces_foldTransform = {}
+  I := [[1,0,0],[0,1,0],[0,0,1]]
+  fold.faces_foldTransform = []
+  fold.faces_foldTransform[rootFace] = I
   fold.vertices_foldCoords = Array(fold.vertices_coords.length).fill(null)
 
   // Use fold.faces_edges -> fold.edges_vertices, which are both needed below,
@@ -286,12 +288,9 @@ export function foldedGeometry(fold: Fold, rootFace = 0)
           // enough because each face can have multiple neighbors and we need to
           // store the transform for each neighbor. If we store with just face2,
           // then the transform get's overwritten by the other neighbour
-          l .= `${face},${face2}`
-          existingTransform := fold.faces_foldTransform[l = `${face},${face2}`] ??
-            fold.faces_foldTransform[l = `${face2},${face}`]
           transformRotate := geom.matrixRotate3D(...crease_coords, geom.toRadian(fold.edges_foldAngle[edge]))
 
-          transform := geom.matrixMatrix (existingTransform ?? [[1,0,0],[0,1,0],[0,0,1]]), geom.matrixMatrix(
+          transform := geom.matrixMatrix (fold.faces_foldTransform[face] ?? [[1,0,0],[0,1,0],[0,0,1]]), geom.matrixMatrix(
             geom.matrixMatrix(
               geom.matrixTranslate(crease_coords[1])
               transformRotate
@@ -299,17 +298,21 @@ export function foldedGeometry(fold: Fold, rootFace = 0)
             geom.matrixTranslate(geom.mul crease_coords[1], -1)
           )
 
-          if existingTransform?
-            for row, i of existingTransform
+          if fold.faces_foldTransform[face2]?
+            for row, i of fold.faces_foldTransform[face2]
               maxError = Math.max maxError, geom.dist row, transform[i]
           else
-            fold.faces_foldTransform[l] = transform
+            fold.faces_foldTransform[face2] = transform
 
             for edge2 of fold.faces_edges[face2]
               for vertex2 of fold.edges_vertices[edge2]
                 mapped := geom.matrixVector transform, fold.vertices_coords[vertex2]
 
-                fold.vertices_foldCoords[vertex2] = mapped
+                if fold.vertices_foldCoords[vertex2]?
+                  maxError = Math.max maxError,
+                    geom.dist fold.vertices_foldCoords[vertex2], mapped
+                else
+                  fold.vertices_foldCoords[vertex2] = mapped
             nextLevel.push face2
     level = nextLevel
   maxError

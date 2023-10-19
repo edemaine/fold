@@ -1,6 +1,4 @@
-{ foldedGeometry, flatFoldedGeometry } from '../src/convert.civet';
-
-fold := {
+{
   "file_spec": 1,
   "file_creator": "A text editor",
   "file_author": "Mokshit Jain",
@@ -26,8 +24,8 @@ fold := {
   ],
   "faces_vertices": [
     [0,1,2,3],
-    [3,4,5,2],
-    [1,2,13,12],
+    [3,2,5,4],
+    [1,12,13,2],
     [8,11,1,0],
     [9,10,11,8],
     [7,0,3,6]
@@ -72,7 +70,7 @@ fold := {
     "V",
     "B",
     "B",
-    "B",
+    "B"
   ],
   "edges_foldAngle": [
     90,
@@ -93,10 +91,6 @@ fold := {
     90,
     0,
     0,
-    0,
+    0
   ]
 }
-
-foldedGeometry(fold as any)
-
-console.dir(fold.vertices_foldCoords, {depth: Infinity})
