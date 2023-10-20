@@ -6,6 +6,7 @@ type { Fold, Converter } from "./types.civet"
 interface Options
   flatFold?: boolean
   converter?: Converter
+  fold?: boolean
 
 export function extensionOf(filename: string)
   parsed := path.parse filename
@@ -83,6 +84,13 @@ export function mogrify(data: string, options: Options)
     fold.vertices_coords = fold.vertices_flatFoldCoords
     fold.frame_classes = fold.frame_classes.filter (x) -> x != 'creasePattern'
     .concat 'foldedForm'
+  if options.fold
+    fold.file_creator += " --fold"
+    error := convert.foldedGeometry fold
+    console.log ` -- 3D folding error: ${error}`
+    fold.vertices_unfoldCoords = fold.vertices_coords
+    fold.vertices_coords = fold.vertices_foldCoords
+    fold.frame_classes = fold.frame_classes.filter (x) -> x != 'creasePattern'
 
     delete fold.vertices_flatFoldCoords
   convert.toJSON fold
@@ -92,6 +100,7 @@ export function main(args = process.argv[2..]): void
   output .= '.fold'  // Default behavior: convert to .fold
   options: Options :=
     flatFold: false
+    fold: false
   mode .= null
 
   for arg of args
@@ -105,6 +114,8 @@ export function main(args = process.argv[2..]): void
             mode = 'output'
           when '--flat-fold'
             options.flatFold = true
+          when '--fold'
+            options.fold = true
           else
             filenames.push arg
 
