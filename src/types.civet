@@ -17,12 +17,15 @@ export interface Fold
   edges_foldAngle: Array<number>
   edges_length: Array<number>
   faces_flatFoldTransform: (number[][] | null)[]
+  faces_flatUnfoldTransform: (number[][] | null)[]
   faces_foldTransform: (number[][] | null)[]
+  vertices_foldCoords: (number[] | null)[]
+  faces_unfoldTransform: (number[][] | null)[]
+  vertices_unfoldCoords: (number[] | null)[]
   faces_flatFoldOrientation: (number | null)[]
   vertices_flatFoldCoords: (number[] | null)[]
-  vertices_foldCoords: (number[] | null)[]
   vertices_flatUnfoldCoords: Coords[]
-  vertices_curvedUnfoldCoords: Coords[]
+  faces_flatUnfoldOrientation: (number | null)[]
   file_creator?: string
   file_spec?: number
   file_author?: string
