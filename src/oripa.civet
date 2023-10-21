@@ -1,8 +1,9 @@
-{ DOMParser } from "@xmldom/xmldom"
+* as XmlDOM from "@xmldom/xmldom"
 * as convert from "./convert.civet"
 * as filter from "./filter.civet"
 type { Fold } from "./types.civet"
 
+{ DOMParser } := XmlDOM
 export type2fold :=
   0: 'F'     // TYPE_NONE = flat
   1: 'B'     // TYPE_CUT = boundary
@@ -127,7 +128,7 @@ export function toFold(oripaStr: string)
           if prop?
             fold[prop] = oneChildText oneChildSpec(property, 'string')
         else
-          console.warn "Ignoring #{property.tagName} #{top.getAttribute 'property'} in ORIPA file"
+          console.warn `Ignoring ${property.tagName} ${top.getAttribute 'property'} in ORIPA file`
 
   // src/oripa/Doc.java uses absolute distance POINT_EPS = 1.0 to detect
   // points being the same.
