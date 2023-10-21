@@ -44,9 +44,9 @@ export function remapField(fold: Fold, field: string, old2new: number[])
   new2old := []
   for each j, i of old2new  // later overwrites earlier
     new2old[j] = i if j?
-  for key of keysStartingWith fold, "#{field}_"
+  for key of keysStartingWith fold, `${field}_`
     fold[key] = (fold[key][old] for old of new2old)
-  for key of keysEndingWith fold, "_#{field}"
+  for key of keysEndingWith fold, `_${field}`
     fold[key] = ((old2new[old] for old of array) for array of fold[key])
   fold
 
@@ -97,13 +97,13 @@ export function numType(fold: Fold, type: string)
   fields with key of the form `..._type`.  Returns `0` if nothing found.
   ###
   counts .=
-    for key of keysStartingWith fold, "#{type}_"
+    for key of keysStartingWith fold, `${type}_`
       value := fold[key]
       continue unless value.length?
       value.length
   unless counts.length
     counts =
-      for key of keysEndingWith fold, "_#{type}"
+      for key of keysEndingWith fold, `_${type}`
         1 + Math.max fold[key]...
   if counts.length
     Math.max counts...
@@ -125,9 +125,9 @@ export function removeDuplicateEdges_vertices(fold: Fold)
       [v, w] := edge
       key .= ""
       if v < w
-        key = "#{v},#{w}"
+        key = `${v},${w}`
       else
-        key = "#{w},#{v}"
+        key = `${w},${v}`
       unless key in seen
         seen[key] = id
         id += 1
@@ -424,7 +424,7 @@ export function splitCuts(fold: Fold, es = cutEdges(fold))
         else if i1 == (i2+1) % neighbors.length
           neighbors = neighbors[i1..].concat neighbors[..i2] unless i1 == 0
         else
-          throw new Error "Nonadjacent boundary edges at vertex #{v1}"
+          throw new Error `Nonadjacent boundary edges at vertex ${v1}`
 
         // Find first vertex among e1, e2 among neighbors, so other is next
         ie1 := neighbors.indexOf e1
@@ -433,7 +433,7 @@ export function splitCuts(fold: Fold, es = cutEdges(fold))
         fold.vertices_edges[v1] = neighbors[..ie]
         v2 := addVertexLike fold, v1
         fold.vertices_edges[v2] = neighbors[1+ie..]
-        // console.log "Split #{neighbors} into #{fold.vertices_edges[v1]} for #{v1} and #{fold.vertices_edges[v2]} for #{v2}"
+        // console.log "Split ${neighbors} into ${fold.vertices_edges[v1]} for ${v1} and ${fold.vertices_edges[v2]} for ${v2}"
         // Update relevant incident edges to use v2 instead of v1
         for neighbor of fold.vertices_edges[v2] // including e2
           ev := fold.edges_vertices[neighbor]

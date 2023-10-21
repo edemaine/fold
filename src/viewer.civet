@@ -128,7 +128,7 @@ export function addViewer(div: HTMLDivElement, opts: Partial<typeof DEFAULTS> = 
   view: View :=
     cam: initCam()
     opts: DEFAULTS
-    svg: appendSVG(div, 'svg', {xmlns: SVGNS, width: '600'}) as SVGElement
+    svg: null
     model: null
   view.opts[k] = v for k, v in opts
 
@@ -143,10 +143,13 @@ export function addViewer(div: HTMLDivElement, opts: Partial<typeof DEFAULTS> = 
 
   let buttonDiv: Element;
   if view.opts.axisButtons
+    console.log('adding axis buttons')
     buttonDiv = appendHTML(div, 'div')
+    console.log("button div", buttonDiv)
     buttonDiv.innerHTML += 'View: '
     for val, i of ['x', 'y', 'z']
       appendHTML(buttonDiv, 'input', {type: 'button', value: val})
+      console.log("appended", buttonDiv, val)
   if view.opts.properties
     buttonDiv.innerHTML += ' Property:'
     view.properties = appendHTML(buttonDiv, 'select') as HTMLSelectElement
@@ -166,15 +169,15 @@ export function addViewer(div: HTMLDivElement, opts: Partial<typeof DEFAULTS> = 
       appendHTML(inputDiv, 'input', {type: 'file'})
 
   div.addEventListener 'click', (e) =>
-    input := e.target as HTMLElement
-    if input instanceof HTMLInputElement
+    input := e.target as HTMLInputElement
+    if input.type is 'checkbox'
       if input.hasAttribute('checked')
         input.removeAttribute('checked')
       else
         input.setAttribute('checked', '')
       view.cam.show[input.value] = input.hasAttribute('checked')
       update view
-    if input instanceof HTMLButtonElement
+    if input.type is 'button'
       switch input.value
         when 'x' then setCamXY(view.cam, [0,1,0], [0,0,1])
         when 'y' then setCamXY(view.cam, [0,0,1], [1,0,0])
@@ -182,15 +185,16 @@ export function addViewer(div: HTMLDivElement, opts: Partial<typeof DEFAULTS> = 
       update view
 
   div.addEventListener 'change', (e) =>
-    input := e.target as HTMLElement
-    if input instanceof HTMLInputElement
+    input := e.target as any
+    if input.type is 'file'
       importFile(input.files[0], view)
-    if input instanceof HTMLSelectElement
+    if input.type is 'select-one'
       if input is view.properties
         updateProperties(view)
       else
         importURL(input.value, view)
 
+  view.svg = appendSVG(div, 'svg', {xmlns: SVGNS, width: '600'}) as SVGElement
   view
 
 ### CAMERA ###
@@ -219,12 +223,11 @@ export function addRotation(view: View)
 export function rotateCam(p: Coords, view: View)
   cam := view.cam
   return if not cam.last?
-
   d := geom.sub(p, cam.last)
   return if not (geom.mag(d) > 0)
 
   u := geom.unit(geom.plus(geom.mul(cam.x, -d[1]), geom.mul(cam.y, -d[0])))
-  [x, y] := (geom.rotate(cam[e], u, geom.mag(d) * 0.01) for e in ['x','y'])
+  [x, y] := (geom.rotate(cam[e], u, geom.mag(d) * 0.01) for e of ['x','y'])
   setCamXY(cam, x, y)
   cam.last = p
   update(view)
@@ -245,13 +248,13 @@ export function makeModel(fold: Fold)
     for v, i of fold.edges_vertices
       [a,b] := if v[0] > v[1] then [v[1],v[0]] else [v[0],v[1]]
       as := if fold.edges_assignment?[i]? then fold.edges_assignment[i] else 'U'
-      m.es["e#{a}e#{b}"] = {v1: m.vs[a], v2: m.vs[b], as: as}
+      m.es[`e${a}e${b}`] = {v1: m.vs[a], v2: m.vs[b], as: as}
   else
     for f, i of m.fs
       for v, j of f.vs
         w := f.vs[geom.next(j,f.vs.length)]
         [a,b] := if v.i > w.i then [w,v] else [v,w]
-        m.es["e#{a.i}e#{b.i}"] = {v1: a, v2: b, as: 'U'}
+        m.es[`e${a.i}e${b.i}`] = {v1: a, v2: b, as: 'U'}
 
   for f, i of m.fs
     m.fs[i].n = geom.polygonNormal((v.cs for v of f.vs))
@@ -260,7 +263,7 @@ export function makeModel(fold: Fold)
     m.fs[i].es = (for v, j of f.vs
       w := f.vs[geom.next(j, f.vs.length)]
       [a,b] := if v.i > w.i then [w,v] else [v,w]
-      edge .= m.es["e#{a.i}e#{b.i}"]
+      edge .= m.es[`e${a.i}e${b.i}`]
       unless edge?
         edge = {v1: a, v2: b, as: 'U'}
       edge
@@ -272,17 +275,17 @@ export function makeModel(fold: Fold)
       continue unless o is not 0
       if geom.parallel(m.fs[f1].n, m.fs[f2].n)
         normRel := if geom.dot(m.fs[f1].n, m.fs[f2].n) > 0 then 1 else -1
-        if m.fs[f1].ord["f#{f2}"]?
-          console.log "Warning: duplicate ordering input information for \
-            faces #{f1} and #{f2}. Using first found in the faceOrder list."
-          if m.fs[f1].ord["f#{f2}"] != o
-            console.log "Error: duplicate ordering [#{f1},#{f2},#{o}] \
-              is inconsistent with a previous entry."
+        if m.fs[f1].ord[`f${f2}`]?
+          console.log `Warning: duplicate ordering input information for \
+            faces ${f1} and ${f2}. Using first found in the faceOrder list.`
+          if m.fs[f1].ord[`f${f2}`] != o
+            console.log `Error: duplicate ordering [${f1},${f2},${o}] \
+              is inconsistent with a previous entry.`
         else
-          m.fs[f1].ord["f#{f2}"] = o
-          m.fs[f2].ord["f#{f1}"] = -o * normRel
+          m.fs[f1].ord[`f${f2}`] = o
+          m.fs[f2].ord[`f${f1}`] = -o * normRel
       else
-        console.log "Warning: order for non-parallel faces [#{f1},#{f2}]"
+        console.log `Warning: order for non-parallel faces [${f1},${f2}]`
   return m
 
 export function faceAbove(f1, f2, n)
@@ -297,10 +300,10 @@ export function faceAbove(f1, f2, n)
     if dir?
       return 0 > geom.dot(n, dir) // faces are separable in 3D
     else
-      console.log "Warning: faces #{f1.i} and #{f2.i} properly intersect.
-        Ordering is unresolved."
+      console.log `Warning: faces ${f1.i} and ${f2.i} properly intersect.
+        Ordering is unresolved.`
   if basis.length is 2
-    ord := f1.ord["f#{f2.i}"]
+    ord := f1.ord[`f${f2.i}`]
     if ord?
       return 0 > geom.dot(f2.n, n) * ord // faces coplanar and have order
   return null
@@ -326,7 +329,7 @@ export function draw({svg: svg, cam: cam, model: model})
   svg.innerHTML = ''
   style := appendSVG(svg, 'style')
   for k, v in STYLES
-    style.innerHTML += ".#{k}{#{v}}\n"
+    style.innerHTML += `.${k}{${v}}\n`
   min := ((v.cs[i] for v of model.vs).reduce(geom.min) for i of [0,1,2])
   max := ((v.cs[i] for v of model.vs).reduce(geom.max) for i of [0,1,2])
   cam.c = geom.mul(geom.plus(min, max), 0.5)
@@ -338,7 +341,7 @@ export function draw({svg: svg, cam: cam, model: model})
     f.g = appendSVG(svg, 'g')
     f.path = appendSVG(f.g, 'path')
     f.text = appendSVG(f.g, 'text', {class: 'text', transform: t})
-    f.text.innerHTML = "f#{f.i}"
+    f.text.innerHTML = `f${f.i}`
     f.eg = []
     for e, j of f.es
       f.eg[j] = appendSVG(f.g, 'path')
@@ -348,11 +351,11 @@ export function draw({svg: svg, cam: cam, model: model})
       f.vg[j].path = appendSVG(f.vg[j], 'circle', {class: 'vert'})
       f.vg[j].text = appendSVG(f.vg[j], 'text',
         {transform: 'translate(0, 0.01)', class: 'text'})
-      f.vg[j].text.innerHTML = "#{v.i}"
+      f.vg[j].text.innerHTML = `${v.i}`
   cam.axis = appendSVG(svg,'g',{transform: 'translate(-0.9,-0.9)'})
   for c of ['x','y','z']
     cam.axis[c] = appendSVG(cam.axis,'path', {
-      id: "a#{c}", class: "a#{c} axis"})
+      id: `a${c}`, class: `a${c} axis`})
 
 export function update(view: View)
   {model, cam, svg} := view
@@ -371,11 +374,11 @@ export function update(view: View)
       x: f.c2[0], y: f.c2[1], visibility: show['Face Text']})
     setAttrs(f.path, {
       d: makePath((v.ps for v of f.vs)) + 'Z'
-      visibility: show['Faces'], class: "face #{visibleSide}"})
+      visibility: show['Faces'], class: `face ${visibleSide}`})
     for e, j of f.es
       setAttrs(f.eg[j], {
         d: makePath([e.v1.ps, e.v2.ps])
-        visibility: show['Edges'], class: "edge #{e.as}"})
+        visibility: show['Edges'], class: `edge ${e.as}`})
     for v, j of f.vs
       setAttrs(f.vg[j], {visibility: show['Vertices']})
       setAttrs(f.vg[j].path, {cx: v.ps[0], cy: v.ps[1]})

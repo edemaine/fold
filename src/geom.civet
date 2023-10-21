@@ -15,7 +15,8 @@ export function min(a: number, b: number)
 export function max(a: number, b: number)
   if a > b then a else b
 
-export function all(a: boolean, b: boolean) -> a and b
+export function all(a: boolean, b: boolean)
+  a and b
 
 export function next(start: number, n: number, i = 1)
   // Returns the ith cyclic ordered number after start in the range [0..n].
@@ -217,7 +218,7 @@ export function matrixMatrix(matrix1: Coords[], matrix2: Coords[])
   // which may involve adding an implicit column to matrix2 as well.
   for row1 of matrix1
     if matrix2.length != row1.length != matrix2.length + 1
-      throw new Error "Invalid matrix dimension #{row1.length} vs. matrix dimension #{matrix2.length}"
+      throw new Error `Invalid matrix dimension ${row1.length} vs. matrix dimension ${matrix2.length}`
     product :=
       for j of [0...matrix2[0].length]
         val .= (row1[k] * row2[j] for each row2, k of matrix2).reduce(sum)
@@ -236,7 +237,7 @@ export function matrixInverseRT(matrix: Coords[])
   if matrix[0].length == matrix.length+1
     lastCol = (row[row.length-1] for row of matrix)
   else if matrix[0].length != matrix.length
-    throw new Error "Invalid matrix dimensions #{matrix.length}x#{matrix[0].length}"
+    throw new Error `Invalid matrix dimensions ${matrix.length}x${matrix[0].length}`
   for each row, i of matrix
     invRow := (matrix[j][i] for j of [0...matrix.length]) // transpose
     if lastCol?
@@ -246,7 +247,7 @@ export function matrixInverseRT(matrix: Coords[])
 export function matrixInverse(matrix: Coords[])
   // Returns inverse of a matrix computed via Gauss-Jordan elimination method.
   if matrix.length != matrix[0].length != matrix.length+1
-    throw new Error "Invalid matrix dimensions #{matrix.length}x#{matrix[0].length}"
+    throw new Error `Invalid matrix dimensions ${matrix.length}x${matrix[0].length}`
   matrix = (row[..] for row of matrix) // copy before elimination
   inverse :=
     for each row, i of matrix
@@ -285,7 +286,7 @@ export function matrixTranslate(v: Coords)
     row.push x
     row
 
-export function matrixRotate2D(t: number, center: Coords)
+export function matrixRotate2D(t: number, center?: Coords)
   // 2D rotation matrix around center, which defaults to origin,
   // counterclockwise by t radians.
   [ct, st] := [Math.cos(t), Math.sin(t)]
@@ -297,7 +298,7 @@ export function matrixRotate2D(t: number, center: Coords)
     [[ct, -st]
      [st,  ct]]
 
-export function matrixReflectAxis(a: number, d: number, center: number)
+export function matrixReflectAxis(a: number, d: number, center?: number)
   // Matrix transformation negating dimension a out of d dimensions,
   // or if center is specified, reflecting around that value of dimension a.
   for i of [0...d]
@@ -378,7 +379,9 @@ export function polygonOrientation(points: Coords[])
   // via computing sum of signed areas of triangles formed with origin
   Math.sign twiceSignedArea points
 
-export function sortByAngle<T = number[]>(points: T[], origin: number[], mapping?: (x: T) => number[])
+export function sortByAngle<T = number[]>(points: T[], origin?: number[], mapping: (x: T) => number[] = (x) => (x as any))
+  if (!origin) origin = [0,0]
+
   // Sort a set of 2D points in place counter clockwise about origin
   // under the provided mapping.
   points.sort (p, q) =>
