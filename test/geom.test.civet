@@ -8,7 +8,7 @@ describe 'Utilities', ->
   array := [-3,-2,-1,0,1,2,3,14,-5,6,7]
   test 'Reducing with geom.sum', ->
     expect array.reduce geom.sum
-    .toEqual 21
+    .toEqual 22
   test 'Reducing with geom.min', ->
     expect array.reduce geom.min
     .toEqual -5
