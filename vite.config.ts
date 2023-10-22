@@ -3,6 +3,7 @@ import civetPlugin from '@danielx/civet/vite';
 import { resolve } from 'path';
 
 export default defineConfig({
+  base: '/fold/',
   build: {
     watch: {
       include: ['**/*.civet'],
