@@ -1,0 +1,552 @@
+{
+  "$id": "FOLD JSON Schema",
+  "$schema": "https://json-schema.org/draft-04/schema",
+  "$ref": "#/$defs/file",
+  "$defs": {
+    "file": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "file_spec": {
+              "description": "The version of the FOLD spec that the file assumes. See https://github.com/edemaine/fold/blob/main/doc/spec.md. Strongly recommended, in case we ever have to make backward-incompatible changes.",
+              "enum": [
+                1,
+                1.1
+              ]
+            },
+            "file_creator": {
+              "description": "The software that created the file. Recommended for files output by computer software; less important for files made by hand.",
+              "type": "string"
+            },
+            "file_author": {
+              "description": "The human author",
+              "type": "string"
+            },
+            "file_title": {
+              "description": "A title for the entire file",
+              "type": "string"
+            },
+            "file_description": {
+              "description": "A description of the entire file",
+              "type": "string"
+            },
+            "file_classes": {
+              "description": "A subjective interpretation about what the entire file represents",
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "enum": [
+                      "singleModel"
+                    ],
+                    "description": "A single origami model, possibly still in multiple frames to represent crease pattern, folded form, etc."
+                  },
+                  {
+                    "enum": [
+                      "multiModel"
+                    ],
+                    "description": "Multiple origami models collected together into one file"
+                  },
+                  {
+                    "enum": [
+                      "animation"
+                    ],
+                    "description": "Animation of sequence of frames, e.g., illustrating a continuous folding motion"
+                  },
+                  {
+                    "enum": [
+                      "diagrams"
+                    ],
+                    "description": "A sequence of frames representing folding steps, as in origami diagrams"
+                  },
+                  {
+                    "$ref": "#/$defs/customValue"
+                  }
+                ]
+              }
+            },
+            "file_frames": {
+              "description": "Array of frame dictionaries. See https://github.com/edemaine/fold/blob/main/doc/spec.md#multiple-frames",
+              "type": "array",
+              "items": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/frame"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "frame_parent": {
+                        "type": "integer"
+                      },
+                      "frame_inherit": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "$ref": "#/$defs/frame"
+        }
+      ]
+    },
+    "frame": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "frame_author": {
+              "description": "The human author",
+              "type": "string"
+            },
+            "frame_title": {
+              "description": "A title for the frame",
+              "type": "string"
+            },
+            "frame_description": {
+              "description": "A description of the frame",
+              "type": "string"
+            },
+            "frame_classes": {
+              "description": "A subjective interpretation about what the frame represents",
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "enum": [
+                      "creasePattern"
+                    ],
+                    "description": "a crease pattern (unfolded)"
+                  },
+                  {
+                    "enum": [
+                      "foldedForm"
+                    ],
+                    "description": "a folded form/state, e.g. flat folding or 3D folding"
+                  },
+                  {
+                    "enum": [
+                      "graph"
+                    ],
+                    "description": "vertices and edges, but no lengths or faces"
+                  },
+                  {
+                    "enum": [
+                      "linkage"
+                    ],
+                    "description": "vertices and edges and edge lengths, but no faces"
+                  },
+                  {
+                    "$ref": "#/$defs/customValue"
+                  }
+                ]
+              }
+            },
+            "frame_attributes": {
+              "description": "Attributes that objectively describe properties of the folded structure being represented",
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "enum": [
+                      "2D"
+                    ],
+                    "description": "the coordinates lie in 2D (xy); z coordinates are all implicitly or explicitly 0"
+                  },
+                  {
+                    "enum": [
+                      "3D"
+                    ],
+                    "description": "the coordinates lie in 3D (xyz) and not 2D (xy)"
+                  },
+                  {
+                    "enum": [
+                      "abstract"
+                    ],
+                    "description": "the polyhedral complex is not embedded in Euclidean space, so there are no vertex coordinates (but there might be edge lengths defining intrinsic geometry)"
+                  },
+                  {
+                    "enum": [
+                      "manifold"
+                    ],
+                    "description": "the polyhedral complex is a manifold (has at most two faces incident to each edge)"
+                  },
+                  {
+                    "enum": [
+                      "nonManifold"
+                    ],
+                    "description": "the polyhedral complex is not a manifold (has more than two faces incident to an edge)"
+                  },
+                  {
+                    "enum": [
+                      "orientable"
+                    ],
+                    "description": "the polyhedral complex is orientable, meaning it can be assigned a consistent normal direction (and hence it is also manifold)"
+                  },
+                  {
+                    "enum": [
+                      "nonOrientable"
+                    ],
+                    "description": "the polyhedral complex is not orientable, meaning it cannot be assigned a consistent normal direction"
+                  },
+                  {
+                    "enum": [
+                      "selfTouching"
+                    ],
+                    "description": "the polyhedral complex has faces that touch in their relative interiors, so you probably want a face ordering"
+                  },
+                  {
+                    "enum": [
+                      "nonSelfTouching"
+                    ],
+                    "description": "the polyhedral complex has no touching faces, so face ordering isn't needed"
+                  },
+                  {
+                    "enum": [
+                      "selfIntersecting"
+                    ],
+                    "description": "the polyhedral complex has properly intersecting faces"
+                  },
+                  {
+                    "enum": [
+                      "nonSelfIntersecting"
+                    ],
+                    "description": "the polyhedral complex has no properly intersecting faces"
+                  },
+                  {
+                    "$ref": "#/$defs/customValue"
+                  }
+                ]
+              }
+            },
+            "frame_unit": {
+              "description": "Physical or logical unit that all coordinates are relative to",
+              "oneOf": [
+                {
+                  "enum": [
+                    "unit"
+                  ],
+                  "description": "(equivalent to not specifying a unit): no physical meaning"
+                },
+                {
+                  "enum": [
+                    "in"
+                  ],
+                  "description": "inches (25.4 mm)"
+                },
+                {
+                  "enum": [
+                    "pt"
+                  ],
+                  "description": "desktop publishing/PostScript points (1/72 in)"
+                },
+                {
+                  "enum": [
+                    "m"
+                  ],
+                  "description": "meters (1/299,792,458 light seconds)"
+                },
+                {
+                  "enum": [
+                    "cm"
+                  ],
+                  "description": "centimeters (1/100 meters)"
+                },
+                {
+                  "enum": [
+                    "mm"
+                  ],
+                  "description": "millimeters (1/1000 meters)"
+                },
+                {
+                  "enum": [
+                    "um"
+                  ],
+                  "description": "microns (1/1,000,000 meters)"
+                },
+                {
+                  "enum": [
+                    "nm"
+                  ],
+                  "description": "nanometers (1/1,000,000,000 meters)"
+                },
+                {
+                  "type": "string",
+                  "description": "You can also use a custom string, but it will probably not be understood by software"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "$ref": "#/$defs/vertices"
+        },
+        {
+          "$ref": "#/$defs/edges"
+        },
+        {
+          "$ref": "#/$defs/faces"
+        },
+        {
+          "$ref": "#/$defs/layerInfo"
+        }
+      ]
+    },
+    "vertices": {
+      "type": "object",
+      "properties": {
+        "vertices_coords": {
+          "description": "For each vertex, an array of coordinates, such as [x, y, z] or [x, y] (where z is implicitly zero). In higher dimensions, all unspecified coordinates are implicitly zero. Recommended except for frames with attribute \"abstract\"",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "description": "coordinate",
+              "type": "number"
+            }
+          }
+        },
+        "vertices_vertices": {
+          "description": "For each vertex, an array of vertices (vertex IDs) that are adjacent along edges. If the frame represents an orientable manifold or planar linkage, this list should be ordered counterclockwise around the vertex (possibly repeating a vertex more than once). If the frame is a nonorientable manifold, this list should be cyclically ordered around the vertex (possibly repeating a vertex). Otherwise, the order is arbitrary. Recommended in any frame lacking `edges_vertices` property (otherwise `vertices_vertices` can easily be computed from `edges_vertices` as needed).",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/vertexID"
+            }
+          }
+        },
+        "vertices_faces": {
+          "description": "For each vertex, an array of face IDs for the faces incident to the vertex. If the frame represents an orientable manifold, this list should be ordered counterclockwise around the vertex (possibly repeating a face more than once). If the frame is a nonorientable manifold, this list should be cyclically ordered around the vertex (possibly repeating a vertex), and matching the cyclic order of `vertices_vertices` (if both are specified). In addition to the matching cyclic order, `vertices_vertices` and `vertices_faces` should align in start so that `vertices_faces[v][i]` contains vertices `vertices_vertices[v][i]` and `vertices_vertices[v][(i+1)%d]` where `d` is the degree of vertex `v`.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/faceID"
+            }
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "object",
+      "properties": {
+        "edges_vertices": {
+          "description": "For each edge, an array `[u, v]` of two vertex IDs for the two endpoints of the edge. This effectively defines the orientation of the edge, from `u` to `v`. (This orientation choice is arbitrary, but is used to define the ordering of `edges_faces`.) Recommended in frames having any `edges_...` property (e.g., to represent mountain-valley assignment).",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minLength": 2,
+            "maxLength": 2,
+            "items": {
+              "$ref": "#/$defs/vertexID"
+            }
+          }
+        },
+        "edges_faces": {
+          "description": "For each edge, an array of face IDs for the faces incident to the edge. The faces should be listed in counterclockwise order around the edge. For manifolds, this array has length 1 (for boundary edges) or 2 (for nonboundary edges). When the array has length 2, the canonical ordering is to start with the face locally to the left of the edge (as defined by its orientation in `edges_vertices`).",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/faceID"
+            }
+          }
+        },
+        "edges_assignment": {
+          "description": "For each edge, a string representing its fold direction assignment. For example, this property can be used to specify a full mountain-valley assignment (consisting of \"M\", \"V\", and \"B\"), or just to label which edges are boundary edges (consisting of \"U\" or \"B\"). For orientable manifolds, a valley fold points the two face normals into each other, while a mountain fold makes them point away from each other. For nonorientable manifolds, a valley fold is defined as bringing the normal of the face to the left of the edge (listed first in `edges_faces`) to point into the adjacent face (when fully folded), while a mountain fold has the same normal point away from the adjacent face.",
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "enum": [
+                  "B"
+                ],
+                "description": "border/boundary edge (only one incident face)"
+              },
+              {
+                "enum": [
+                  "M"
+                ],
+                "description": "mountain fold"
+              },
+              {
+                "enum": [
+                  "V"
+                ],
+                "description": "valley fold"
+              },
+              {
+                "enum": [
+                  "F"
+                ],
+                "description": "flat (unfolded) fold"
+              },
+              {
+                "enum": [
+                  "U"
+                ],
+                "description": "unassigned/unknown"
+              }
+            ]
+          }
+        },
+        "edges_foldAngle": {
+          "description": "For each edge, the fold angle (deviation from flatness) along each edge of the pattern. The fold angle is a number in degrees lying in the range [−180, 180]. The fold angle is positive for valley folds, negative for mountain folds, and zero for flat, unassigned, and border folds. Accordingly, the sign of `edge_foldAngle` should match `edges_assignment` if both are specified.",
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "edges_length": {
+          "description": "For each edge, the length of the edge. This is mainly useful for defining the intrinsic geometry of abstract complexes where `vertices_coords` are unspecified; otherwise, `edges_length` can be computed from `vertices_coords`.",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "faces": {
+      "type": "object",
+      "properties": {
+        "faces_vertices": {
+          "description": "For each face, an array of vertex IDs for the vertices around the face in counterclockwise order. This array can repeat the same vertex multiple times (e.g., if the face has a \"slit\" in it). Recommended in any frame having faces. The counterclockwise ordering of each face defines the side/sign of its normal vector.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/vertexID"
+            }
+          }
+        },
+        "faces_edges": {
+          "description": "For each face, an array of edge IDs for the edges around the face in counterclockwise order. In addition to the matching cyclic order, `faces_vertices` and `faces_edges` should align in start so that `faces_edges[f][i]` is the edge connecting `faces_vertices[f][i]` and `faces_vertices[f][(i+1)%d]` where `d` is the degree of face `f`. The counterclockwise ordering of each face defines the side/sign of its normal vector.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/edgeID"
+            }
+          }
+        }
+      }
+    },
+    "layerInfo": {
+      "type": "object",
+      "properties": {
+        "faceOrders": {
+          "description": "Faces layering information. Omitting a triple [`f`, `g`, `s`] for two faces `f` and `g` is the same as specifying `s` = 0, so generally triples will have `s` either +1 or −1. If triple [`f`, `g`, `s`] appears in `faceOrders`, the corresponding triple [`g`, `f`, `t`] may or may not appear; if it does, `t` should be `-s` if `f` and `g` have the same normal direction in the folded state, and `t` should be `s` if `f` and `g` have opposite normal directions in the folded state. If faces `f`, `g`, and `h` all share a common point, then triples [`f`, `g`, `s`] and [`g`, `h`, `t`] suffice; the ordering between `f` and `h` can be derived, or explicitly specified. Recommended for frames with interior-overlapping faces.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "maxLength": 3,
+            "items": [
+              {
+                "description": "f",
+                "$ref": "#/$defs/faceID"
+              },
+              {
+                "description": "g",
+                "$ref": "#/$defs/faceID"
+              },
+              {
+                "description": "s",
+                "type": "integer",
+                "oneOf": [
+                  {
+                    "enum": [
+                      1
+                    ],
+                    "description": "indicates that face `f` lies above face `g`, i.e., on the side pointed to by `g`'s normal vector in the folded state."
+                  },
+                  {
+                    "enum": [
+                      -1
+                    ],
+                    "description": "indicates that face `f` lies below face `g`, i.e., on the side opposite `g`'s normal vector in the folded state."
+                  },
+                  {
+                    "enum": [
+                      0
+                    ],
+                    "description": "indicates that `f` and `g` have unknown stacking order (e.g., they do not overlap in their interiors)."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "edgeOrders": {
+          "description": "Edges layering information. This property makes sense only in 2D. Recommended for linkage configurations with interior-overlapping edges.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "maxLength": 3,
+            "items": [
+              {
+                "description": "e",
+                "$ref": "#/$defs/edgeID"
+              },
+              {
+                "description": "f",
+                "$ref": "#/$defs/edgeID"
+              },
+              {
+                "description": "s",
+                "type": "integer",
+                "oneOf": [
+                  {
+                    "enum": [
+                      -1
+                    ],
+                    "description": "indicates that edge `e` lies locally on the left side of edge `f` (relative to edge `f`'s orientation given by `edges_vertices`)"
+                  },
+                  {
+                    "enum": [
+                      1
+                    ],
+                    "description": "indicates that edge `e` lies locally on the right side of edge `f` (relative to edge `f`'s orientation given by `edges_vertices`)"
+                  },
+                  {
+                    "enum": [
+                      0
+                    ],
+                    "description": "indicates that `e` and `f` have unknown stacking order (e.g., they do not overlap in their interiors)."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    "vertexID": {
+      "type": "integer",
+      "description": "vertex ID",
+      "minimum": 0
+    },
+    "edgeID": {
+      "type": "integer",
+      "description": "edge ID",
+      "minimum": 0
+    },
+    "faceID": {
+      "type": "integer",
+      "description": "face ID",
+      "minimum": 0
+    },
+    "customValue": {
+      "type": "string",
+      "pattern": ":",
+      "description": "Custom value should have a colon in them; see https://github.com/edemaine/fold/blob/main/doc/spec.md#custom-properties"
+    }
+  }
+}
