@@ -60,6 +60,8 @@ and by other people:
   v1.10+ supports FOLD import/export (in addition to its OPX file format).
 * [Crease Pattern Editor](https://github.com/edemaine/cp-editor/)
   supports FOLD export
+* [Rhino Grasshopper FOLD plugin](https://github.com/robbykraft/rhino-grasshopper-fold)
+  converts between Rhino meshes and FOLD format/data
 
 ## [FOLD JavaScript Library](https://github.com/edemaine/fold/tree/main/doc/api.md)
 
