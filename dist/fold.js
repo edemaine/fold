@@ -2777,6 +2777,19 @@ viewer.makePath = function(coords) {
 };
 
 /* INTERFACE */
+viewer.move_vertex = function(view,vertex_index,vector){
+  "Moves the selected vertex along the input vector"
+  coords = view.fold.vertices_coords[vertex_index]
+  new_coords = [coords[0]+vector[0],coords[1]+vector[1],coords[2]+vector[2]]
+  console.log("moved from",coords,"to",new_coords)
+  coords[0] += vector[0]
+  coords[1] += vector[1]
+  coords[2] += vector[2]
+
+  FOLD.viewer.makeModel(view.fold)
+  FOLD.viewer.update(view)
+}
+
 viewer.processInput = function(input, view) {
   var k;
   if (typeof input === 'string') {
