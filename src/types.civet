@@ -1,7 +1,42 @@
 export type Coords = number[]
 export type Converter = (x: any) => any;
 
-export interface Fold
+interface FileMetadata
+  file_creator?: string
+  file_spec?: number
+  file_author?: string
+  file_title?: string
+  file_classes?: Array<
+    ('singleModel' | 'multiModel') | 'animation' | 'diagrams' | string
+  >
+
+interface FrameMetadata
+  frame_author?: string
+  frame_title?: string
+  frame_description?: string
+  frame_classes?: Array<
+    'creasePattern' | 'foldedForm' | 'graph' | 'linkage' | string
+  >
+  frame_attributes?: Array<
+    | ('2D' | '3D')
+    | 'abstract'
+    | ('manifold' | 'nonManifold')
+    | ('orientable' | 'nonOrientable')
+    | ('selfTouching' | 'nonSelfTouching')
+    | ('selfIntersecting' | 'nonSelfIntersecting')
+    | string
+  >
+  frame_unit?:
+    | 'unit'
+    | 'in'
+    | 'pt'
+    | 'm'
+    | 'cm'
+    | 'mm'
+    | 'um'
+    | 'nm'
+
+export type Fold = FileMetadata & FrameMetadata &
   edges: Array<[number, number]>
   edges_assignment: Array<string>
   faces: Array<Array<number>>
@@ -26,11 +61,4 @@ export interface Fold
   vertices_flatFoldCoords: (number[] | null)[]
   vertices_flatUnfoldCoords: Coords[]
   faces_flatUnfoldOrientation: (number | null)[]
-  file_creator?: string
-  file_spec?: number
-  file_author?: string
-  file_classes?: string[]
-  frame_attributes?: string[]
-  frame_title?: string
-  frame_classes: any
   faceOrders: any
