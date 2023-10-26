@@ -1,24 +1,37 @@
 * as geom from "./geom.civet"
 type { Fold, Coords } from "./types.civet"
 
+interface FoldSVGProperties
+  path?: SVGElement
+  text?: SVGElement
+
+interface Vertex
+  cs: Coords
+  i: number
+  ps: Coords
+  vg?: SVGElement & FoldSVGProperties
+
+interface Edge
+  eg?: SVGElement
+  v1: Vertex
+  v2: Vertex
+  as: string
+
 interface Model
-  vs: Array<{ cs: Coords; i: number; ps: any }>
+  vs: Vertex[]
   fs: Array<{
-    vs?: Array<{ cs: Coords; i: number; ps: any }>
+    vs?: Vertex[]
     i?: number
-    n?: any
-    c?: any
-    ord?: any
-    es?: any
-    g?: any
-    c2?: any
-    children: any
-    path?: any
-    text?: any
-    eg?: any
-    vg?: any
-  }>
-  es: any
+    n?: number[]
+    c?: Coords
+    ord?: Record<string, number>
+    es?: Edge[]
+    g?: SVGElement
+    c2?: Coords
+    children: any[]
+    visited?: boolean
+  } & FoldSVGProperties>
+  es: Record<string, Edge>
 
 interface ViewOptions
   viewButtons: boolean
@@ -54,7 +67,7 @@ STYLES := {
   top: "fill: cyan;", bot: "fill: yellow;"
   edge: "fill: none; stroke-width: 0.01; stroke-linecap: round;"
   axis: "fill: none; stroke-width: 0.01; stroke-linecap: round;"
-  text: "fill: black; font-size: 0.04; text-anchor: middle;
+  text: "fill: black; font-size: 0.04px; text-anchor: middle;
     font-family: sans-serif;"
   B: "stroke: black;", V: "stroke: blue;"
   M: "stroke: red;", U: "stroke: white;", F: "stroke: gray;"
@@ -72,7 +85,7 @@ export function appendHTML(el: Element, tag: string, attrs?: Record<string, stri
 SVGNS := 'http://www.w3.org/2000/svg'
 
 export function appendSVG(el: Element, tag: string, attrs?: Record<string, string>)
-  el.appendChild(setAttrs(document.createElementNS(SVGNS, tag), attrs))
+  el.appendChild(setAttrs(document.createElementNS(SVGNS, tag), attrs)) as SVGElement
 
 export function makePath(coords: Coords[])
   (for c, i of coords
@@ -242,7 +255,7 @@ export function makeModel(fold: Fold)
     continue unless v.cs.length is 2
     m.vs[i].cs[2] = 0
 
-  m.fs = ({i: i, vs: (m.vs[v] for v of vs)} for vs, i of fold.faces_vertices)
+  m.fs = fold.faces_vertices ? ({i: i, vs: (m.vs[v] for v of vs)} for vs, i of fold.faces_vertices) : []
 
   if fold.edges_vertices?
     for v, i of fold.edges_vertices
@@ -325,7 +338,11 @@ export function orderFaces(view: View)
   f.g.parentNode.removeChild(f.g) for f of view.model.fs
   view.svg.appendChild(f.g) for f of view.model.fs
 
-export function draw({svg: svg, cam: cam, model: model})
+export function draw({ svg, cam, model }: {
+  svg: SVGElement,
+  cam: Camera,
+  model: Model
+})
   svg.innerHTML = ''
   style := appendSVG(svg, 'style')
   for k, v in STYLES
@@ -337,21 +354,21 @@ export function draw({svg: svg, cam: cam, model: model})
   c := proj(cam.c, cam)
   setAttrs(svg, {viewBox: "-1,-1,2,2"})
   t := "translate(0,0.01)"
+
+  for _, e in model.es
+    e.eg = appendSVG(svg, 'path')
+
+  for v, i of model.vs
+    v.vg = appendSVG(svg, 'g') as any
+    v.vg.path = appendSVG(v.vg, 'circle', {class: 'vert'})
+    v.vg.text = appendSVG(v.vg, 'text', {class: 'text', transform: t})
+    v.vg.text.innerHTML = `${v.i}`
+
   for f, i of model.fs
     f.g = appendSVG(svg, 'g')
     f.path = appendSVG(f.g, 'path')
     f.text = appendSVG(f.g, 'text', {class: 'text', transform: t})
     f.text.innerHTML = `f${f.i}`
-    f.eg = []
-    for e, j of f.es
-      f.eg[j] = appendSVG(f.g, 'path')
-    f.vg = []
-    for v, j of f.vs
-      f.vg[j] = appendSVG(f.g, 'g')
-      f.vg[j].path = appendSVG(f.vg[j], 'circle', {class: 'vert'})
-      f.vg[j].text = appendSVG(f.vg[j], 'text',
-        {transform: 'translate(0, 0.01)', class: 'text'})
-      f.vg[j].text.innerHTML = `${v.i}`
   cam.axis = appendSVG(svg,'g',{transform: 'translate(-0.9,-0.9)'})
   for c of ['x','y','z']
     cam.axis[c] = appendSVG(cam.axis,'path', {
@@ -367,6 +384,16 @@ export function update(view: View)
   for k, v in cam.show
     show[k] = if v then 'visible' else 'hidden'
 
+  for _, e in model.es
+    setAttrs(e.eg, {
+      d: makePath([e.v1.ps, e.v2.ps])
+      visibility: show['Edges'], class: `edge ${e.as}`})
+
+  for v, j of model.vs
+    setAttrs(v.vg, {visibility: show['Vertices']})
+    setAttrs(v.vg.path, {cx: v.ps[0], cy: v.ps[1]})
+    setAttrs(v.vg.text, {x: v.ps[0], y: v.ps[1]})
+
   for f, i of model.fs
     continue unless f.path?
     visibleSide := if geom.dot(f.n, cam.z) > 0 then 'top' else 'bot'
@@ -375,14 +402,7 @@ export function update(view: View)
     setAttrs(f.path, {
       d: makePath((v.ps for v of f.vs)) + 'Z'
       visibility: show['Faces'], class: `face ${visibleSide}`})
-    for e, j of f.es
-      setAttrs(f.eg[j], {
-        d: makePath([e.v1.ps, e.v2.ps])
-        visibility: show['Edges'], class: `edge ${e.as}`})
-    for v, j of f.vs
-      setAttrs(f.vg[j], {visibility: show['Vertices']})
-      setAttrs(f.vg[j].path, {cx: v.ps[0], cy: v.ps[1]})
-      setAttrs(f.vg[j].text, {x: v.ps[0], y: v.ps[1]})
+
   for c, v in {x: [1,0,0], y: [0,1,0], z: [0,0,1]}
     end := geom.plus(geom.mul(v, 0.05 * cam.r), cam.c)
     setAttrs(cam.axis[c], {
