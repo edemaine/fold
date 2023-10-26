@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Fold Viewer</title>
+  </head>
+  <body>
+    <h3>FOLD Viewer</h3>
+    <div id="view1"></div>
+    <p style="text-align: right">(C) Jason S. Ku 2016</p>
+    <script type="module">
+      import { addViewer } from './src/viewer.civet';
+
+      addEventListener('load', () => {
+        addViewer(document.getElementById('view1'), {
+          examples: {
+            Default: 'examples/simple.fold',
+            'Flexicube Unit': 'examples/box.fold',
+            'Square Twist': 'examples/squaretwist.fold',
+            'Without Face': 'examples/vertex.fold',
+          },
+        });
+      });
+    </script>
+  </body>
+</html>

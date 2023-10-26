@@ -1,16 +1,45 @@
 {
   "name": "fold",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "FOLD file format for origami models, crease patterns, etc.",
-  "main": "lib/index.js",
+  "main": "dist/index.civet.js",
   "bin": {
     "fold-convert": "bin/fold-convert.js"
   },
   "scripts": {
-    "test": "npm run coffee && jest",
-    "prepare": "npm run coffee && npm run dist",
-    "coffee": "coffee --no-header --bare -o lib -c src",
-    "dist": "browserify -t coffeeify --extension=.coffee -r ./src/index.coffee:fold -o dist/fold.js"
+    "test": "vitest",
+    "build": "vite build",
+    "dev": "vite dev"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.civet.js",
+      "require": "./dist/index.civet.mjs"
+    },
+    "./convert": {
+      "import": "./dist/convert.civet.js",
+      "require": "./dist/convert.civet.mjs"
+    },
+    "./file": {
+      "import": "./dist/file.civet.js",
+      "require": "./dist/file.civet.mjs"
+    },
+    "./filter": {
+      "import": "./dist/filter.civet.js",
+      "require": "./dist/filter.civet.mjs"
+    },
+    "./geom": {
+      "import": "./dist/geom.civet.js",
+      "require": "./dist/geom.civet.mjs"
+    },
+    "./viewer": {
+      "import": "./dist/viewer.civet.js",
+      "require": "./dist/viewer.civet.mjs"
+    },
+    "./oripa": {
+      "import": "./dist/oripa.civet.js",
+      "require": "./dist/oripa.civet.mjs"
+    }
   },
   "repository": {
     "type": "git",
@@ -39,22 +68,12 @@
   },
   "homepage": "https://github.com/edemaine/fold#readme",
   "devDependencies": {
-    "browserify": "^16.5.0",
-    "coffeeify": "^3.0.1",
-    "coffeescript": "^2.4.1",
-    "jest": "^26.6.3",
-    "jest-matcher-deep-close-to": "^2.0.1",
-    "jest-preset-coffeescript": "1.1.1"
-  },
-  "browser": {
-    "@xmldom/xmldom": false,
-    "./src/file.coffee": false
-  },
-  "jest": {
-    "preset": "jest-preset-coffeescript",
-    "testPathIgnorePatterns": [
-      "/node_modules/"
-    ]
+    "@danielx/civet": "^0.6.42",
+    "@types/node": "^20.8.2",
+    "jest-matcher-deep-close-to": "^3.0.2",
+    "typescript": "^5.1.6",
+    "vite": "^4.5.0",
+    "vitest": "^0.34.6"
   },
   "dependencies": {
     "@xmldom/xmldom": "^0.7.2"
