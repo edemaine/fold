@@ -21,7 +21,7 @@ export function extensionOf(filename: string): string | null
   else
     null
 
-export function toFile(fold: Fold, output: string, converter: Converter = null): void
+export function toFile(fold: Fold, output: string, converter?: Converter): void
   outFormat := extensionOf output
   unless outFormat
     console.warn `Could not detect extension of ${output}`
@@ -73,7 +73,7 @@ export function fileToFile(input: string, output: string, options: Options): voi
       result = convert.toJSON result as Fold
     fs.writeFileSync output, result as string, 'utf-8'
 
-export function mogrify(data: string, options: Options): string
+export function mogrify(data: string, options: Options): string | undefined
   return unless options.flatFold // or any options set
   fold: Fold := JSON.parse data
   fold.file_creator = "fold-convert"
@@ -83,24 +83,27 @@ export function mogrify(data: string, options: Options): string
     console.log ` -- Flat folding error: ${error}`
     fold.vertices_flatUnfoldCoords = fold.vertices_coords
     fold.vertices_coords = fold.vertices_flatFoldCoords
-    fold.frame_classes = fold.frame_classes.filter (x) -> x != 'creasePattern'
-    .concat 'foldedForm'
+    if fold.frame_classes?
+      fold.frame_classes = fold.frame_classes.filter (x) => x != 'creasePattern'
+      .concat 'foldedForm'
   if options.fold
     fold.file_creator += " --fold"
     error := convert.foldedGeometry fold
     console.log ` -- 3D folding error: ${error}`
     fold.vertices_unfoldCoords = fold.vertices_coords
     fold.vertices_coords = fold.vertices_foldCoords
-    fold.frame_classes = fold.frame_classes.filter (x) -> x != 'creasePattern'
-    delete fold.vertices_flatFoldCoords
+    if fold.frame_classes?
+      fold.frame_classes = fold.frame_classes.filter (x) => x != 'creasePattern'
+      .concat 'foldedForm'
   if options.unfold
     fold.file_creator += " --unfold"
     error := convert.flatUnfoldedGeometry fold
     console.log ` -- Unfolding flat error: ${error}`
     fold.vertices_foldCoords = fold.vertices_coords
     fold.vertices_coords = fold.vertices_flatUnfoldCoords
-    fold.frame_classes = fold.frame_classes.filter (x) -> x != 'creasePattern'
-    delete fold.vertices_flatFoldCoords
+    if fold.frame_classes?
+      fold.frame_classes = fold.frame_classes.filter (x) -> x != 'foldedForm'
+      .concat 'creasePattern'
   convert.toJSON fold
 
 export function main(args = process.argv[2..]): void

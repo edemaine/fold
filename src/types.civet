@@ -243,4 +243,4 @@ export interface Frame extends RootFrame
   frame_inherit?: boolean
 
 export interface Fold extends FileMetadata, RootFrame
-  file_frames: Frame[]
+  file_frames?: Frame[]
