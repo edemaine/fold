@@ -2,7 +2,7 @@
 { expect, test, describe } from 'vitest'
 { toBeDeepCloseTo } from 'jest-matcher-deep-close-to'
 
-expect.extend({ toBeDeepCloseTo })
+expect.extend {toBeDeepCloseTo}
 
 describe 'Utilities', ->
   array := [-3,-2,-1,0,1,2,3,14,-5,6,7]
