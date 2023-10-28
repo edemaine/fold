@@ -1,5 +1,4 @@
-# Compiled .js
-lib
+dist
 
 # Logs
 *.log
@@ -11,5 +10,3 @@ package-lock.json
 
 # Mac
 .DS_Store
-
-dist/*

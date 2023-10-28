@@ -8,7 +8,7 @@
   "compilerOptions": {
     "isolatedModules": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "resolveJsonModule": true,
     "target": "ESNext",
     "strict": false,

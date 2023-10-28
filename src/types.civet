@@ -1,5 +1,9 @@
 export type Coords = number[]
-export type Converter = (x: any) => any;
+export type Coords2D = [x: number, y: number]
+export type Coords3D = [x: number, y: number, z: number]
+export type Matrix = Coords[]
+
+export type Converter = (x: unknown) => unknown
 
 export interface FileMetadata
   /** The version of the FOLD spec that the file assumes.

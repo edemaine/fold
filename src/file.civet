@@ -1,14 +1,16 @@
 fs from fs
 path from path
+{ fileURLToPath } from url
 * as convert from "./convert.civet"
 type { Fold, Converter } from "./types.civet"
 
 interface Options
-  flatFold?: boolean
   converter?: Converter
+  flatFold?: boolean
   fold?: boolean
+  unfold?: boolean
 
-export function extensionOf(filename: string)
+export function extensionOf(filename: string): string | null
   parsed := path.parse filename
   if parsed.ext
     parsed.ext
@@ -19,9 +21,8 @@ export function extensionOf(filename: string)
   else
     null
 
-export function toFile(fold: Fold, output: string, converter: Converter = null)
+export function toFile(fold: Fold, output: string, converter: Converter = null): void
   outFormat := extensionOf output
-
   unless outFormat
     console.warn `Could not detect extension of ${output}`
     return
@@ -33,11 +34,11 @@ export function toFile(fold: Fold, output: string, converter: Converter = null)
 
   result .= converter fold
   if typeof result != 'string'
-    result = convert.toJSON result
+    result = convert.toJSON result as Fold
 
-  fs.writeFileSync output, result, 'utf-8'
+  fs.writeFileSync output, result as string, 'utf-8'
 
-export function fileToFile(input: string, output: string, options: Options)
+export function fileToFile(input: string, output: string, options: Options): void
   inFormat := extensionOf input
   outFormat := extensionOf output
   unless inFormat
@@ -62,17 +63,17 @@ export function fileToFile(input: string, output: string, options: Options)
     console.warn `Attempt to convert ${input} to same filename`
   else
     console.log input, '->', output
-    result .= fs.readFileSync input, 'utf-8'
+    result: unknown .= fs.readFileSync input, 'utf-8'
     if inFormat == '.fold' != outFormat // avoid double mogrification
-      result = mogrify result, options
+      result = mogrify result as string, options
     result = converter result
     if outFormat == '.fold'
-      result = mogrify result, options
+      result = mogrify result as string, options
     if typeof result != 'string'
-      result = convert.toJSON result
-    fs.writeFileSync output, result, 'utf-8'
+      result = convert.toJSON result as Fold
+    fs.writeFileSync output, result as string, 'utf-8'
 
-export function mogrify(data: string, options: Options)
+export function mogrify(data: string, options: Options): string
   return unless options.flatFold // or any options set
   fold: Fold := JSON.parse data
   fold.file_creator = "fold-convert"
@@ -91,16 +92,21 @@ export function mogrify(data: string, options: Options)
     fold.vertices_unfoldCoords = fold.vertices_coords
     fold.vertices_coords = fold.vertices_foldCoords
     fold.frame_classes = fold.frame_classes.filter (x) -> x != 'creasePattern'
-
+    delete fold.vertices_flatFoldCoords
+  if options.unfold
+    fold.file_creator += " --unfold"
+    error := convert.flatUnfoldedGeometry fold
+    console.log ` -- Unfolding flat error: ${error}`
+    fold.vertices_foldCoords = fold.vertices_coords
+    fold.vertices_coords = fold.vertices_flatUnfoldCoords
+    fold.frame_classes = fold.frame_classes.filter (x) -> x != 'creasePattern'
     delete fold.vertices_flatFoldCoords
   convert.toJSON fold
 
 export function main(args = process.argv[2..]): void
   filenames := []
   output .= '.fold'  // Default behavior: convert to .fold
-  options: Options :=
-    flatFold: false
-    fold: false
+  options: Options := {}
   mode .= null
 
   for arg of args
@@ -116,10 +122,12 @@ export function main(args = process.argv[2..]): void
             options.flatFold = true
           when '--fold'
             options.fold = true
+          when '--unfold'
+            options.unfold = true
           else
             filenames.push arg
 
-  for filename of filenames
+  for each filename of filenames
     fileToFile filename, output, options
 
-main() if require.main == module
+main() if import.meta.url.startsWith('file:') and process.argv[1] == fileURLToPath(import.meta.url)
