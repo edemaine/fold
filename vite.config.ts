@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import civetPlugin from '@danielx/civet/vite';
 import { resolve } from 'path';
+import { builtinModules as nodeBuiltins } from 'module';
 
 export default defineConfig({
   base: '/fold/',
@@ -22,7 +23,8 @@ export default defineConfig({
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
-      external: ['fs', 'path'],
+      // exclude node internals
+      external: nodeBuiltins,
     },
   },
   test: {
