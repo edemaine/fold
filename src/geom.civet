@@ -160,10 +160,10 @@ export function parallel(a: Coords, b: Coords, eps = EPS): boolean | null
   1 - Math.abs(dot ua, ub) < eps
 
 /**
- * Returns the rotation of 3D vector `a` about 3D unit vector `u` by angle `t`.
+ * Returns the rotation of 3D vector `a` about 3D vector `axis` by angle `t`.
  */
-export function rotate(a: Coords, u: Coords, t: number): Coords
-  u = unit(u)!
+export function rotate(a: Coords, axis: Coords, t: number): Coords | null
+  u := unit(axis)
   return null unless u?
 
   [ct, st] := [Math.cos(t), Math.sin(t)]
