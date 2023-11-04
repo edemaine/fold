@@ -587,3 +587,6 @@ export function quadSplit(u: Coords, p: Coords, d: number, t: number): Coords
 
 export function toRadian(ang: number): number
   ang * Math.PI/180
+
+export function toDegree(ang: number): number
+  ang * 180/Math.PI

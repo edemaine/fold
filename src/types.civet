@@ -221,8 +221,6 @@ export interface RootFrame extends FrameMetadata
   faces_flatUnfoldTransform?: (number[][] | null)[]
   faces_foldTransform?: (number[][] | null)[]
   vertices_foldCoords?: (number[] | null)[]
-  faces_unfoldTransform?: (number[][] | null)[]
-  vertices_unfoldCoords?: (number[] | null)[]
   faces_flatFoldOrientation?: (number | null)[]
   vertices_flatFoldCoords?: (number[] | null)[]
   vertices_flatUnfoldCoords?: Coords[]

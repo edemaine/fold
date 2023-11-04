@@ -286,72 +286,47 @@ export function edges_vertices_to_edges_faces_edges(fold: Fold): Fold
         edge
   fold
 
-export function unfoldedGeometry(fold: Fold, rootFace = 0): number
+export function computeFoldAngles(fold: Fold)
   unless fold.vertices_coords?
-    throw new Error "unfoldedGeometry needs vertices_coords"
+    throw new Error "computeFoldAngles needs vertices_coords"
   unless fold.edges_vertices?
-    throw new Error "unfoldedGeometry needs edges_vertices"
+    throw new Error "computeFoldAngles needs edges_vertices"
+  unless fold.faces_vertices?
+    throw new Error "computeFoldAngles needs faces_vertices"
   unless fold.edges_faces? and fold.faces_edges?
     edges_vertices_to_edges_faces_edges fold
     fold.faces_edges = fold.faces_edges! as number[][]
     fold.edges_faces = fold.edges_faces! as number[][]
 
-  maxError .= 0
-  level .= [rootFace]
-  fold.faces_unfoldTransform = []
-  fold.faces_unfoldTransform[rootFace] = [[1,0,0],[0,1,0],[0,0,1]]
-  fold.vertices_unfoldCoords = Array(fold.vertices_coords.length).fill(null)
-  // Use fold.faces_edges -> fold.edges_vertices, which are both needed below,
-  // in case fold.faces_vertices isn't defined.
-  for each edge of fold.faces_edges[rootFace]
-    for each vertex of fold.edges_vertices[edge]
-      fold.vertices_unfoldCoords[vertex] ?= fold.vertices_coords[vertex][..]
+  return fold.edges_foldAngle if fold.edges_foldAngle?
 
-  while level.length
-    nextLevel := []
+  foldAngles: number[] := []
+  faceNormals: Coords[] := []
 
-    for each face of level
-      for each edge of fold.faces_edges[face]
-        for each face2 of fold.edges_faces[edge]
-          continue unless face2? and face2 != face
+  for edge in fold.edges_vertices
+    edgesFaces := (fold.edges_faces[edge].filter (x) => x?) as number[]
 
-          crease_edges_vertices := fold.edges_vertices[edge]
-          crease_coords := (for each vertex of crease_edges_vertices
-            fold.vertices_coords[vertex]
-          ) as [Coords, Coords]
+    // Not a boundary edge
+    if edgesFaces.length == 2
+      normals := for each face of edgesFaces
+        faceCoords := for each vertex of fold.faces_vertices[face]
+          fold.vertices_coords[vertex]
 
-          transform := geom.matrixMatrix fold.faces_unfoldTransform[face]!, geom.matrixMatrix(
-            geom.matrixMatrix(
-              geom.matrixTranslate(crease_coords[1])
-              geom.matrixRotate3D(...crease_coords, -geom.toRadian(fold.edges_foldAngle[edge]))
-            ),
-            geom.matrixTranslate(geom.mul crease_coords[1], -1)
-          )
+        faceNormals[face] ?= geom.polygonNormal(faceCoords)
 
-          if fold.faces_unfoldTransform[face2]?
-            for each row, i of fold.faces_unfoldTransform[face2]!
-              maxError = Math.max maxError, geom.dist row, transform[i]
-          else
-            fold.faces_unfoldTransform[face2] = transform
+      ang := geom.ang(normals[0], normals[1])!
+      foldAngles[edge] = geom.toDegree(ang)
+    else
+      foldAngles[edge] = 0
 
-            for each edge2 of fold.faces_edges[face2]
-              for each vertex2 of fold.edges_vertices[edge2]
-                mapped := geom.matrixVector transform, fold.vertices_coords[vertex2]
+  foldAngles
 
-                if coord := fold.vertices_unfoldCoords[vertex2]
-                  maxError = Math.max maxError, geom.dist coord, mapped
-                else
-                  fold.vertices_unfoldCoords[vertex2] = mapped
-            nextLevel.push face2
-    level = nextLevel
-  maxError
-
-export function foldedGeometry(fold: Fold, rootFace = 0): number
+export function foldedGeometry(fold: Fold, rootFace = 0, edges_foldAngle = fold.edges_foldAngle): number
   unless fold.vertices_coords?
     throw new Error "foldedGeometry needs vertices_coords"
   unless fold.edges_vertices?
     throw new Error "foldedGeometry needs edges_vertices"
-  unless fold.edges_foldAngle?
+  unless edges_foldAngle?
     throw new Error "foldedGeometry needs edges_foldAngle"
   unless fold.edges_faces? and fold.faces_edges?
     edges_vertices_to_edges_faces_edges fold
@@ -386,7 +361,7 @@ export function foldedGeometry(fold: Fold, rootFace = 0): number
           transform := geom.matrixMatrix fold.faces_foldTransform[face]!, geom.matrixMatrix(
             geom.matrixMatrix(
               geom.matrixTranslate(crease_coords[1])
-              geom.matrixRotate3D(...crease_coords, geom.toRadian(fold.edges_foldAngle[edge]))
+              geom.matrixRotate3D(...crease_coords, geom.toRadian(edges_foldAngle[edge]))
             ),
             geom.matrixTranslate(geom.mul crease_coords[1], -1)
           )
@@ -400,7 +375,6 @@ export function foldedGeometry(fold: Fold, rootFace = 0): number
             for each edge2 of fold.faces_edges[face2]
               for each vertex2 of fold.edges_vertices[edge2]
                 mapped := geom.matrixVector transform, fold.vertices_coords[vertex2]
-
                 if coords := fold.vertices_foldCoords[vertex2]
                   maxError = Math.max maxError, geom.dist coords, mapped
                 else
@@ -409,63 +383,10 @@ export function foldedGeometry(fold: Fold, rootFace = 0): number
     level = nextLevel
   maxError
 
-export function flatUnfoldedGeometry(fold: Fold, rootFace = 0): number
-  unless fold.vertices_coords?
-    throw new Error "flatUnfoldedGeometry needs vertices_coords"
-  unless fold.edges_vertices?
-    throw new Error "flatUnfoldedGeometry needs edges_vertices"
-  unless fold.edges_faces? and fold.faces_edges?
-    edges_vertices_to_edges_faces_edges fold
-    fold.faces_edges = fold.faces_edges! as number[][]
-    fold.edges_faces = fold.edges_faces! as number[][]
-
-  maxError .= 0
-  level .= [rootFace]
-  fold.faces_flatUnfoldTransform = Array(fold.faces_edges.length).fill(null)
-  fold.faces_flatUnfoldTransform[rootFace] = [[1,0,0],[0,1,0]] // identity
-  fold.faces_flatUnfoldOrientation = Array(fold.faces_edges.length).fill(null)
-  fold.faces_flatUnfoldOrientation[rootFace] = +1
-  fold.vertices_flatUnfoldCoords = Array(fold.vertices_coords.length).fill(null)
-
-  // Use fold.faces_edges -> fold.edges_vertices, which are both needed below,
-  // in case fold.faces_vertices isn't defined.
-  for each edge of fold.faces_edges[rootFace]
-    for each vertex of fold.edges_vertices[edge]
-      fold.vertices_flatUnfoldCoords[vertex] ?= fold.vertices_coords[vertex][..]
-
-  while level.length
-    nextLevel := []
-
-    for each face of level
-      orientation := -fold.faces_flatUnfoldOrientation[face]!
-      for each edge of fold.faces_edges[face]
-        for each face2 of fold.edges_faces[edge]
-          continue unless face2? and face2 != face
-          transform := geom.matrixMatrix fold.faces_flatUnfoldTransform[face]!,
-            geom.matrixReflectLine(...(
-              for each vertex of fold.edges_vertices[edge]
-                fold.vertices_coords[vertex]
-            ) as [Coords, Coords])
-
-          if fold.faces_flatUnfoldTransform[face2]?
-            for each row, i of fold.faces_flatUnfoldTransform[face2]!
-              maxError = Math.max maxError, geom.dist row, transform[i]
-            if orientation != fold.faces_flatUnfoldOrientation[face2]
-              maxError = Math.max 1, maxError
-          else
-            fold.faces_flatUnfoldTransform[face2] = transform
-            fold.faces_flatUnfoldOrientation[face2] = orientation
-            for each edge2 of fold.faces_edges[face2]
-              for each vertex2 of fold.edges_vertices[edge2]
-                mapped := geom.matrixVector transform, fold.vertices_coords[vertex2]
-                if fold.vertices_flatUnfoldCoords[vertex2]?
-                  maxError = Math.max maxError,
-                    geom.dist fold.vertices_flatUnfoldCoords[vertex2], mapped
-                else
-                  fold.vertices_flatUnfoldCoords[vertex2] = mapped
-            nextLevel.push face2
-    level = nextLevel
-  maxError
+export function unfoldedGeometry(fold: Fold, rootFace = 0): number
+  foldAngles := computeFoldAngles fold
+  unfoldAngles := foldAngles.map (ang) => -ang
+  foldedGeometry fold, rootFace, unfoldAngles
 
 /**
  * Assuming `fold` is a locally flat foldable crease pattern in the xy plane,
@@ -475,10 +396,10 @@ export function flatUnfoldedGeometry(fold: Fold, rootFace = 0): number
  * unfolded --> folded geometry; and sets `fold.faces_flatFoldOrientation` to
  * +1 or -1 to indicate whether each folded face matches its original
  * orientation or is upside-down (so is oriented clockwise in 2D).
- * 
+ *
  * Requires `fold` to have `vertices_coords` and `edges_vertices`;
  * `edges_faces` and `faces_edges` will be created if they do not exist.
- * 
+ *
  * Returns the maximum displacement error from closure constraints (multiple
  * mappings of the same vertices, or multiple transformations of the same face).
  */
@@ -540,6 +461,10 @@ export function flatFoldedGeometry(fold: Fold, rootFace = 0): number
             nextLevel.push face2
     level = nextLevel
   maxError
+
+// `foldedGeometry` is self-inverse
+export function flatUnfoldedGeometry(fold: Fold, rootFace = 0): number
+  flatFoldedGeometry fold, rootFace
 
 export function deepCopy<T>(fold: T): T
   // Given a FOLD object, make a copy that shares no pointers with the original.
