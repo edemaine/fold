@@ -76,6 +76,9 @@ export function ang2D(a: Coords, eps = EPS): number | null
   Math.atan2(a[1], a[0])
 
 /** Multiplies a vector by a scalar factor. */
+export function mul(a: Coords2D, s: number): Coords2D
+export function mul(a: Coords3D, s: number): Coords3D
+export function mul(a: Coords, s: number): Coords
 export function mul(a: Coords, s: number): Coords
   (i * s for each i of a)
 
@@ -137,10 +140,18 @@ export function dir(a: Coords, b: Coords): Coords
   unit sub(b, a)
 
 /** Returns the angle spanned by vectors `a` and `b` of the same dimension. */
-export function ang(a: Coords, b: Coords): number | null
+export function ang(a: Coords, b: Coords, eps = EPS): number | null
   [ua, ub] := [unit(a), unit(b)]
   return null unless ua? and ub?
-  Math.acos dot(ua, ub)
+
+  dotProd .= dot(ua, ub)
+
+  if dotProd < -1 or dotProd > 1
+    // this is only possible when floating point error causes dotProd to be
+    // slightly outside the range [-1,1]
+    dotProd = Math.round dotProd
+
+  Math.acos dotProd
 
 /** Returns the cross product of two 2D or 3D vectors. */
 export function cross(a: Coords2D, b: Coords2D): number

@@ -314,8 +314,12 @@ export function computeFoldAngles(fold: Fold)
 
         faceNormals[face] ?= geom.polygonNormal(faceCoords)
 
-      ang := geom.ang(normals[0], normals[1])!
-      foldAngles[edge] = geom.toDegree(ang)
+      if normals[0] == null or normals[1] == null
+        foldAngles[edge] = 0
+      else
+        toThree := (x: number[]) => Array.from({length: 3}, (_, i) => x[i] ?? 0)
+        ang := geom.ang(toThree(normals[0]), toThree(normals[1]))!
+        foldAngles[edge] = geom.toDegree(ang)
     else
       foldAngles[edge] = 0
 
