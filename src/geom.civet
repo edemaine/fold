@@ -1,0 +1,603 @@
+// BASIC GEOMETRY
+
+type { Coords, Coords2D, Coords3D, Matrix } from "./types.civet"
+
+// Utilities
+
+export EPS := 0.000001
+
+export function sum(a: number, b: number): number
+  a + b
+
+export function min(a: number, b: number): number
+  if a < b then a else b
+
+export function max(a: number, b: number): number
+  if a > b then a else b
+
+/** Returns the ith cyclic ordered number after start in the range [0..n]. */
+export function next(start: number, n: number, i = 1): number
+  (start + i) %% n
+
+/**
+ * Returns whether the scalar interval [a1, a2] is disjoint from the scalar
+ * interval [b1,b2].
+ */
+export function rangesDisjoint([a1, a2]: [number, number], [b1, b2]: [number, number]): boolean
+  (b1 < Math.min(a1, a2) > b2) or (b1 > Math.max(a1, a2) < b2)
+
+interface Tree
+  visited?: boolean
+  parent?: Tree | null
+  children: Array<Tree>
+
+export function topologicalSort(vs: Tree[]): Tree[]
+  [v.visited, v.parent] = [false, null] for v of vs
+  list: Tree[] .= []
+  for each v of vs
+    continue if v.visited
+    list = visit(v, list)
+  list
+
+function visit(v: Tree, list: Tree[])
+  v.visited = true
+  for each u of v.children
+    continue if u.visited
+    u.parent = v
+    list = visit(u, list)
+  list.push v
+  list
+
+// Vector operations
+
+/** Returns the squared magnitude of vector of arbitrary dimension. */
+export function magsq(a: Coords): number
+  dot a, a
+
+/** Returns the magnitude of vector of arbitrary dimension. */
+export function mag(a: Coords): number
+  Math.sqrt magsq a
+
+/**
+ * Returns the unit vector in the direction of vector of arbitrary dimension.
+ * Returns `null` if magnitude is (near) zero.
+ */
+export function unit(a: Coords, eps = EPS): Coords | null
+  length := magsq a
+  return null if length < eps
+  mul(a, 1 / mag(a))
+
+/**
+ * Returns the angle of a 2D vector relative to the standard
+ * east-is-0-degrees rule.  Returns `null` if magnitude is (near) zero.
+ */
+export function ang2D(a: Coords, eps = EPS): number | null
+  return null if magsq(a) < eps
+  Math.atan2(a[1], a[0])
+
+/** Multiplies a vector by a scalar factor. */
+export function mul(a: Coords2D, s: number): Coords2D
+export function mul(a: Coords3D, s: number): Coords3D
+export function mul(a: Coords, s: number): Coords
+export function mul(a: Coords, s: number): Coords
+  (i * s for each i of a)
+
+/** Returns linear interpolation of vector `a` to vector `b` for 0 < t < 1 */
+export function linearInterpolate(t: number, a: Coords, b: Coords): Coords
+  plus mul(a, 1 - t), mul(b, t)
+
+/** Returns the vector sum of two vectors having the same dimension. */
+export function plus(a: Coords2D, b: Coords2D): Coords2D
+export function plus(a: Coords3D, b: Coords3D): Coords3D
+export function plus(a: Coords, b: Coords): Coords
+export function plus(a: Coords, b: Coords): Coords
+  (ai + b[i] for each ai, i of a)
+
+/** Returns the vector difference of two vectors having the same dimension. */
+export function sub(a: Coords2D, b: Coords2D): Coords2D
+export function sub(a: Coords3D, b: Coords3D): Coords3D
+export function sub(a: Coords, b: Coords): Coords
+export function sub(a: Coords, b: Coords): Coords
+  (ai - b[i] for each ai, i of a)
+
+/** Returns the dot product of two vectors a and b having the same dimension. */
+export function dot(a: Coords, b: Coords): number
+  (ai * b[i] for each ai, i of a).reduce(sum)
+
+/**
+ * Returns the squared Euclidean distance between two vectors a and b
+ * having the same dimension.
+ */
+export function distsq(a: Coords, b: Coords): number
+  magsq sub(a, b)
+
+/**
+ * Returns the Euclidean distance between two vectors a and b
+ * having the same dimension.
+ */
+export function dist(a: Coords, b: Coords): number
+  Math.sqrt distsq(a, b)
+
+/**
+ * Finds the closest point to `a` among points in `bs`, and returns the
+ * index of that point in `bs`.  Returns `undefined` if `bs` is empty.
+ */
+export function closestIndex(a: Coords, bs: Coords[]): number | undefined
+  minDist .= Infinity
+  let minI: number | undefined
+  for each b, i of bs
+    d := dist(a, b)
+    if minDist > d
+      minDist = d
+      minI = i
+  minI
+
+/**
+ * Returns a unit vector in the direction from vector `a` to vector `b`,
+ * in the same dimension as `a` and `b`.
+ */
+export function dir(a: Coords, b: Coords): Coords
+  unit sub(b, a)
+
+/** Returns the angle spanned by vectors `a` and `b` of the same dimension. */
+export function ang(a: Coords, b: Coords, eps = EPS): number | null
+  [ua, ub] := [unit(a), unit(b)]
+  return null unless ua? and ub?
+
+  dotProd .= dot(ua, ub)
+
+  if dotProd < -1 or dotProd > 1
+    // this is only possible when floating point error causes dotProd to be
+    // slightly outside the range [-1,1]
+    dotProd = Math.round dotProd
+
+  Math.acos dotProd
+
+/** Returns the cross product of two 2D or 3D vectors. */
+export function cross(a: Coords2D, b: Coords2D): number
+export function cross(a: Coords3D, b: Coords3D): Coords3D
+export function cross(a: Coords, b: Coords): number | Coords | null
+export function cross(a: Coords, b: Coords): number | Coords | null
+  if a.length == b.length == 2
+    return (a[0] * b[1] - a[1] * b[0])
+  if a.length == b.length == 3
+    return (a[i] * b[j] - a[j] * b[i] for [i, j] of [[1, 2], [2, 0], [0, 1]])
+  return null
+
+/** Returns whether vectors are parallel, up to accuracy eps */
+export function parallel(a: Coords, b: Coords, eps = EPS): boolean | null
+  [ua, ub] := [unit(a), unit(b)]
+  return null unless ua? and ub?
+  1 - Math.abs(dot ua, ub) < eps
+
+/**
+ * Returns the rotation of 3D vector `a` about 3D vector `axis` by angle `t`.
+ */
+export function rotate(a: Coords, axis: Coords, t: number): Coords | null
+  u := unit(axis)
+  return null unless u?
+
+  [ct, st] := [Math.cos(t), Math.sin(t)]
+  (for each p of [[0,1,2],[1,2,0],[2,0,1]]
+    (for each q, i of [ct, -st * u[p[2]], st * u[p[1]]]
+      a[p[i]] * (u[p[0]] * u[p[i]] * (1 - ct) + q)
+    ).reduce(sum)
+  )
+
+/** Reflect point `p` through the point `q` into the "symmetric point" */
+export function reflectPoint(p: Coords, q: Coords): Coords
+  sub mul(q, 2), p
+
+/**
+ * Reflect point `p` through line through points `a` and `b`
+ * [based on https://math.stackexchange.com/a/11532]
+ */
+export function reflectLine(p: Coords, a: Coords, b: Coords): Coords
+  // projection = a + (b - a) * [(b - a) dot (p - a)] / ||b - a||^2
+  vec := sub(b, a)
+  lenSq := magsq(vec)
+  d := dot(vec, sub(p, a))
+  projection := plus(a, mul(vec, d / lenSq))
+
+  // reflection = 2*projection - p (symmetric point of p opposite projection)
+  sub mul(projection, 2), p
+
+###
+Matrix transformations
+
+2D transformation matrices are of the form (where last column is optional):
+  [[a, b, c],
+   [d, e, f]]
+
+3D transformation matrices are of the form (where last column is optional):
+  [[a, b, c, d],
+   [e, f, g, h],
+   [i, j, k, l]]
+
+Transformation matrices are designed to be multiplied on the left of points,
+i.e., T*x gives vector x transformed by matrix T, where x has an implicit 1
+at the end (homogeneous coordinates) when T has the optional last column.
+See `matrixCoords`.
+###
+
+/**
+ * Returns matrix-vector product, `matrix` * `vector`.
+ * Requires the number of `matrix` columns to be <= `vector` length.
+ * If the matrix has more columns than the vector length, then the vector
+ * is assumed to be padded with zeros at the end, EXCEPT when the matrix
+ * has more columns than rows (as in transformation matrices above),
+ * in which case the final vector padding is `implicitLast`,
+ * which defaults to 1 (point); set to 0 for treating like a vector.
+ */
+export function matrixVector(matrix: Matrix, vector: Coords, implicitLast = 1): Coords
+  for each row of matrix
+    val .= (row[j] * x for each x, j of vector).reduce(sum)
+    if row.length > vector.length and row.length > matrix.length
+      val += row[row.length-1] * implicitLast
+    val
+
+/**
+ * Returns matrix-matrix product, `matrix1` * `matrix2`.
+ * Requires number of `matrix1` columns equal to or 1 more than `matrix2` rows.
+ * In the latter case, treats `matrix2` as having an extra row [0,0,...,0,0,1],
+ * which may involve adding an implicit column to `matrix2` as well.
+ */
+export function matrixMatrix(matrix1: Matrix, matrix2: Matrix): Matrix
+  for each row1 of matrix1
+    if matrix2.length != row1.length != matrix2.length + 1
+      throw new Error `Invalid matrix dimension ${row1.length} vs. matrix dimension ${matrix2.length}`
+    product :=
+      for j of [0...matrix2[0].length]
+        val .= (row1[k] * row2[j] for each row2, k of matrix2).reduce(sum)
+        if j == row1.length - 1 == matrix2.length
+          val += row1[j]
+        val
+    if row1.length - 1 == matrix2.length == matrix2[0].length
+      product.push row1[row1.length - 1]
+    product
+
+/**
+ * Returns inverse of a matrix consisting of rotations and/or translations,
+ * where the inverse can be found by a transpose and dot products
+ * [http://www.graphics.stanford.edu/courses/cs248-98-fall/Final/q4.html].
+ */
+export function matrixInverseRT(matrix: Matrix): Matrix
+  let lastCol: Coords | undefined
+  if matrix[0].length == matrix.length+1
+    lastCol = (row[row.length-1] for row of matrix)
+  else if matrix[0].length != matrix.length
+    throw new Error `Invalid matrix dimensions ${matrix.length}x${matrix[0].length}`
+  for each row, i of matrix
+    invRow := (matrix[j][i] for j of [0...matrix.length]) // transpose
+    if lastCol?
+      invRow.push -dot row[...matrix.length], lastCol
+    invRow
+
+/** Returns inverse of a matrix computed via Gauss-Jordan elimination method. */
+export function matrixInverse(matrix: Matrix): Matrix
+  if matrix.length != matrix[0].length != matrix.length+1
+    throw new Error `Invalid matrix dimensions ${matrix.length}x${matrix[0].length}`
+  matrix = (row[..] for row of matrix) // copy before elimination
+  inverse :=
+    for each row, i of matrix
+      for j of [0...row.length]
+        Number(i == j)
+  for j of [0...matrix.length]
+    // Pivot to maximize absolute value in jth column
+    bestRow .= j
+    for i of [j+1...matrix.length]
+      if Math.abs(matrix[i][j]) > Math.abs(matrix[bestRow][j])
+        bestRow = i
+    if bestRow != j
+      [matrix[bestRow], matrix[j]] = [matrix[j], matrix[bestRow]]
+      [inverse[bestRow], inverse[j]] = [inverse[j], inverse[bestRow]]
+    // Scale row to unity in jth column
+    inverse[j] = mul inverse[j], 1/matrix[j][j]
+    matrix[j] = mul matrix[j], 1/matrix[j][j]
+    // Eliminate other rows in jth column
+    for i of [0...matrix.length]
+      continue if i == j
+      inverse[i] = plus inverse[i], mul inverse[j], -matrix[i][j]
+      matrix[i] = plus matrix[i], mul matrix[j], -matrix[i][j]
+  if matrix[0].length == matrix.length+1
+    for i of [0...matrix.length]
+      inverse[i][inverse[i].length-1] -= matrix[i][matrix[i].length-1]
+      matrix[i][matrix[i].length-1] -= matrix[i][matrix[i].length-1]
+  inverse
+
+/**
+ * Transformation matrix for translating by given vector v.
+ * Works in any dimension, assuming v.length is that dimension.
+ */
+export function matrixTranslate(v: Coords): Matrix
+  for each x, i of v
+    row :=
+      for j of [0...v.length]
+        Number(i == j)
+    row.push x
+    row
+
+/**
+ * 2D rotation matrix around `center`, which defaults to origin,
+ * counterclockwise by `t` radians.
+ */
+export function matrixRotate2D(t: number, center?: Coords): Matrix
+  [ct, st] := [Math.cos(t), Math.sin(t)]
+  if center?
+    [x, y] := center
+    [[ct, -st, -x*ct + y*st + x]
+     [st,  ct, -x*st - y*ct + y]]
+  else
+    [[ct, -st]
+     [st,  ct]]
+
+/**
+ * 3D rotation matrix around axis through points `a` and `b`,
+ * counterclockwise by `t` radians.  Based on `rotate`.
+ */
+export function matrixRotate3D(a: Coords, b: Coords, t: number)
+  u := sub b, a
+  [ct, st] := [Math.cos(t), Math.sin(t)]
+  [ux, uy, uz = 0] := u
+  omct := 1 - ct
+
+  [
+    [ux*ux*omct+ct, uy*ux*omct+st*uz, uz*ux*omct-st*uy]
+    [ux*uy*omct-st*uz, uy*uy*omct+ct, uz*uy*omct+st*ux]
+    [ux*uz*omct+st*uy, uy*uz*omct-st*ux, uz*uz*omct+ct]
+  ]
+
+/**
+ * Matrix transformation negating dimension `a` out of `d` dimensions,
+ * or if `center` is specified, reflecting around that value of dimension `a`.
+ */
+export function matrixReflectAxis(a: number, d: number, center?: number): Matrix
+  for i of [0...d]
+    row :=
+      for j of [0...d]
+        if i == j
+          if a == i
+            -1
+          else
+            1
+        else
+          0
+    if center?
+      if a == i
+        row.push 2*center
+      else
+        row.push 0
+    row
+
+/** Matrix transformation implementing 2D `reflectLine(*, a, b)` */
+export function matrixReflectLine(a: Coords, b: Coords): Matrix
+  vec := sub(b, a)
+  lenSq := magsq(vec)
+  dot2 := dot(vec, a)
+
+  [[2*(vec[0] * vec[0] / lenSq) - 1,
+    2*(vec[0] * vec[1] / lenSq),
+    2*(a[0] - vec[0] * dot2 / lenSq)]
+   [2*(vec[1] * vec[0] / lenSq),
+    2*(vec[1] * vec[1] / lenSq) - 1,
+    2*(a[1] - vec[1] * dot2 / lenSq)]]
+
+// Polygon Operations
+
+/**
+ * Computes the angle of three points that are, say, part of a triangle.
+ * Specify in counterclockwise order.
+ * ```
+ *          a
+ *         /
+ *        /
+ *      b/_)__ c
+ * ```
+ */
+export function interiorAngle(a: Coords, b: Coords, c: Coords): number
+  ang .= ang2D(sub(a, b)) - ang2D(sub(c, b))
+  ang += 2*Math.PI if ang < 0
+  ang
+
+/** Returns the turn angle, the supplement of the interior angle */
+export function turnAngle(a: Coords, b: Coords, c: Coords): number
+  Math.PI - interiorAngle(a, b, c)
+
+/**
+ * Returns the right handed normal unit vector to triangle `a`, `b`, `c` in 3D.
+ * If the triangle is degenerate, returns `null`.
+ */
+export function triangleNormal(a: Coords3D, b: Coords3D, c: Coords3D): Coords3D | null
+  unit(cross(sub(b, a), sub(c, b))) as Coords3D
+
+/**
+ * Returns the right handed normal unit vector to the polygon defined by
+ * points in 3D. Assumes the points are planar.
+ */
+export function polygonNormal(points: Coords[], eps = EPS): Coords
+  unit(
+    (for each p, i of points
+      cross(p, points[next(i, points.length)])
+    ).reduce(plus),
+    eps
+  )
+
+/**
+ * Returns twice signed area of polygon defined by input points.
+ * Calculates and sums twice signed area of triangles in a fan from the first
+ * vertex.
+ */
+export function twiceSignedArea(points: Coords[]): number
+  (for each v0, i of points
+    v1 := points[next(i, points.length)]
+    v0[0] * v1[1] - v1[0] * v0[1]
+  ).reduce(sum)
+
+/**
+ * Returns the orientation of the 2D polygon defined by the input points --
+ * +1 for counterclockwise, -1 for clockwise --
+ * via computing sum of signed areas of triangles formed with origin.
+ */
+export function polygonOrientation(points: Coords[]): number
+  Math.sign twiceSignedArea points
+
+/**
+ * Sort a set of 2D points in place counter clockwise about origin
+ * under the provided mapping.
+ */
+export function sortByAngle<T = Coords>(points: Coords[], origin: Coords)
+export function sortByAngle<T = Coords>(points: T[], origin?: Coords, mapping?: (x: T) => Coords)
+export function sortByAngle<T = Coords>(points: T[], origin: Coords = [0,0], mapping: (x: T) => Coords = (x) => (x as Coords))
+  points.sort (p, q) =>
+    pa := ang2D sub(mapping(p), origin)
+    qa := ang2D sub(mapping(q), origin)
+    pa - qa
+
+/**
+ * Check whether two segments (specified by endpoints) cross.
+ * May not work if the segments are collinear.
+ * First do rough overlap check in x and y.  This helps with
+ * near-collinear segments.  (Inspired by oripa/geom/GeomUtil.java)
+ */
+export function segmentsCross([p0, q0]: [Coords, Coords], [p1, q1]: [Coords, Coords]): boolean
+  if rangesDisjoint([p0[0], q0[0]], [p1[0], q1[0]]) or
+     rangesDisjoint([p0[1], q0[1]], [p1[1], q1[1]])
+    return false
+  // Now do orientation test.
+  polygonOrientation([p0,q0,p1]) != polygonOrientation([p0,q0,q1]) and
+  polygonOrientation([p1,q1,p0]) != polygonOrientation([p1,q1,q0])
+
+/**
+ * Returns the parameters s,t for the equations s*p1+(1-s)*p2 and
+ * t*q1+(1-t)*q2.  Used Maple's result of:
+ * ```maple
+ *    solve({s*p2x+(1-s)*p1x=t*q2x+(1-t)*q1x,
+ *           s*p2y+(1-s)*p1y=t*q2y+(1-t)*q1y}, {s,t});
+ * ```
+ * Returns null, null if the intersection couldn't be found
+ * because the lines are parallel.
+ * Input points must be 2D.
+ */
+export function parametricLineIntersect([p1, p2]: [Coords2D, Coords2D], [q1, q2]: [Coords2D | null, Coords2D | null])
+  denom := (q2[1]-q1[1])*(p2[0]-p1[0]) + (q1[0]-q2[0])*(p2[1]-p1[1])
+  if denom == 0
+    [null, null]
+  else
+    [(q2[0]*(p1[1]-q1[1])+q2[1]*(q1[0]-p1[0])+q1[1]*p1[0]-p1[1]*q1[0])/denom,
+     (q1[0]*(p2[1]-p1[1])+q1[1]*(p1[0]-p2[0])+p1[1]*p2[0]-p2[1]*p1[0])/denom]
+
+export function segmentIntersectSegment(s1: [Coords, Coords], s2: [Coords, Coords]): Coords | null
+  [s, t] := parametricLineIntersect(s1, s2)
+  if s? and (0 <= s <= 1) and (0 <= t <= 1)
+    linearInterpolate(s, s1[0], s1[1])
+  else
+    null
+
+export function lineIntersectLine(l1: [Coords, Coords], l2: [Coords, Coords]): Coords | null
+  [s, t] := parametricLineIntersect(l1, l2)
+  if s?
+    linearInterpolate(s, l1[0], l1[1])
+  else
+    null
+
+export function pointStrictlyInSegment(p: Coords, s: [Coords, Coords], eps = EPS)
+  v0 := sub p, s[0]
+  v1 := sub p, s[1]
+  parallel(v0, v1, eps) and dot(v0, v1) < 0
+
+export function centroid(points: Coords[])
+  // Returns the centroid of a set of points having the same dimension.
+  mul(points.reduce(plus), 1.0 / points.length)
+
+/**
+ * Returns a basis of a 3D point set.
+ *  - [] if the points are all the same point (0 dimensional)
+ *  - [u] if the points lie on a line with basis direction u
+ *  - [u,v] if the points lie in a plane with basis directions u and v
+ *  - [u,v,w] if the points span three dimensions
+ *  - null if some point is not 3D
+ */
+export function basis(ps: Coords3D[], eps = EPS): Coords[] | null
+  return null if ps.some .length != 3
+
+  ds: Coords3D[] := for p of ps
+    continue unless distsq(p,ps[0]) > eps
+    dir(p,ps[0])
+
+  return [] if ds.length is 0
+
+  x := ds[0]
+  return [x] if ds.every (d) => parallel(d, x, eps)
+  ns := (unit(cross(d, x) as Coords) for d of ds).filter &?
+  z := ns[0]
+  y := cross(z, x)
+  return [x, y] if ns.every (n) => parallel(n, z, eps)
+  return [x, y, z]
+
+export function above(ps: Coords[], qs: Coords[], n: number[], eps = EPS): number
+  [pn,qn] := ((dot(v, n) for v of vs) for vs of [ps,qs])
+  return  1 if qn.reduce(max) - pn.reduce(min) < eps
+  return -1 if pn.reduce(max) - qn.reduce(min) < eps
+  return 0
+
+export function separatingDirection2D(t1: Coords[], t2: Coords[], n: number[], eps = EPS): Coords | null
+  // If points are contained in a common plane with normal `n` and a separating
+  // direction exists, a direction perpendicular to some pair of points from
+  // the same set is also a separating direction.
+  for t of [t1, t2]
+    for each p, i of t
+      for each q, j of t
+        continue unless i < j
+        if m := unit(cross(sub(p, q), n) as Coords)
+          sign := above(t1, t2, m, eps)
+          return mul(m, sign) if sign !== 0
+  return null
+
+export function separatingDirection3D(t1: Coords[], t2: Coords[], eps = EPS): Coords | null
+  // If points are not contained in a common plane and a separating direction
+  // exists, a plane spanning two points from one set and one point from the
+  // other set is a separating plane, with its normal a separating direction.
+  for [x1, x2] of [[t1, t2], [t2, t1]]
+    for p of x1
+      for each q1, i of x2
+        for each q2, j of x2
+          continue unless i < j
+          m := unit(cross(sub(p, q1), sub(p, q2)) as Coords)
+          if m?
+            sign := above(t1, t2, m, eps)
+            return mul(m, sign) if sign !== 0
+  return null
+
+// Hole Filling Methods
+
+export function circleCross(d: number, r1: number, r2: number)
+  x := (d * d - r2 * r2 + r1 * r1) / d / 2
+  y := Math.sqrt(r1 * r1 - x * x)
+  [x, y]
+
+export function creaseDir(u1: Coords, u2: Coords, a: number, b: number, eps = EPS): Coords
+  b1 := Math.cos(a) + Math.cos(b)
+  b2 := Math.cos(a) - Math.cos(b)
+  x .= plus(u1, u2)
+  y .= sub(u1, u2)
+  z .= unit(cross(y, x) as Coords)
+  x = mul(x, b1 / magsq(x))
+  y = mul(y, if magsq(y) < eps then 0 else b2 / magsq(y))
+  zmag := Math.sqrt(1 - magsq(x) - magsq(y))
+  z = mul(z, zmag)
+  [x, y, z].reduce(plus)
+
+/**
+ * Split from origin in direction `u` subject to external point `p` whose
+ * shortest path on the surface is distance `d` and projecting angle is `t`.
+ */
+export function quadSplit(u: Coords, p: Coords, d: number, t: number): Coords
+  if magsq(p) > d * d
+    throw new Error "STOP! Trying to split expansive quad."
+  return mul(u, (d*d - magsq(p))/2/(d*Math.cos(t) - dot(u, p)))
+
+export function toRadian(ang: number): number
+  ang * Math.PI/180
+
+export function toDegree(ang: number): number
+  ang * 180/Math.PI

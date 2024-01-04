@@ -1,0 +1,19 @@
+{
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "dist"
+  ],
+  "compilerOptions": {
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "moduleResolution": "nodenext",
+    "resolveJsonModule": true,
+    "target": "ESNext",
+    "strict": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "jsx": "preserve"
+  }
+}
