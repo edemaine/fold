@@ -32,7 +32,7 @@ export default defineConfig({
   },
   plugins: [
     civetPlugin({
-      dts: false,
+      ts: 'esbuild',
     }),
   ],
 });

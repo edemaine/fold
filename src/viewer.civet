@@ -1,26 +1,40 @@
+// @ts-nocheck
 * as geom from "./geom.civet"
-type { Fold, Coords } from "./types.civet"
+type { Fold, Coords, Coords3D } from "./types.civet"
+createRBTree from 'functional-red-black-tree'
+
+// vs -> vertices
+// fs -> faces
+// c2 -> projected centroid
+// es -> edges
+// g -> group
+// vg -> vertex group
+// eg -> edge group
+// ps -> projected coords
+// cs -> coords
+// n -> normal
+// c -> centroid
+interface Face
+  vs?: Array<{ cs: Coords; i: number; ps: number[] }>
+  i?: number
+  n?: any
+  c?: any
+  ord?: any
+  es?: any
+  g?: any
+  c2?: any
+  children: any[]
+  path?: any
+  text?: any
+  eg?: any
+  vg?: any
 
 interface Model
-  vs: Array<{ cs: Coords; i: number; ps: any }>
-  fs: Array<{
-    vs?: Array<{ cs: Coords; i: number; ps: any }>
-    i?: number
-    n?: any
-    c?: any
-    ord?: any
-    es?: any
-    g?: any
-    c2?: any
-    children: any
-    path?: any
-    text?: any
-    eg?: any
-    vg?: any
-  }>
+  vs: Array<{ cs: Coords; i: number; ps: number[] }>
+  fs: Array<Face>
   es: any
 
-interface ViewOptions
+interface ViewOptions extends Record<string, any>
   viewButtons: boolean
   axisButtons: boolean
   attrViewer: boolean
@@ -29,7 +43,7 @@ interface ViewOptions
   export: boolean
   properties: boolean
 
-interface Camera
+interface Camera extends Record<string, any>
   x: Coords
   y: Coords
   z:  Coords
@@ -48,13 +62,13 @@ interface View
   cam: Camera
   opts: ViewOptions
 
-STYLES := {
+STYLES: Record<string, string> := {
   vert: "fill: white; r: 0.03; stroke: black; stroke-width: 0.005;"
   face: "stroke: none; fill-opacity: 0.8;"
   top: "fill: cyan;", bot: "fill: yellow;"
   edge: "fill: none; stroke-width: 0.01; stroke-linecap: round;"
   axis: "fill: none; stroke-width: 0.01; stroke-linecap: round;"
-  text: "fill: black; font-size: 0.04; text-anchor: middle;
+  text: "fill: black; font-size: 0.04px; text-anchor: middle;
     font-family: sans-serif;"
   B: "stroke: black;", V: "stroke: blue;"
   M: "stroke: red;", U: "stroke: white;", F: "stroke: gray;"
@@ -77,7 +91,7 @@ export function appendSVG(el: Element, tag: string, attrs?: Record<string, strin
 export function makePath(coords: Coords[])
   (for c, i of coords
     `${if (i is 0) then 'M' else 'L'} ${c[0]} ${c[1]} `
-  ).reduce geom.sum
+  ).reduce((a, b) -> a + b)
 
 ### INTERFACE ###
 
@@ -87,23 +101,23 @@ export function processInput(input: string | Fold, view: View)
   else
     view.fold = input
 
-  view.model = makeModel(view.fold)
+  view.model = makeModel(view.fold!)
   addRotation(view)
   draw(view)
   update(view)
 
   if view.opts.properties
-    view.properties.innerHTML = ''
+    view.properties!.innerHTML = ''
     for k in view.fold
       continue unless view.opts.properties
-      appendHTML(view.properties, 'option', value: k)
+      appendHTML(view.properties!, 'option', value: k)
         .innerHTML = k
     updateProperties(view)
 
 export function updateProperties(view: View)
-  v := view.fold[view.properties.value]
+  v := view.fold![view.properties!.value as keyof typeof view.fold] as any
   s := if v.length? then `${v.length} elements: ` else ''
-  view.data.innerHTML = s + JSON.stringify(v)
+  view.data!.innerHTML = s + JSON.stringify(v)
 
 export function importURL(url: string, view: View)
   fetch(url)
@@ -112,7 +126,7 @@ export function importURL(url: string, view: View)
 
 export function importFile(file: Blob, view: View)
   file_reader := new FileReader()
-  file_reader.onload = (e) => processInput(e.target.result as string, view)
+  file_reader.onload = (e) => processInput(e.target!.result as string, view)
   file_reader.readAsText(file)
 
 DEFAULTS: ViewOptions :=
@@ -124,13 +138,13 @@ DEFAULTS: ViewOptions :=
   export: true
   properties: true
 
-export function addViewer(div: HTMLDivElement, opts: Partial<typeof DEFAULTS> = {})
+export function addViewer(div: HTMLDivElement, opts: Partial<ViewOptions> = {})
   view: View :=
     cam: initCam()
     opts: DEFAULTS
-    svg: null
-    model: null
-  view.opts[k] = v for k, v in opts
+    svg: null as any
+    model: null as any
+  view.opts[k as keyof ViewOptions] = v for k, v in opts
 
   if view.opts.viewButtons
     toggleDiv := appendHTML(div, 'div')
@@ -150,12 +164,12 @@ export function addViewer(div: HTMLDivElement, opts: Partial<typeof DEFAULTS> = 
     for val, i of ['x', 'y', 'z']
       appendHTML(buttonDiv, 'input', {type: 'button', value: val})
       console.log("appended", buttonDiv, val)
-  if view.opts.properties
-    buttonDiv.innerHTML += ' Property:'
-    view.properties = appendHTML(buttonDiv, 'select') as HTMLSelectElement
-    view.data = appendHTML(buttonDiv, 'div', {
-      style: 'width: 300; padding: 10px; overflow: auto; \
-        border: 1px solid black; display: inline-block; white-space: nowrap;'})
+    if view.opts.properties
+      buttonDiv.innerHTML += ' Property:'
+      view.properties = appendHTML(buttonDiv, 'select') as HTMLSelectElement
+      view.data = appendHTML(buttonDiv, 'div', {
+        style: 'width: 300; padding: 10px; overflow: auto; \
+          border: 1px solid black; display: inline-block; white-space: nowrap;'})
   if view.opts.examples or view.opts.import
     inputDiv := appendHTML(div, 'div')
     if view.opts.examples
@@ -213,7 +227,7 @@ export function setCamXY(cam: Camera, x: Coords, y: Coords)
 export function addRotation(view: View)
   {svg, cam} := view
   for s in ['contextmenu', 'selectstart', 'dragstart']
-    svg[`on${s}`] = (e) -> e.preventDefault()
+    (svg as any)[`on${s}`] = (e: Event) -> e.preventDefault()
   svg.onmousedown = (e) => cam.last = [e.clientX, e.clientY]
   svg.onmousemove = (e) => rotateCam([e.clientX, e.clientY], view)
   svg.onmouseup = (e) =>
@@ -226,8 +240,8 @@ export function rotateCam(p: Coords, view: View)
   d := geom.sub(p, cam.last)
   return if not (geom.mag(d) > 0)
 
-  u := geom.unit(geom.plus(geom.mul(cam.x, -d[1]), geom.mul(cam.y, -d[0])))
-  [x, y] := (geom.rotate(cam[e], u, geom.mag(d) * 0.01) for e of ['x','y'])
+  u := geom.unit(geom.plus(geom.mul(cam.x, -d[1]), geom.mul(cam.y, -d[0])))!
+  [x, y] := (geom.rotate(cam[e], u, geom.mag(d) * 0.01)! for e of ['x','y'])
   setCamXY(cam, x, y)
   cam.last = p
   update(view)
@@ -236,13 +250,13 @@ export function rotateCam(p: Coords, view: View)
 
 export function makeModel(fold: Fold)
   m: Model := {vs: null, fs: null, es: {}}
-  m.vs = ({i: i, cs: cs} for cs, i of fold.vertices_coords)
+  m.vs = ({i: i, cs: cs} for cs, i of fold.vertices_coords!)
 
   for v, i of m.vs
     continue unless v.cs.length is 2
     m.vs[i].cs[2] = 0
 
-  m.fs = ({i: i, vs: (m.vs[v] for v of vs)} for vs, i of fold.faces_vertices)
+  m.fs = ({i: i, vs: (m.vs[v] for v of vs)} for vs, i of fold.faces_vertices!)
 
   if fold.edges_vertices?
     for v, i of fold.edges_vertices
@@ -251,17 +265,17 @@ export function makeModel(fold: Fold)
       m.es[`e${a}e${b}`] = {v1: m.vs[a], v2: m.vs[b], as: as}
   else
     for f, i of m.fs
-      for v, j of f.vs
-        w := f.vs[geom.next(j,f.vs.length)]
+      for v, j of f.vs!
+        w := f.vs![geom.next(j,f.vs!.length)]
         [a,b] := if v.i > w.i then [w,v] else [v,w]
         m.es[`e${a.i}e${b.i}`] = {v1: a, v2: b, as: 'U'}
 
   for f, i of m.fs
-    m.fs[i].n = geom.polygonNormal((v.cs for v of f.vs))
-    m.fs[i].c = geom.centroid((v.cs for v of f.vs))
+    m.fs[i].n = geom.polygonNormal((v.cs for v of f.vs!))
+    m.fs[i].c = geom.centroid((v.cs for v of f.vs!))
     // m.fs[i].es = {}
-    m.fs[i].es = (for v, j of f.vs
-      w := f.vs[geom.next(j, f.vs.length)]
+    m.fs[i].es = (for v, j of f.vs!
+      w := f.vs![geom.next(j, f.vs!.length)]
       [a,b] := if v.i > w.i then [w,v] else [v,w]
       edge .= m.es[`e${a.i}e${b.i}`]
       unless edge?
@@ -288,13 +302,13 @@ export function makeModel(fold: Fold)
         console.log `Warning: order for non-parallel faces [${f1},${f2}]`
   return m
 
-export function faceAbove(f1, f2, n)
-  [p1, p2] := ((v.ps for v of f.vs) for f of [f1,f2])
+export function faceAbove(f1: Face, f2: Face, n: Coords)
+  [p1, p2] := ((v.ps for v of f.vs!) for f of [f1,f2])
   sepDir := geom.separatingDirection2D(p1, p2, [0,0,1])
   if sepDir? // projections do not overlap
     return null
-  [v1,v2] := ((v.cs for v of f.vs) for f of [f1,f2])
-  basis := geom.basis(v1.concat(v2))
+  [v1,v2] := ((v.cs for v of f.vs!) for f of [f1,f2]) as Coords3D[][]
+  basis := geom.basis(v1.concat(v2))!
   if basis.length is 3
     dir := geom.separatingDirection3D(v1, v2)
     if dir?
@@ -308,24 +322,119 @@ export function faceAbove(f1, f2, n)
       return 0 > geom.dot(f2.n, n) * ord // faces coplanar and have order
   return null
 
+function handleFaceOrdering(f1: Face, f2: Face, direction: Coords)
+  f1_above := faceAbove(f1, f2, direction)
+
+  console.log `comparing (${f1.i}, ${f2.i})`
+
+  if f1_above?
+    [p,c] := if f1_above then [f1,f2] else [f2,f1]
+    p.children = p.children.concat([c])
+
+function getPredecessorAndSuccessor(tree: any, key: number)
+  var cmp = tree._compare;
+  var n = tree.root;
+  var stack = [];
+  var successor = null;
+  var predecessor = null;
+
+  while(n) {
+    var d = cmp(key, n.key);
+    stack.push(n);
+    if(d < 0) {
+      if(!successor || cmp(n.key, successor.key) < 0) {
+        successor = n;
+      }
+      n = n.left;
+    } else if(d > 0) {
+      if(!predecessor || cmp(n.key, predecessor.key) > 0) {
+        predecessor = n;
+      }
+      n = n.right;
+    } else {
+      if(n.right) {
+        var temp = n.right;
+        while(temp.left) {
+          temp = temp.left;
+        }
+        successor = temp;
+      }
+      if(n.left) {
+        var temp = n.left;
+        while(temp.right) {
+          temp = temp.right;
+        }
+        predecessor = temp;
+      }
+      break;
+    }
+  }
+
+  return { successor, predecessor }
+
 export function orderFaces(view: View)
-  faces := view.model.fs
   direction := geom.mul(view.cam.z, -1)
+  faces := view.model.fs as any[]
   (f.children = [] for f of faces)
 
-  for f1, i of faces
-    for f2, j of faces
-      continue unless i < j
-      f1_above := faceAbove(f1, f2, direction)
-      if f1_above?
-        [p,c] := if f1_above then [f1,f2] else [f2,f1]
-        p.children = p.children.concat([c])
+  tree .= createRBTree<number, typeof faces[number]>() as any
 
-  view.model.fs = geom.topologicalSort(faces)
+  for each f of faces
+    max .= [0, -Infinity, 0]
+    min .= [0, Infinity, 0]
+    for v of f.vs!
+      if v.ps[1] > max[1]
+        max = f.end = v.ps
+        f.end_i = v.i
+      if v.ps[1] < min[1]
+        min = f.begin = v.ps
+        f.begin_i = v.i
+
+  events := faces.flatMap((f) => [
+    { i: f.i, vs: f.begin_i, face: f, coords: f.begin, type: 'begin' },
+    { i: f.i, vs: f.end_i, face: f, coords: f.begin, type: 'end' }
+  ])
+
+  events.sort((e1, e2) => {
+    if (e1.coords[1] !== e2.coords[1]) {
+      return e1.coords[1] - e2.coords[1];
+    }
+    // If coords[1] are the same, sort 'begin' events before 'end' events
+    if (e1.type !== e2.type) {
+      return e1.type === 'begin' ? -1 : 1;
+    }
+    // If both events are of the same type, sort based on x or z coordinates
+    return e1.coords[0] - e2.coords[0] || e1.coords[2] - e2.coords[2];
+  });
+
+  f_to_i := new Map(events.filter((e) => e.type === 'begin').map((e, i) => [e.i!, i]))
+
+  for E of events
+    face := E.face
+    if E.type === 'begin'
+      i := f_to_i.get(face.i!)!
+      tree = tree.insert(i, face)
+
+      {successor, predecessor} := tree.getSuccessorAndPredecessor(i)
+      if successor?
+        handleFaceOrdering(face, successor.value, direction)
+      if predecessor?
+        handleFaceOrdering(face, predecessor.value, direction)
+    if E.type === 'end'
+      i := f_to_i.get(face.i!)!
+      {successor, predecessor} := tree.getSuccessorAndPredecessor(i!)
+      if successor?
+        if predecessor?
+          handleFaceOrdering(predecessor.value, successor.value, direction)
+      tree = tree.remove(i)
+
+  orderedFaces := geom.topologicalSort(faces)
+
+  view.model.fs = orderedFaces
   f.g.parentNode.removeChild(f.g) for f of view.model.fs
   view.svg.appendChild(f.g) for f of view.model.fs
 
-export function draw({svg: svg, cam: cam, model: model})
+export function draw({svg, cam, model}: View)
   svg.innerHTML = ''
   style := appendSVG(svg, 'style')
   for k, v in STYLES
@@ -346,7 +455,7 @@ export function draw({svg: svg, cam: cam, model: model})
     for e, j of f.es
       f.eg[j] = appendSVG(f.g, 'path')
     f.vg = []
-    for v, j of f.vs
+    for v, j of f.vs!
       f.vg[j] = appendSVG(f.g, 'g')
       f.vg[j].path = appendSVG(f.vg[j], 'circle', {class: 'vert'})
       f.vg[j].text = appendSVG(f.vg[j], 'text',
@@ -361,7 +470,9 @@ export function update(view: View)
   {model, cam, svg} := view
   (model.vs[i].ps = proj(v.cs, cam) for v, i of model.vs)
   (model.fs[i].c2 = proj(f.c, cam)  for f, i of model.fs)
+  console.time();
   orderFaces(view)
+  console.timeEnd()
   show: Record<string, string> := {}
 
   for k, v in cam.show
@@ -373,17 +484,17 @@ export function update(view: View)
     setAttrs(f.text, {
       x: f.c2[0], y: f.c2[1], visibility: show['Face Text']})
     setAttrs(f.path, {
-      d: makePath((v.ps for v of f.vs)) + 'Z'
+      d: makePath((v.ps for v of f.vs!)) + 'Z'
       visibility: show['Faces'], class: `face ${visibleSide}`})
     for e, j of f.es
       setAttrs(f.eg[j], {
         d: makePath([e.v1.ps, e.v2.ps])
         visibility: show['Edges'], class: `edge ${e.as}`})
-    for v, j of f.vs
+    for v, j of f.vs!
       setAttrs(f.vg[j], {visibility: show['Vertices']})
-      setAttrs(f.vg[j].path, {cx: v.ps[0], cy: v.ps[1]})
-      setAttrs(f.vg[j].text, {x: v.ps[0], y: v.ps[1]})
-  for c, v in {x: [1,0,0], y: [0,1,0], z: [0,0,1]}
+      setAttrs(f.vg[j].path, {cx: String(v.ps[0]), cy: String(v.ps[1])})
+      setAttrs(f.vg[j].text, {x: String(v.ps[0]), y: String(v.ps[1])})
+  for c, v in {x: [1,0,0], y: [0,1,0], z: [0,0,1]} as Record<string, Coords>
     end := geom.plus(geom.mul(v, 0.05 * cam.r), cam.c)
     setAttrs(cam.axis[c], {
       d: makePath((proj(p, cam) for p of [cam.c, end]))})

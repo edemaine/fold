@@ -68,7 +68,8 @@
   },
   "homepage": "https://github.com/edemaine/fold#readme",
   "devDependencies": {
-    "@danielx/civet": "^0.6.42",
+    "@danielx/civet": "^0.6.61",
+    "@types/functional-red-black-tree": "^1.0.6",
     "@types/node": "^20.8.2",
     "jest-matcher-deep-close-to": "^3.0.2",
     "typescript": "^5.1.6",
@@ -76,6 +77,7 @@
     "vitest": "^0.34.6"
   },
   "dependencies": {
-    "@xmldom/xmldom": "^0.7.2"
+    "@xmldom/xmldom": "^0.7.2",
+    "functional-red-black-tree": "^1.0.1"
   }
 }
